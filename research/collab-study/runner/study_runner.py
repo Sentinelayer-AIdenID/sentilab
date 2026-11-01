@@ -11,6 +11,7 @@ import os
 import socket
 import ssl
 import threading
+import time
 from urllib.parse import urlsplit
 
 import requests
@@ -314,7 +315,8 @@ class Ledger:
             self._attempts.append(attempt)
             return attempt
 
-    def settle(self, attempt: dict, *, usage=None, failure: CallFailure | None = None, request_id=None) -> None:
+    def settle(self, attempt: dict, *, usage=None, failure: CallFailure | None = None,
+               request_id=None, agent_cap: int | None = None, tokens_before: int = 0) -> None:
         unknown = False
         if failure and failure.safe_to_retry and usage is None:
             charged, amount = 0, Decimal(0)
@@ -337,11 +339,14 @@ class Ledger:
                 raise RuntimeError("attempt already settled")
             self._reserved -= Decimal(attempt["reserved_usd"])
             self._spent += amount
+            overspend = max(0, tokens_before + charged - agent_cap) if agent_cap is not None else 0
             attempt.update({"end_utc": utc_now(), "state": "failed" if failure else "response",
                             "usage": usage, "unknown_usage": unknown, "charged_tokens": charged,
                             "charged_usd": decimal_text(amount), "request_id": request_id or (failure.request_id if failure else None),
                             "failure": failure.kind if failure else None,
                             "http_status": failure.status if failure else None,
+                            "overspend_tokens": overspend,
+                            "overspend_limit_exceeded": overspend > attempt["max_tokens"],
                             "over_reserved_tokens": max(0, charged - attempt["prompt_bound"] - attempt["max_tokens"])})
             if self._spent > self.max_usd:
                 self.stop_reason = "dollar_cap"
@@ -358,3 +363,96 @@ class Ledger:
                       "reserved_usd": decimal_text(self._reserved), "overshoot_usd": decimal_text(max(Decimal(0), self._spent - self.max_usd)),
                       "stop_reason": self.stop_reason, "scopes": scopes, "attempts": self._attempts}
             return json.loads(canonical(result))
+
+
+@dataclass
+class AgentState:
+    number: int
+    cap: int
+    prompt_bound: int
+    charged_tokens: int = 0
+    successful_responses: int = 0
+    retried: bool = False
+    unknown_usage_attempts: int = 0
+    stop_reason: str | None = None
+
+    def __post_init__(self):
+        if type(self.cap) is not int or self.cap <= 0 or type(self.prompt_bound) is not int or self.prompt_bound < 0:
+            raise InputError("agent cap and initial prompt bound must be explicit nonnegative integers")
+
+
+class RequestEngine:
+    """One request lifecycle, shared by all arms; never guesses a prompt count.
+
+    The caller must supply the initial prompt bound. Its protocol source is
+    deliberately not defaulted here; subsequent bounds come from provider usage.
+    """
+
+    def __init__(self, model, ledger: Ledger, *, max_tokens_per_reply: int,
+                 clock=time.monotonic, sleep=time.sleep):
+        if type(max_tokens_per_reply) is not int or max_tokens_per_reply <= 0:
+            raise InputError("max_tokens_per_reply must be a positive integer")
+        self.model = model
+        self.ledger = ledger
+        self.reply_limit = max_tokens_per_reply
+        self.clock = clock
+        self.sleep = sleep
+
+    def request(self, job_id: str, agent: AgentState, messages: list[dict], *,
+                deadline: float, scope: str, record) -> Reply | None:
+        retry = False
+        message_hash = sha256(canonical(messages))
+        while not agent.stop_reason:
+            remaining_time = deadline - self.clock()
+            if remaining_time <= 0:
+                agent.stop_reason = "wall_time"
+                return None
+            remaining_tokens = agent.cap - agent.charged_tokens
+            max_tokens = min(self.reply_limit, remaining_tokens)
+            if max_tokens <= 0 or agent.prompt_bound + max_tokens > remaining_tokens:
+                agent.stop_reason = "token_cap"
+                return None
+            attempt = self.ledger.reserve(job_id, agent.number, "retry" if retry else scope,
+                                          prompt_bound=agent.prompt_bound, max_tokens=max_tokens)
+            if attempt is None:
+                agent.stop_reason = "dollar_cap"
+                return None
+            record({**attempt, "event": "request", "messages_sha256": message_hash})
+            reply, failure = None, None
+            try:
+                reply = self.model.complete(messages, max_tokens=max_tokens, timeout=remaining_time)
+                usage_counts(reply.usage)
+            except CallFailure as error:
+                failure = error
+            usage = reply.usage if reply is not None else failure.usage
+            request_id = reply.request_id if reply is not None else failure.request_id
+            self.ledger.settle(attempt, usage=usage, failure=failure, request_id=request_id,
+                               agent_cap=agent.cap, tokens_before=agent.charged_tokens)
+            agent.charged_tokens += attempt["charged_tokens"]
+            agent.unknown_usage_attempts += int(attempt["unknown_usage"])
+            try:
+                agent.prompt_bound = usage_counts(usage)[0]
+            except CallFailure:
+                pass
+            record({**attempt, "event": "failure" if failure else "response",
+                    "reply": reply.content if reply is not None else None,
+                    "response_id": reply.response_id if reply is not None else None})
+            if failure:
+                if failure.safe_to_retry and not agent.retried and agent.successful_responses == 0:
+                    if self.clock() + 10 >= deadline:
+                        agent.stop_reason = "wall_time"
+                        return None
+                    agent.retried = True
+                    self.sleep(10)
+                    retry = True
+                    continue
+                agent.stop_reason = failure.kind
+                return None
+            agent.successful_responses += 1
+            if self.clock() >= deadline:
+                agent.stop_reason = "wall_time"
+                return None
+            if agent.charged_tokens >= agent.cap:
+                agent.stop_reason = "token_cap"
+            return reply
+        return None

@@ -300,3 +300,204 @@ def test_ambiguous_failure_is_reserved_even_with_partial_usage(prompt, output, c
     assert recorded['charged_usd'] == usd
     assert recorded['request_id'] == 'failed-call'
     assert recorded['http_status'] == 503
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0
+        self.sleeps = []
+
+    def __call__(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+class ScriptedModel:
+    def __init__(self, *results):
+        self.results = list(results)
+        self.calls = []
+
+    def complete(self, messages, *, max_tokens, timeout):
+        self.calls.append({'messages': json.loads(json.dumps(messages)), 'max_tokens': max_tokens, 'timeout': timeout})
+        result = self.results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+def response(text='thinking', prompt=100, completion=20):
+    return runner.Reply(text, {'prompt_tokens': prompt, 'completion_tokens': completion}, 'request-one', 'reply-one')
+
+
+def lifecycle(model, *, cap=1000, prompt_bound=100, max_usd='10'):
+    clock = FakeClock()
+    ledger = runner.Ledger(max_usd, {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    agent = runner.AgentState(1, cap, prompt_bound)
+    engine = runner.RequestEngine(model, ledger, max_tokens_per_reply=100, clock=clock, sleep=clock.sleep)
+    records = []
+    return engine, agent, ledger, clock, records
+
+
+def send(engine, agent, records, *, deadline=900, scope='study'):
+    return engine.request('job-one', agent, [{'role': 'user', 'content': 'packet'}],
+                          deadline=deadline, scope=scope, record=records.append)
+
+
+def test_request_stops_at_cap_and_uses_previous_prompt_usage():
+    model = ScriptedModel(response(prompt=150))
+    engine, agent, ledger, clock, records = lifecycle(model, cap=350)
+    assert send(engine, agent, records) is not None
+    assert agent.charged_tokens == 170
+    assert agent.prompt_bound == 150
+    assert send(engine, agent, records) is None
+    assert agent.stop_reason == 'token_cap'
+    assert len(model.calls) == 1
+    assert model.calls[0]['max_tokens'] == 100
+    assert ledger.report()['scopes']['study']['charged_tokens'] == 170
+
+
+def test_dollar_cap_prevents_model_call():
+    model = ScriptedModel()
+    engine, agent, ledger, clock, records = lifecycle(model, max_usd='0.00029')
+    assert send(engine, agent, records) is None
+    assert model.calls == []
+    assert agent.stop_reason == 'dollar_cap'
+    assert ledger.report()['stop_reason'] == 'dollar_cap'
+
+
+def test_presend_retry_once_before_success_with_same_request_and_ten_second_wait():
+    failure = runner.CallFailure('presend_failure', safe_to_retry=True)
+    model = ScriptedModel(failure, response('verbatim\r\nreply'))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    reply = send(engine, agent, records, scope='pilot')
+    assert reply.content == 'verbatim\r\nreply'
+    assert len(model.calls) == 2
+    assert model.calls[0]['messages'] == model.calls[1]['messages']
+    assert clock.sleeps == [10]
+    attempts = ledger.report()['attempts']
+    assert [a['scope'] for a in attempts] == ['pilot', 'retry']
+    assert [a['job_id'] for a in attempts] == ['job-one', 'job-one']
+    assert [a['charged_tokens'] for a in attempts] == [0, 120]
+    assert [r['event'] for r in records] == ['request', 'failure', 'request', 'response']
+    assert records[0]['messages_sha256'] == runner.sha256(runner.canonical(model.calls[0]['messages']))
+    assert records[0]['messages_sha256'] == records[2]['messages_sha256']
+    assert records[-1]['reply'] == 'verbatim\r\nreply'
+    assert records[-1]['request_id'] == 'request-one'
+    assert records[-1]['response_id'] == 'reply-one'
+
+
+def test_second_presend_failure_is_not_retried():
+    failure = runner.CallFailure('presend_failure', safe_to_retry=True)
+    model = ScriptedModel(failure, failure)
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records) is None
+    assert len(model.calls) == 2
+    assert clock.sleeps == [10]
+    assert agent.stop_reason == 'presend_failure'
+    assert len(ledger.report()['attempts']) == 2
+
+
+def test_presend_failure_after_success_is_not_retried():
+    model = ScriptedModel(response(), runner.CallFailure('presend_failure', safe_to_retry=True))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records) is not None
+    assert send(engine, agent, records) is None
+    assert len(model.calls) == 2
+    assert clock.sleeps == []
+    assert agent.stop_reason == 'presend_failure'
+
+
+def test_ambiguous_attempt_has_no_retry_and_is_charged():
+    model = ScriptedModel(runner.CallFailure('transport_unknown', request_id='ambiguous'))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records) is None
+    assert len(model.calls) == 1
+    assert clock.sleeps == []
+    assert agent.charged_tokens == 200
+    assert agent.unknown_usage_attempts == 1
+    assert agent.stop_reason == 'transport_unknown'
+    assert records[-1]['request_id'] == 'ambiguous'
+    assert records[-1]['unknown_usage'] is True
+    assert ledger.report()['grand_total_usd'] == '0.0003'
+
+
+def test_invalid_usage_stops_agent_and_keeps_verbatim_reply():
+    model = ScriptedModel(runner.Reply('verbatim answer', None, 'missing-usage', 'reply-two'))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records) is None
+    assert agent.stop_reason == 'invalid_usage'
+    assert agent.charged_tokens == 200
+    assert records[-1]['reply'] == 'verbatim answer'
+    assert records[-1]['request_id'] == 'missing-usage'
+    assert records[-1]['usage'] is None
+    assert len(model.calls) == 1
+
+
+def test_token_overspend_is_reported_with_reply_bound():
+    model = ScriptedModel(response(prompt=400, completion=20))
+    engine, agent, ledger, clock, records = lifecycle(model, cap=200)
+    assert send(engine, agent, records) is not None
+    assert agent.charged_tokens == 420
+    assert agent.stop_reason == 'token_cap'
+    assert records[-1]['overspend_tokens'] == 220
+    assert records[-1]['overspend_limit_exceeded'] is True
+    assert records[-1]['max_tokens'] == 100
+    assert send(engine, agent, records) is None
+    assert len(model.calls) == 1
+
+
+def test_deadline_checked_before_call_and_retry():
+    model = ScriptedModel()
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records, deadline=0) is None
+    assert agent.stop_reason == 'wall_time'
+    assert model.calls == []
+    model = ScriptedModel(runner.CallFailure('presend_failure', safe_to_retry=True))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    assert send(engine, agent, records, deadline=9) is None
+    assert agent.stop_reason == 'wall_time'
+    assert clock.sleeps == []
+    assert len(model.calls) == 1
+
+
+def test_retry_rechecks_dollar_cap_after_delay():
+    model = ScriptedModel(runner.CallFailure('presend_failure', safe_to_retry=True))
+    engine, agent, ledger, clock, records = lifecycle(model)
+
+    def spend_elsewhere(seconds):
+        clock.sleep(seconds)
+        ledger.reserve('other-job', 1, 'study', prompt_bound=10_000_000, max_tokens=100)
+
+    engine.sleep = spend_elsewhere
+    assert send(engine, agent, records) is None
+    assert agent.stop_reason == 'dollar_cap'
+    assert len(model.calls) == 1
+
+
+def test_late_response_is_charged_but_cannot_finalize_after_deadline():
+    engine, agent, ledger, clock, records = lifecycle(ScriptedModel())
+
+    class LateModel:
+        def complete(self, messages, *, max_tokens, timeout):
+            assert timeout == 900
+            clock.now = 901
+            return response('FINAL\n')
+
+    engine.model = LateModel()
+    assert send(engine, agent, records) is None
+    assert agent.stop_reason == 'wall_time'
+    assert agent.charged_tokens == 120
+    assert records[-1]['reply'] == 'FINAL\n'
+    assert ledger.report()['scopes']['study']['charged_tokens'] == 120
+
+
+def test_run_accounting_contains_agent_cap_overspend():
+    model = ScriptedModel(response(prompt=400, completion=20))
+    engine, agent, ledger, clock, records = lifecycle(model, cap=200)
+    send(engine, agent, records)
+    attempt = ledger.report()['attempts'][0]
+    assert attempt['overspend_tokens'] == 220
+    assert attempt['overspend_limit_exceeded'] is True
