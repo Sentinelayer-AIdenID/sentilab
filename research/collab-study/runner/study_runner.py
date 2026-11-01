@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
+import os
+import socket
+import ssl
+from urllib.parse import urlsplit
+
+import requests
 from pathlib import Path
 
 PACKET_FILES = ("README.md", "config.json", "model.py", "results.json", "report.md")
@@ -140,3 +146,116 @@ def validate_pilot(path: Path, sealed_hashes: list[dict[str, str]]) -> tuple[str
     if any(sha256(canonical(sealed)) == digest for sealed in sealed_hashes):
         raise InputError("pilot must differ from every sealed packet")
     return message, hashes
+
+
+class CallFailure(Exception):
+    """Only bounded, credential-free categories cross the transport boundary."""
+
+    def __init__(self, kind: str, *, safe_to_retry=False, status=None, request_id=None, usage=None):
+        super().__init__(kind)
+        self.kind = kind
+        self.safe_to_retry = safe_to_retry
+        self.status = status
+        self.request_id = request_id
+        self.usage = usage
+
+
+@dataclass(frozen=True)
+class Reply:
+    content: str
+    usage: dict | None
+    request_id: str | None
+    response_id: str | None
+
+
+def usage_counts(usage: dict | None) -> tuple[int, int, int, int]:
+    """Cached/reasoning details are subsets, not additional billed tokens."""
+    try:
+        prompt = usage["prompt_tokens"]
+        output = usage["completion_tokens"]
+        cached = (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0)
+        reasoning = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens", 0)
+        values = (prompt, cached, output, reasoning)
+        if any(type(value) is not int or value < 0 for value in values):
+            raise ValueError
+        if cached > prompt or reasoning > output:
+            raise ValueError
+        if "total_tokens" in usage and usage["total_tokens"] != prompt + output:
+            raise ValueError
+        return values
+    except (KeyError, TypeError, AttributeError, ValueError):
+        raise CallFailure("invalid_usage", usage=usage) from None
+
+
+def evidenced_presend(error: BaseException) -> bool:
+    """Do not infer send state from a generic timeout/reset/SSL error."""
+    pending, visited = [error], set()
+    while pending:
+        current = pending.pop()
+        if id(current) in visited:
+            continue
+        visited.add(id(current))
+        if isinstance(current, (socket.gaierror, ConnectionRefusedError, ssl.SSLCertVerificationError)):
+            return True
+        for nested in [current.__cause__, getattr(current, "reason", None), *current.args]:
+            if isinstance(nested, BaseException):
+                pending.append(nested)
+    return False
+
+
+def contains_credential(value, credential: str) -> bool:
+    if isinstance(value, str):
+        return credential in value
+    if isinstance(value, dict):
+        return any(contains_credential(k, credential) or contains_credential(v, credential) for k, v in value.items())
+    if isinstance(value, list):
+        return any(contains_credential(item, credential) for item in value)
+    return False
+
+
+class HTTPModel:
+    def __init__(self, endpoint: str, credential: str):
+        parsed = urlsplit(endpoint)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+            raise InputError("STUDY_ENDPOINT must be a complete HTTPS chat-completions URL")
+        if not credential:
+            raise InputError("STUDY_API_KEY must be set")
+        self.endpoint = endpoint
+        self._credential = credential
+
+    @classmethod
+    def from_env(cls):
+        return cls(os.environ.get("STUDY_ENDPOINT", ""), os.environ.get("STUDY_API_KEY", ""))
+
+    def complete(self, messages: list[dict], *, max_tokens: int, timeout: float) -> Reply:
+        payload = {"model": "deepseek-v4-pro", "messages": messages, "temperature": 0.3,
+                   "top_p": 1, "max_tokens": max_tokens, "stream": False}
+        if contains_credential(payload, self._credential):
+            raise CallFailure("credential_in_input")
+        try:
+            with requests.Session() as session:
+                response = session.post(self.endpoint, json=payload, headers={"Authorization": "Bearer " + self._credential},
+                                        timeout=timeout, allow_redirects=False)
+        except requests.RequestException as error:
+            safe = evidenced_presend(error)
+            raise CallFailure("presend_failure" if safe else "transport_unknown", safe_to_retry=safe) from None
+        request_id = response.headers.get("x-request-id") or response.headers.get("apim-request-id")
+        if contains_credential(request_id, self._credential):
+            request_id = None
+        try:
+            body = response.json()
+        except (ValueError, RecursionError):
+            raise CallFailure("invalid_response", status=response.status_code, request_id=request_id) from None
+        if contains_credential(body, self._credential):
+            raise CallFailure("credential_in_response", status=response.status_code, request_id=request_id)
+        usage = body.get("usage") if isinstance(body, dict) else None
+        if not 200 <= response.status_code < 300:
+            raise CallFailure("http_error", status=response.status_code, request_id=request_id, usage=usage)
+        try:
+            content = body["choices"][0]["message"]["content"]
+            if not isinstance(content, str):
+                raise TypeError
+            response_id = body.get("id")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            raise CallFailure("invalid_response", status=response.status_code, request_id=request_id, usage=usage) from None
+        return Reply(content, usage, request_id, response_id)
