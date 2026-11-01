@@ -1,10 +1,10 @@
 # SentiLab founder pitch (v4), about three minutes (3:20 at most), draft 2026-11-01 10:10 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 9c5994ce…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 0f64cd34…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
-**Clock:** 382 words = 152.8 s at 150 wpm, plus 15 s of transitions = 167.8 s of the 200 s maximum. At 135 wpm: 184.8 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
+**Clock:** 400 words = 160 s at 150 wpm, plus 15 s of transitions = 175 s of the 200 s maximum. At 135 wpm: 192.8 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
 
-**With the demo:** 120 s of demo makes 287.8 s (4:48) at 150 wpm, or 304.8 s (5:05) at 135. Before the talk, do one real timed rehearsal with the actual demo.
+**With the demo:** 120 s of demo makes 295 s (4:55) at 150 wpm, or 312.8 s (5:13) at 135. Before the talk, do one real timed rehearsal with the actual demo.
 
 ## 1. Of course I know everything about chip design. (Chip design)
 
@@ -38,15 +38,15 @@ Our agents found a suspect in 32 minutes, then helped stop our own experiment. W
 
 ## 6. In the model: the link from lid to cooler. (Where it splits)
 
-They localized a difference around the modeled link between the metal lid and cooler. Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment. Two other teams reported results from changing that link.
+They localized a difference around the modeled link between the metal lid and cooler. Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment. Two other teams reported results from changing that link. We ran it too, against a bar we fixed in advance, and it met it.
 
-42 words, 16.8 s at 150 wpm. Cue: Play the plumbing line lightly.
+57 words, 22.8 s at 150 wpm. Cue: Play the plumbing line lightly. "We ran it too" is the configured diagnostic, as Carter's Q&A has it ("Did you run that change yourselves?"): it localizes the difference to this term in this configured model; it doesn't tell us what the authors intended, or which version matches hardware.
 
 ## 7. Passing one check isn't passing them all. (The checks)
 
-Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
+Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is within rounding in our own run and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
 
-61 words, 24.4 s at 150 wpm. Cue: Pause before "I nodded."
+64 words, 25.6 s at 150 wpm. Cue: Pause before "I nodded."
 
 ## 8. Check the grader before celebrating the score. (The point)
 

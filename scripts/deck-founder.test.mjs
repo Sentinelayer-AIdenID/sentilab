@@ -47,14 +47,14 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 200, `${u.totalSeconds} s`); // 3:00 to 3:20, Carter's slot (57411): 3-4 minutes of talk, then the demo
   const d = draft.budget;
-  assert.deepEqual([d.talkWords, d.talkSeconds, d.transitionSeconds, d.totalSeconds], [382, 152.8, 15, 167.8]);
+  assert.deepEqual([d.talkWords, d.talkSeconds, d.transitionSeconds, d.totalSeconds], [400, 160, 15, 175]);
   assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(50); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
   assert.equal(slide(draft, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
   // v4-short: two minutes of talk, transitions included, then the demo.
   const short = buildFounderData(loaded, { slot: "2min", final: false });
   assert.deepEqual(short.slides.filter((x) => x.main).map((x) => x.id), SHORT);
-  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [247, 98.8, 10, 108.8]);
+  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [250, 100, 10, 110]);
   // The cut slides lead the backup, then the backup pages.
   assert.deepEqual(short.slides.filter((x) => !x.main).map((x) => x.id), ["senti", "times", "link", "point", "sources", "cost", "solvers"]);
   assert.throws(() => buildFounderData(loaded, { slot: "4min" }), /--slot must be one of 3min, 2min/);
@@ -65,11 +65,13 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // Root, reply to 57809 at 07:04Z: the two paragraph openings, as written.
   assert.ok(say("hook").startsWith("In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at the hottest modeled grid cells, for the same design and input files."));
   // Slide 7, the scorecard: aneta's first sentence (57906), root's preferred wording (reply to 57902, 08:04Z), then the beat.
-  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
+  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is within rounding in our own run and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
   assert.match(slide(data, "scorecard").notes.cue, /Pause before "I nodded\."/);
   assert.equal(slide(data, "scorecard").content.title, "Passing one check isn't passing them all.");
   // Aneta's shortening (57816), with the distinction kept in the footer.
-  assert.ok(say("link").endsWith("Two other teams reported results from changing that link."));
+  assert.ok(say("link").endsWith("Two other teams reported results from changing that link. We ran it too, against a bar we fixed in advance, and it met it."));
+  assert.match(slide(data, "link").notes.cue, /"We ran it too" is the configured diagnostic, as Carter's Q&A has it .*localizes the difference to this term in this configured model/);
+  assert.equal(slide(data, "link").content.line, "Two other teams reported results from changing that link.", "the slide itself is unchanged");
   assert.match(slide(data, "link").content.footer, /^Delfie \(delphisci team\) and ScienceClaw reported results from changing that modeled link; those reports are separate from our verified reference reproduction\./);
   // Carter's additions (57800): the chip joke's second half, what the tech does for agents, the room, the closer.
   assert.ok(say("chips").endsWith("All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design."));
@@ -108,12 +110,14 @@ test("root's carried openings, the finding beat in root's words and Carter's add
     assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
     assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
-  // Slide 9's freeze fallback is aneta's v1.28 plain13 (root's scoped +1, 11:57:49Z), in place of v1.22's plain8, which
-  // stays in the review evidence only. Its header and alt text still need root's P2 wording, so the freeze refuses it
-  // until aneta's corrected figure replaces it.
-  assert.equal(loaded.v4.figures.plain13.sha256, "cf6844474f888a512e63d78859a2d8c6459b1ac5bad30056265a465fa1cbb50a");
-  assert.match(loaded.v4.figures.plain13.review, /^root's scoped \+1 on v1\.28, 11:57:49Z \(ZIP f2e2798daa79b67feb2ff7d3944de48d94e9d4862853b46c19278f234cf5262f, 46,406 bytes\)$/);
-  assert.match(loaded.v4.figures.plain13.pending, /to replies reporting reruns/);
+  // Slide 9's freeze fallback is aneta's plain13 from v1.31 (root's wording, five rows; it supersedes v1.28), with root's +1
+  // (12:12:03Z), in place of v1.22's plain8, which stays in the review evidence only.
+  assert.equal(loaded.v4.figures.plain13.sha256, "3ec61a135fb0d3544878da9870f7c81b8a374907cccc1fc5bc5f2af25832befc");
+  assert.match(loaded.v4.figures.plain13.review, /^aneta's v1\.31 \(ZIP 6813d5e00fe496f5174bf9d411997493538bfc17b690c4bd0467cab5bed29f46, 41,586 bytes\), five rows, with root's wording; root's \+1, 12:12:03Z/);
+  assert.equal(loaded.v4.figures.plain13.pending, undefined);
+  const p13 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain13-crosscheck.svg"), "utf8");
+  for (const t of ["from our ask in the help room to replies reporting re-runs,", "Finite element, a separate code", "another team"]) assert.ok(p13.includes(t), t);
+  assert.doesNotMatch(p13, /own solvers|own compute|Vortex/);
   assert.equal(loaded.v4.slides.find((x) => x.id === "invite").finalFallback.figure, "plain13");
   assert.equal(loaded.v4.figures.plain8, undefined);
   for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith("plain8")), dir);
@@ -122,16 +126,20 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z).
   assert.match(shown(data, "senti"), /Staging output, 08:39 UTC, 1 November: our own team's test runs/);
   assert.equal(slide(data, "senti").content.figure.minFont, 21, "plain9's own 21 px text stays as drawn, recorded for the renderer");
-  // The scorecard is aneta's v1.19 plain7 (root's three repairs drawn in), with one declared edit and this deck's label.
+  // The scorecard is aneta's v1.30 plain7, with root's +1 (12:12:03Z): its third row is our own run, served as drawn, with
+  // its own alt text (the expanded description, now with our run) and this deck's label.
   const fig = slide(data, "scorecard").content.figure;
   assert.equal(fig.id, "plain7");
-  assert.equal(loaded.v4.figures.plain7.sha256, "6bc037d767d6cc8e9f65bc96bd49bb31fbc97280d2c79369a9a32fbd67840d36");
+  assert.equal(loaded.v4.figures.plain7.sha256, "b5d487be828a694d8e9b22c23a79e5b355970805042243ad20683adcaf657ae9");
+  assert.match(loaded.v4.figures.plain7.review, /^aneta's v1\.30 \(ZIP 251fee39fa8c3e9982aabaed27840deae6cb5461e44ef4b0875c0c5d3ec89cfd, 45,938 bytes\).*root's \+1, 12:12:03Z \(reply to 57988\), covering the g1 heat balance and attribution$/);
+  assert.equal(loaded.v4.figures.plain7.pending, undefined);
+  assert.equal(loaded.v4.figures.plain7.edits, undefined);
+  assert.equal(loaded.v4.figures.plain7.alt, undefined);
   const served = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain7-scorecard.svg"), "utf8");
-  for (const t of ["Each column uses its own reading.", "Rounding limit: about 0.43 W, 0.063%; not a total error bound.", "Older: our pinned 6.0 build", "as ScienceClaw reports", "as Delfie reports; ScienceClaw reports too"]) assert.ok(served.includes(t), t);
-  assert.ok(!served.includes("re-ran it"), "the participant-report boundary");
-  assert.equal(fig.alt, loaded.v4.figures.plain7.alt);
-  // Aneta's expanded description (57915): the selector, rounding and provenance qualifications, with the reported attribution.
-  for (const t of ["The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound.", "The paper column uses the native all-block reading, 232.67 degrees for 7.0.", "The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0", "as Delfie reports and ScienceClaw reports too"]) assert.ok(fig.alt.includes(t), t);
+  for (const t of ["Each column uses its own reading.", "Rounding limit: about 0.43 W, 0.063%; not a total error bound.", "Older: our pinned 6.0 build", "our run; also Delfie and ScienceClaw"]) assert.ok(served.includes(t), t);
+  assert.ok(!served.includes("re-ran it") && !served.includes("as ScienceClaw reports"), "our own run, no longer only reported");
+  // The expanded description (57915): the selector, rounding and provenance qualifications, with our run.
+  for (const t of ["The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound.", "The paper column uses the native all-block reading, 232.67 degrees for 7.0.", "The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0", "our own run, with the same result reported by Delfie and ScienceClaw"]) assert.ok(fig.alt.includes(t), t);
   assert.ok(served.includes("aria-label=\"Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build"));
   assert.ok(shown(data, "scorecard").includes("Delfie (delphisci team) reports the one-step change; ScienceClaw reports reproducing it"));
 });
@@ -198,8 +206,8 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
   }
   for (const f of ["sheet-main.png", "sheet-main-2min.png"]) assert.ok(existsSync(join(FOUNDER_DIR, f)), f);
   // Root's timing note: with the demo, and a real timed rehearsal before the talk.
-  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 287\.8 s \(4:48\) at 150 wpm, or 304\.8 s \(5:05\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
-  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 168\.8 s \(2:49\)/);
+  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 295 s \(4:55\) at 150 wpm, or 312\.8 s \(5:13\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
+  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 170 s \(2:50\)/);
   assert.match(committed.slides[0].notes.cue, /one real timed rehearsal with the actual demo/);
   assert.equal(readFileSync(scriptPath("2min"), "utf8"), speakerScript(short, loaded.v4));
 });
@@ -209,10 +217,7 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
   const pending = structuredClone(loaded.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
   assert.throws(() => buildFounderData({ ...loaded, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
-  // With nothing measured, slide 9 needs its fallback picture, and plain13 waits for root's P2 wording.
-  assert.throws(() => buildFounderData(loaded, { final: true }), /figure plain13 is awaiting aneta's corrected header and alt text .*the freeze takes only reviewed figures/);
   const reviewed = structuredClone(loaded.v4);
-  delete reviewed.figures.plain13.pending;
   for (const slot of ["3min", "2min"]) {
     const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
@@ -341,7 +346,6 @@ test("root's rev 5 review: the timeline keeps its qualifications, help says refr
 test("V4.json's build sets the committed build's mode: \"final\" is the freeze, anything else but \"draft\" stops the build", () => {
   const frozen = structuredClone(loaded.v4);
   frozen.build = "final";
-  delete frozen.figures.plain13.pending;
   const fin = buildFounderData({ ...loaded, v4: frozen });
   assert.equal(fin.deck.draft, false);
   assert.doesNotMatch(html(fin), /DRAFT/);
@@ -357,8 +361,7 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
 test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
   const { readQr } = await import("./qr-read.mjs");
   const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_start: "2026-11-01T07:13:20Z", window_end: "2026-11-01T14:20:05Z", window: "2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
-  // plain13 as it will be once aneta's corrected header is in (it is pending until then; the --final test pins that).
-  const freeze = (keys) => variant((v) => { v.build = "final"; delete v.figures.plain13.pending; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
   const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
   for (const [name, keys] of Object.entries(cases)) {
     const d = freeze(keys);
@@ -396,7 +399,7 @@ test("the deck's own words on the cross-check follow root's P2: never \"their ow
   const texts = [
     ...[join(FOUNDER_DIR, "V4.json"), scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources].map((p) => readFileSync(p, "utf8")),
     html(draft),
-    html(variant((v) => { v.build = "final"; delete v.figures.plain13.pending; })),
+    html(variant((v) => { v.build = "final"; })),
   ];
   for (const t of texts) assert.doesNotMatch(t, /own solvers|re-?ran (?:it )?(?:with)?in (?:under )?(?:six|6) minutes/i);
 });

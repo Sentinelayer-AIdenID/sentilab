@@ -30,7 +30,9 @@
     "The coordinator's QR check (after rev 5): the door QR must encode exactly the URL the notes intend, the site root; the build now decodes it.",
     "Root's full review of rev 5 (reply to 57809, 11:07:53Z), relayed 11:09Z: the timeline's qualifications back on page 5, \"refresh at the freeze\" on page 3, and script headings for slides 8 and 10.",
     "The coordinator's freeze rule for slide 9 (11:45Z): each measured tile shown with its receipt, each unmeasured one dropped and the rest reflowed, the fallback picture only when none is measured, and the QR code and the door's address in every case.",
-    "Aneta's v1.28 cross-check (team room 57973, 11:47Z; ZIP f2e2798d..., 46,406 bytes) with root's scoped +1 and P2 wording (reply to 57973, 11:57:49Z), relayed by the coordinator: plain13-crosscheck replaces plain8-candidate as slide 9's freeze fallback (plain8-candidate is kept in the review evidence); any line about it says \"Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction.\""
+    "Aneta's cross-check, plain13-crosscheck, relayed by the coordinator: v1.28 (team room 57973; root's scoped +1 and P2 wording, reply to 57973 at 11:57:49Z), superseded by v1.31 (reply to 57988; ZIP 6813d5e0..., 41,586 bytes; root's wording, five rows), with root's +1 (12:12:03Z, reply to 57988). It is slide 9's freeze fallback in place of plain8-candidate (kept in the review evidence); any line about it says \"Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction.\"",
+    "Aneta's v1.30 scorecard (reply to 57982; ZIP 251fee39..., 45,938 bytes), relayed by the coordinator, with root's +1 (12:12:03Z, reply to 57988) covering the g1 heat balance and attribution: the third row is our own run (\"our run; also Delfie and ScienceClaw\"), its heat column from aneta's check of our saved outputs. Slide 7's words, with root's OK: \"The modified output is within rounding in our own run...\"; standing alone, root's precise form is \"The heat balance closes within saved-output rounding in our own run\".",
+    "Slide 6's added sentence, which root supports (11:59:29Z), relayed by the coordinator: \"We ran it too, against a bar we fixed in advance, and it met it.\", tied to the configured diagnostic as Carter's Q&A words it."
   ],
   "teams": {
     "named": {
@@ -102,18 +104,11 @@
     },
     "plain7": {
       "file": "plain7-scorecard.svg",
-      "sha256": "6bc037d767d6cc8e9f65bc96bd49bb31fbc97280d2c79369a9a32fbd67840d36",
+      "sha256": "b5d487be828a694d8e9b22c23a79e5b355970805042243ad20683adcaf657ae9",
       "width": 1664,
       "height": 700,
       "scale": 0.94,
-      "edits": [
-        {
-          "from": "as Delfie reports; ScienceClaw re-ran it",
-          "to": "as Delfie reports; ScienceClaw reports too",
-          "why": "root's participant-report boundary, as on the technical deck's slides 7 and 9 (reply to 57558, 06:48Z)"
-        }
-      ],
-      "alt": "Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the balance check; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Saved 45 mm, grid 64 CPU-DRAM cases, simulated, not compared with a real chip. The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound. Each column uses its own reading. The paper column uses the native all-block reading, 232.67 degrees for 7.0. The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0, against die-centre values from two finite-element implementations, one ours, and one separate finite-volume implementation."
+      "review": "aneta's v1.30 (ZIP 251fee39fa8c3e9982aabaed27840deae6cb5461e44ef4b0875c0c5d3ec89cfd, 45,938 bytes): the third row is our own run, its heat balance from aneta's check of our saved outputs; root's +1, 12:12:03Z (reply to 57988), covering the g1 heat balance and attribution"
     },
     "plain9": {
       "file": "plain9-senti-door.svg",
@@ -149,12 +144,11 @@
     },
     "plain13": {
       "file": "plain13-crosscheck.svg",
-      "sha256": "cf6844474f888a512e63d78859a2d8c6459b1ac5bad30056265a465fa1cbb50a",
+      "sha256": "3ec61a135fb0d3544878da9870f7c81b8a374907cccc1fc5bc5f2af25832befc",
       "width": 1664,
-      "height": 736,
+      "height": 790,
       "scale": 0.92,
-      "review": "root's scoped +1 on v1.28, 11:57:49Z (ZIP f2e2798daa79b67feb2ff7d3944de48d94e9d4862853b46c19278f234cf5262f, 46,406 bytes)",
-      "pending": "awaiting aneta's corrected header and alt text (root's P2, 11:57:49Z: \"to replies reporting reruns\")"
+      "review": "aneta's v1.31 (ZIP 6813d5e00fe496f5174bf9d411997493538bfc17b690c4bd0467cab5bed29f46, 41,586 bytes), five rows, with root's wording; root's +1, 12:12:03Z (reply to 57988); it supersedes v1.28 (ZIP f2e2798d..., root's scoped +1 at 11:57:49Z)"
     }
   },
   "slides": [
@@ -364,8 +358,8 @@
       },
       "line": "Two other teams reported results from changing that link.",
       "footer": "Delfie (delphisci team) and ScienceClaw reported results from changing that modeled link; those reports are separate from our verified reference reproduction. Simulated, not silicon.",
-      "say": "They localized a difference around the modeled link between the metal lid and cooler. Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment. Two other teams reported results from changing that link.",
-      "cue": "Play the plumbing line lightly.",
+      "say": "They localized a difference around the modeled link between the metal lid and cooler. Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment. Two other teams reported results from changing that link. We ran it too, against a bar we fixed in advance, and it met it.",
+      "cue": "Play the plumbing line lightly. \"We ran it too\" is the configured diagnostic, as Carter's Q&A has it (\"Did you run that change yourselves?\"): it localizes the difference to this term in this configured model; it doesn't tell us what the authors intended, or which version matches hardware.",
       "facts": []
     },
     {
@@ -378,7 +372,7 @@
       },
       "label": "simulated, not silicon",
       "footer": "Delfie (delphisci team) reports the one-step change; ScienceClaw reports reproducing it and computed its heat balance. The figure carries each column's own reading and limits.",
-      "say": "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+      "say": "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is within rounding in our own run and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
       "cue": "Pause before \"I nodded.\"",
       "facts": []
     },
