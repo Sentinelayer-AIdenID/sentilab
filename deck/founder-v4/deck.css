@@ -104,6 +104,7 @@ h1.big { font-size: 72px; }
 .tile { display: flex; flex-direction: column; gap: 14px; padding: 28px 26px; border: 2px solid var(--line); border-radius: 18px; background: var(--panel); min-height: 250px; }
 .tile .tv { font: 800 96px/1 var(--display); color: var(--cyan); letter-spacing: -.02em; }
 .tile .tl { font-size: 30px; color: var(--body); }
+.tile .tw { margin-top: auto; font: 600 28px/1.2 var(--mono); color: var(--muted); }
 .tile.is-measuring { border: 3px dashed var(--am-line); background: var(--am-bg); }
 .tile .measuring { font: 700 44px/1.1 var(--mono); color: var(--amber); }
 .npoints { margin: 40px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 16px 40px; font: 600 34px/1.3 var(--display); color: var(--body); }
@@ -122,6 +123,10 @@ h1.big { font-size: 72px; }
 /* 6: the figure */
 .fwrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .fwrap .fig { margin: 0; }
+/* 3 (plain14 with the bullets under it): the picture sits low, just above the bullets, so a footer that wraps longer in
+   print takes room from the gap under the title, never the title itself (aneta's read of final-2's page 3, 15:18Z) */
+.l-figure .fwrap:has(+ .npoints) { align-items: flex-end; }
+.l-figure .npoints { margin-top: 14px; }
 .fline { flex: none; margin: 8px 0 18px; font: 650 44px/1.2 var(--display); color: var(--amber); }
 
 /* 7: the pair of tiles */
@@ -164,3 +169,12 @@ h1.big { font-size: 72px; }
 .fstat { display: flex; align-items: baseline; gap: 22px; padding: 18px 26px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
 .fstat b { flex: none; font: 800 60px/1 var(--display); color: var(--cyan); }
 .fstat span { font-size: 28px; color: var(--body); }
+
+/* 9 at a freeze with nothing measured: the fallback picture in the tiles' place, the QR code beside it (never dropped)
+   and the door's address under them */
+.l-fallback .fb { position: relative; margin-top: 10px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.l-fallback .npoints { margin-top: 8px; }
+.l-fallback .fb .fig { margin: 0; flex: none; }
+/* The QR code, 330px, in the free space right of the picture's own text (final-2: aneta's P2, 14:41Z) */
+.l-fallback .fb .still { position: absolute; right: 0; top: 80px; }
+.l-fallback .fb .still img { border-radius: 12px; background: #fff; }

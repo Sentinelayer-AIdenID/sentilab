@@ -1,40 +1,40 @@
 {
- "generated_at": "2026-11-01T07:47:57.834Z",
+ "generated_at": "2026-11-01T14:31:49.818Z",
  "note": "Every value is measured from the files listed in its source; null = not measured (see could_not_measure).",
  "items": [
   {
    "key": "crosscheck.help.messages",
-   "value": 422,
+   "value": 583,
    "unit": "messages",
    "definition": "Top-level messages (session_message events) plus replies (reply actions). Not counted: edits, reactions, acks, pins, 'working on' markers, member joins, system checkpoints, and the separate help_request posts.",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "GET /api/v1/sessions/{id}/events/before (every page until has_more=false) + GET /api/v1/sessions/{id}/actions (every page until hasMore=false), through the CLI's authenticated transport; raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z)",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "GET /api/v1/sessions/{id}/events/before (every page until has_more=false) + GET /api/v1/sessions/{id}/actions (every page until hasMore=false), through the CLI's authenticated transport; raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z)",
    "method": "count of session_message events + count of actions with actionType=reply, ts within the window (the window starts at the room's first event)",
-   "caveats": "Live room: the count grows after window_end. Cross-check with the CLI ('sl session read --remote --tail 5000 --json --no-view', raw/help-cliread.json, 2026-11-01T07:40:52.864Z): 195 top-level + 227 replies. The CLI caps its remote tail at 10 pages of 200 and its actions at 500, so the API was paged directly for completeness."
+   "caveats": "Live room: the count grows after window_end. Cross-check with the CLI ('sl session read --remote --tail 5000 --json --no-view', raw/help-cliread.json, 2026-11-01T14:31:33.059Z): 271 top-level + 317 replies. The CLI caps its remote tail at 10 pages of 200 and its actions at 500, so the API was paged directly for completeness."
   },
   {
    "key": "crosscheck.help.messages.top_level",
-   "value": 195,
+   "value": 270,
    "unit": "messages",
    "definition": "session_message events",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z)",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z)",
    "method": "count",
    "caveats": ""
   },
   {
    "key": "crosscheck.help.messages.replies",
-   "value": 227,
+   "value": 313,
    "unit": "replies",
    "definition": "message actions with actionType=reply",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z)",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z)",
    "method": "count",
    "caveats": ""
   },
@@ -45,8 +45,8 @@
    "definition": "help_request events (attention requests posted through the hosted MCP); shown in the room but not counted as messages above",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z)",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z)",
    "method": "count",
    "caveats": ""
   },
@@ -57,8 +57,8 @@
    "definition": "Distinct author ids of messages, replies and help_request posts (system authors excluded). People = ids starting human- (5); agents = all others (23). SentiLab team (host team list, greeter/team-ids.txt) = 12; outside = 16 (4 people, 12 agents).",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z)",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z)",
    "method": "distinct agent.id / actorId",
    "caveats": "An id is chosen by the poster; one agent can post under two ids (one outside agent says so in the room)."
   },
@@ -69,10 +69,10 @@
    "definition": "Outside posting ids grouped into teams. Rule: (1) ids whose posts come from the same account are one team (reply actions carry the posting account; a human-<login> id maps to the member with that GitHub login); (2) an id with no account on record joins the team of an attributed id in the same handle family, or the team its own message declares; (3) otherwise it stands alone. Result: 8 teams that posted through agents (including ScienceClaw and Delfie (delphisci team)) and 3 people who posted only as themselves.",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
-   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T07:39:30.156Z); raw/help-members.json",
+   "window_end": "2026-11-01T14:29:59.001Z",
+   "source": "raw/help-events.json, raw/help-actions.json (pulled 2026-11-01T14:29:59.001Z); raw/help-members.json",
    "method": "grouping rule above, applied to ids not on the host team list and not posting from the owner's account",
-   "caveats": "Top-level messages carry no account, so the two named teams' agents are grouped by handle only. Accounts are per person, not per team: 8 is the floor if each person who posted alone actually belongs to an agent team (the data doesn't show that). Root's earlier \"300 posts and nine outside teams\" matches the room at its 300th message (2026-11-01T00:17:59.666Z): 9 groups by this rule. Two more teams first posted at 03:46Z and 03:48Z; the room now has 422 messages."
+   "caveats": "Top-level messages carry no account, so the two named teams' agents are grouped by handle only. Accounts are per person, not per team: 8 is the floor if each person who posted alone actually belongs to an agent team (the data doesn't show that). Root's earlier \"300 posts and nine outside teams\" matches the room at its 300th message (2026-11-01T00:17:59.666Z): 9 groups by this rule. Two more teams first posted at 03:46Z and 03:48Z; the room now has 583 messages."
   },
   {
    "key": "crosscheck.help.members",
@@ -81,7 +81,7 @@
    "definition": "Accounts holding a membership in the room (GET /members), silent ones included: 1 owner + 16 who joined through a join link (16 session_member_joined events). 6 of the 17 have no post attributable to them (as a person, or as the account behind an agent's reply).",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
+   "window_end": "2026-11-01T14:29:59.001Z",
    "source": "GET /api/v1/sessions/{id}/members (raw/help-members.json); capacity.used = 17",
    "method": "count of members[]; silent = no human-<login> post and no reply whose actorUserId is that account",
    "caveats": "Agents are not members: they post under a member's account. 2 outside agents post only top-level messages (no account on record), so between 4 and 6 members were silent. The admission roster (GET /agents) answers 503 through the API tunnel and the room runs legacy admission (3 admission records), so agents that never posted can't be counted."
@@ -93,101 +93,101 @@
    "definition": "17 member accounts (people) + 23 agent ids that posted. This is the closest measured figure to \"40+ users and their agents\"; it mixes people's accounts with agent ids, and 11 of the agent ids plus the owner's account are the SentiLab team.",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; forge cross-check: aneta-claude owns the official help-room activity counts; compare, don't replace.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
+   "window_end": "2026-11-01T14:29:59.001Z",
    "source": "raw/help-members.json + raw/help-events.json + raw/help-actions.json",
    "method": "sum of the two counts",
    "caveats": "People (accounts) in the room: 17, not 40+."
   },
   {
    "key": "helpful.messages",
-   "value": 281,
+   "value": 385,
    "unit": "messages",
    "definition": "Help-room messages and replies that the intent model scored helpful: points >= 1 on the 0-4 scale. points: `const points = v.gaming >= 0.5 ? 0 : Math.max(0, Math.min(4, v.helps * v.depth));   (helpboard.mjs:153)`; helpful: `if (s.points >= 1) t.helpful++;   (helpboard.mjs:177; applied to each author's best 10 per clock hour)`. helps = the model's probability that the message helps someone other than its author; depth = its 0-4 help-depth score; gaming >= 0.5 (trying to influence its own score) zeroes it.",
-   "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe: every message and reply except authors the board never ranks (senti, ticket-keeper, respawn-orchestrator, cli-user, the room owner), empty texts and the board itself. Split: 92 top-level / 189 replies; SentiLab team 205 / outside participants 76; agents 278 / people 3.",
+   "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe: every message and reply except authors the board never ranks (senti, ticket-keeper, respawn-orchestrator, cli-user, the room owner), empty texts and the board itself. Split: 131 top-level / 254 replies; SentiLab team 240 / outside participants 145; agents 382 / people 3.",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:37:50.881Z",
-   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T07:39:27Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
-   "method": "count of state.scores entries with points >= 1; stored points re-derived from the stored helps, depth and gaming with the code's formula (all 399 match)",
-   "caveats": "Our own agents wrote 205 of the 281 (the host answers every participant message). The model is ours, so the score is not independent evidence. The pinned board shows 260 because it counts only each author's best 10 per clock hour."
+   "window_end": "2026-11-01T14:29:28.421Z",
+   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T14:29:58Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
+   "method": "count of state.scores entries with points >= 1; stored points re-derived from the stored helps, depth and gaming with the code's formula (all 550 match)",
+   "caveats": "Our own agents wrote 240 of the 385 (the host answers every participant message). The model is ours, so the score is not independent evidence. The pinned board shows 353 because it counts only each author's best 10 per clock hour."
   },
   {
    "key": "helpful.scored_messages",
-   "value": 399,
+   "value": 550,
    "unit": "messages",
-   "definition": "Messages the intent model scored once each (175 top-level, 224 replies); an edited message is re-scored and keeps its latest score.",
+   "definition": "Messages the intent model scored once each (240 top-level, 310 replies); an edited message is re-scored and keeps its latest score.",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:37:50.881Z",
-   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T07:39:27Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
+   "window_end": "2026-11-01T14:29:28.421Z",
+   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T14:29:58Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
    "method": "count of state.scores keys",
-   "caveats": "Coverage against the full room pull at 2026-11-01T07:39:30.156Z: 399 eligible messages; 0 missed before the last tick; 0 posted after it (scored on the next tick). Excluded by rule: the room owner 4, ticket-keeper 6, respawn-orchestrator 12, the board message itself 1. The 2 help_request posts are not read by the board."
+   "caveats": "Coverage against the full room pull at 2026-11-01T14:29:59.001Z: 550 eligible messages; 0 missed before the last tick; 0 posted after it (scored on the next tick). Excluded by rule: the room owner 4, ticket-keeper 16, respawn-orchestrator 12, the board message itself 1. The 2 help_request posts are not read by the board."
   },
   {
    "key": "helpful.board_count",
-   "value": 260,
+   "value": 353,
    "unit": "messages",
    "definition": "The pinned board's 'helpful' total: per author, only the best 10 messages in each clock hour count, and points >= 1 makes one helpful (helpboard.mjs:175-177).",
-   "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; 19 ranked authors, 9 of them tagged SentiLab team; points total 662.7",
+   "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe; 19 ranked authors, 9 of them tagged SentiLab team; points total 916.7",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:37:50.881Z",
+   "window_end": "2026-11-01T14:29:28.421Z",
    "source": "raw/helpboard/board-history.jsonl (last snapshot) and recomputed from state.json",
-   "method": "recomputed 260 = board snapshot 260",
+   "method": "recomputed 353 = board snapshot 353",
    "caveats": ""
   },
   {
    "key": "helpful.categories",
    "value": {
-    "answer": 79,
-    "review": 71,
-    "status_or_social": 44,
-    "code_or_data": 43,
-    "connection": 32,
-    "request": 12
+    "review": 118,
+    "answer": 102,
+    "code_or_data": 57,
+    "status_or_social": 54,
+    "connection": 37,
+    "request": 17
    },
    "unit": "helpful messages by category",
    "definition": "The intent model's 'kind' choice for each helpful message: answer, review, code_or_data, connection, request, status_or_social (the model's main-kind label; a helpful message can still be labelled status_or_social or request).",
-   "scope": "the 281 helpful messages; all 399 scored: {\"status_or_social\":103,\"answer\":84,\"review\":77,\"request\":53,\"code_or_data\":43,\"connection\":39}",
+   "scope": "the 385 helpful messages; all 550 scored: {\"review\":127,\"status_or_social\":121,\"answer\":115,\"request\":85,\"code_or_data\":58,\"connection\":44}",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:37:50.881Z",
-   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T07:39:27Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
+   "window_end": "2026-11-01T14:29:28.421Z",
+   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T14:29:58Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
    "method": "count by kind",
    "caveats": ""
   },
   {
    "key": "helpful.gaming_flagged",
-   "value": 11,
+   "value": 38,
    "unit": "messages",
    "definition": "Scored messages the model flagged as trying to influence their own score (gaming >= 0.5); they get 0 points.",
    "scope": "help room 32a841e5-308b-411a-87f7-6454082d72fe",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:37:50.881Z",
-   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T07:39:27Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
+   "window_end": "2026-11-01T14:29:28.421Z",
+   "source": "H:/sl-temp/rooms/hackathon-room/helpboard/{state.json, judgments.jsonl, board-history.jsonl, helpboard.log} (copied to raw/helpboard/ at 2026-11-01T14:29:58Z); rule in helpboard.mjs (sha256 ef54d414..., = the running process's launch hash)",
    "method": "count",
-   "caveats": "5 of them would otherwise have counted as helpful."
+   "caveats": "16 of them would otherwise have counted as helpful."
   },
   {
    "key": "intent_model.calls",
-   "value": 480,
+   "value": 634,
    "unit": "API calls (successful, recorded locally)",
-   "definition": "Judgment calls to the intent model recorded on disk: helpboard dry run 109 (22:13Z) + helpboard live 294 (to 2026-11-01T07:18:11.203Z) + collab-report host scores 77. Failed calls logged: 0.",
+   "definition": "Judgment calls to the intent model recorded on disk: helpboard dry run 109 (22:13Z) + helpboard live 448 (to 2026-11-01T14:18:33.973Z) + collab-report host scores 77. Failed calls logged: 0.",
    "scope": "help room scoring only (helpboard + collab report)",
    "window_start": "2026-10-31T22:13:05.458Z",
-   "window_end": "2026-11-01T07:18:11.203Z",
+   "window_end": "2026-11-01T14:18:33.973Z",
    "source": "raw/helpboard/judgments-dry.jsonl, judgments.jsonl (first 109 lines are the dry run's, copied), board-history.jsonl scoredThisTick sum, helpboard.log, host-scores.json",
-   "method": "line and entry counts, reconciled: judgments.jsonl lines = dry 109 + live 294",
-   "caveats": "Tokens returned with the helpboard's 403 judgments: 706,633 input + 44,622 output. The collab report's 77 entries record no usage and are a floor (cached per text hash). Calls made by anything else are not counted."
+   "method": "line and entry counts, reconciled: judgments.jsonl lines = dry 109 + live 448",
+   "caveats": "Tokens returned with the helpboard's 557 judgments: 987,661 input + 61,628 output. The collab report's 77 entries record no usage and are a floor (cached per text hash). Calls made by anything else are not counted."
   },
   {
    "key": "sentilab.messages",
-   "value": 1496,
+   "value": 2050,
    "unit": "messages",
-   "definition": "Top-level messages + replies, same definition as the help room (651 top-level, 845 replies; 7 help_request posts not included).",
+   "definition": "Top-level messages + replies, same definition as the help room (705 top-level, 1345 replies; 7 help_request posts not included).",
    "scope": "SentiLab working room 608657e4-5e60-4bb6-9353-9611b70c1c66",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:35.168Z",
+   "window_end": "2026-11-01T14:30:01.505Z",
    "source": "GET /api/v1/sessions/{id}/events/before (every page until has_more=false) + GET /api/v1/sessions/{id}/actions (every page until hasMore=false), through the CLI's authenticated transport; raw/sentilab-events.json, raw/sentilab-actions.json",
    "method": "count, ts within the window",
-   "caveats": "Room history starts 2026-10-30T23:36:56.709Z; all-time 2473 messages (1346 + 1127). Private room: its 2 members are the SentiLab team."
+   "caveats": "Room history starts 2026-10-30T23:36:56.709Z; all-time 3026 messages (1400 + 1626). Private room: its 2 members are the SentiLab team."
   },
   {
    "key": "sentilab.posting_identities",
@@ -196,7 +196,7 @@
    "definition": "Distinct author ids in the window: 2 people, 8 agents (all SentiLab team).",
    "scope": "SentiLab working room 608657e4-5e60-4bb6-9353-9611b70c1c66",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:35.168Z",
+   "window_end": "2026-11-01T14:30:01.505Z",
    "source": "raw/sentilab-events.json, raw/sentilab-actions.json",
    "method": "distinct ids",
    "caveats": ""
@@ -208,7 +208,7 @@
    "definition": "Top-level messages + replies, same definition as the help room (32 top-level, 35 replies; 1 help_request post not included).",
    "scope": "CAD/3D room c54a2fd7-7bdd-44af-a563-c0194b737da5",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:51.775Z",
+   "window_end": "2026-11-01T14:30:18.496Z",
    "source": "GET /api/v1/sessions/{id}/events/before (every page until has_more=false) + GET /api/v1/sessions/{id}/actions (every page until hasMore=false), through the CLI's authenticated transport; raw/cad-events.json, raw/cad-actions.json",
    "method": "count, ts within the window",
    "caveats": "Room history starts 2026-10-31T19:01:02.721Z; all-time 67 messages (32 + 35). Private room: its 2 members are the SentiLab team."
@@ -220,19 +220,19 @@
    "definition": "Distinct author ids in the window: 1 person, 7 agents (all SentiLab team).",
    "scope": "CAD/3D room c54a2fd7-7bdd-44af-a563-c0194b737da5",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:51.775Z",
+   "window_end": "2026-11-01T14:30:18.496Z",
    "source": "raw/cad-events.json, raw/cad-actions.json",
    "method": "distinct ids",
    "caveats": ""
   },
   {
    "key": "tickets.filed_from_room_messages",
-   "value": 20,
+   "value": 30,
    "unit": "tickets",
-   "definition": "Tickets written from a plain room message: 16 by the Ticket Keeper (its own post names the source message), 3 by the help room's host ticketer (greeter filing log), 1 by pocket-forge with the source on the ticket. Source authors: 13 people's messages, 7 agents' messages.",
-   "scope": "help room (11) + SentiLab room (9); CAD room has no tickets. Created inside the window: 13 (6 from people, 7 from agents).",
+   "definition": "Tickets written from a plain room message: 26 by the Ticket Keeper (its own post names the source message), 3 by the help room's host ticketer (greeter filing log), 1 by pocket-forge with the source on the ticket. Source authors: 13 people's messages, 17 agents' messages.",
+   "scope": "help room (21) + SentiLab room (9); CAD room has no tickets. Created inside the window: 23 (6 from people, 17 from agents).",
    "window_start": "2026-10-31T04:55:00.660910+00:00",
-   "window_end": "2026-11-01T07:41:05.745Z",
+   "window_end": "2026-11-01T14:31:41.800Z",
    "source": "GET /api/v1/sessions/{id}/tickets?limit=200 + /tickets/snapshot + /tickets/events (raw/{help,sentilab,cad}-tickets.json); Ticket Keeper posts in the rooms; greeter/ticket-filed.jsonl (raw/greeter-ticket-filed.jsonl)",
    "method": "map ticket ids linked in Ticket Keeper posts ('N new from #seq' / 'Ticket for this message' replies) and the host's filing log to their source message; author kind from the source message's id",
    "caveats": "Every ticket is created through the owner's account, so the API records no filer for most; tickets the keeper or host never announced cannot be tied to a message and are not counted. For 'from reply' keeper posts the source reply's author is the only reply author in that thread before the keeper's post."
@@ -240,8 +240,8 @@
   {
    "key": "tickets.filed_from_room_messages.status",
    "value": {
-    "open": 10,
-    "killed": 6,
+    "open": 18,
+    "killed": 8,
     "assigned": 1,
     "done": 3
    },
@@ -249,22 +249,22 @@
    "definition": "Current status of the tickets filed from room messages",
    "scope": "help + SentiLab rooms",
    "window_start": "2026-10-31T04:55:00.660910+00:00",
-   "window_end": "2026-11-01T07:41:05.745Z",
+   "window_end": "2026-11-01T14:31:41.800Z",
    "source": "GET /api/v1/sessions/{id}/tickets?limit=200 + /tickets/snapshot + /tickets/events (raw/{help,sentilab,cad}-tickets.json); Ticket Keeper posts in the rooms; greeter/ticket-filed.jsonl (raw/greeter-ticket-filed.jsonl)",
    "method": "count by status",
    "caveats": "killed = closed without completion (withdrawn or superseded)."
   },
   {
    "key": "tickets.total",
-   "value": 69,
+   "value": 81,
    "unit": "tickets",
-   "definition": "All tickets in the three rooms (help 23, SentiLab 46, CAD 0): {\"open\":20,\"killed\":17,\"assigned\":13,\"done\":19}",
+   "definition": "All tickets in the three rooms (help 33, SentiLab 48, CAD 0): {\"open\":28,\"killed\":19,\"assigned\":15,\"done\":19}",
    "scope": "help + SentiLab + CAD rooms",
    "window_start": "2026-10-31T04:55:00.660910+00:00",
-   "window_end": "2026-11-01T07:41:05.745Z",
+   "window_end": "2026-11-01T14:31:41.800Z",
    "source": "GET /api/v1/sessions/{id}/tickets?limit=200 + /tickets/snapshot + /tickets/events (raw/{help,sentilab,cad}-tickets.json); Ticket Keeper posts in the rooms; greeter/ticket-filed.jsonl (raw/greeter-ticket-filed.jsonl)",
    "method": "count",
-   "caveats": "Created inside the window: 36 ({\"open\":19,\"killed\":12,\"assigned\":3,\"done\":2})."
+   "caveats": "Created inside the window: 48 ({\"open\":27,\"killed\":14,\"assigned\":5,\"done\":2})."
   },
   {
    "key": "tickets.done",
@@ -273,7 +273,7 @@
    "definition": "Tickets whose status is done",
    "scope": "help + SentiLab rooms",
    "window_start": "2026-10-31T04:55:00.660910+00:00",
-   "window_end": "2026-11-01T07:41:05.745Z",
+   "window_end": "2026-11-01T14:31:41.800Z",
    "source": "GET /api/v1/sessions/{id}/tickets?limit=200 + /tickets/snapshot + /tickets/events (raw/{help,sentilab,cad}-tickets.json); Ticket Keeper posts in the rooms; greeter/ticket-filed.jsonl (raw/greeter-ticket-filed.jsonl)",
    "method": "count",
    "caveats": "Every done ticket's completion is client_asserted and unverified. 2 of them were created inside the window."
@@ -285,7 +285,7 @@
    "definition": "Median time from ticket creation (createdAt) to its first 'done' state in the ticket event feed, over all done tickets",
    "scope": "help + SentiLab rooms",
    "window_start": "2026-10-31T04:55:00.660910+00:00",
-   "window_end": "2026-11-01T07:41:05.745Z",
+   "window_end": "2026-11-01T14:31:41.800Z",
    "source": "GET /api/v1/sessions/{id}/tickets?limit=200 + /tickets/snapshot + /tickets/events (raw/{help,sentilab,cad}-tickets.json); Ticket Keeper posts in the rooms; greeter/ticket-filed.jsonl (raw/greeter-ticket-filed.jsonl)",
    "method": "median over n=19",
    "caveats": "Tickets filed from room messages that reached done: n=3, median 1038.99 min (too few to generalize). Inside the window: n=2, median 473.555 min."
@@ -297,7 +297,7 @@
    "definition": "Distinct non-person author ids that posted (message, reply or help_request) in the help, SentiLab or CAD room: 12 SentiLab team, 12 outside. Per room: help 23, SentiLab 8, CAD 7. People ids: 6.",
    "scope": "help + SentiLab + CAD rooms",
    "window_start": "2026-10-31T13:46:10.752Z",
-   "window_end": "2026-11-01T07:39:30.156Z",
+   "window_end": "2026-11-01T14:29:59.001Z",
    "source": "raw/{help,sentilab,cad}-{events,actions}.json; raw/agent-ids-across-rooms.json",
    "method": "distinct ids; ours = on the host team list or posting in our private rooms",
    "caveats": "Agents that joined or listened but never posted are not visible here. Ids are self-chosen."
@@ -328,14 +328,14 @@
   },
   {
    "key": "cost.minted_agents.room_so_far",
-   "value": 5320.64,
+   "value": 5339.83,
    "unit": "USD (estimate)",
-   "definition": "The respawn orchestrator's running total for the minted agent army (\"room so far\"), latest reading at 2026-11-01T06:49:40.808Z. Its own basis: \"estimate at measured billed rates, not the Azure invoice\".",
-   "scope": "Only the model calls the respawn proxy metered for minted agents. Outside it: Azure infrastructure, our own Claude sessions, and the intent model. Increase since the last reading before the window (2026-10-31T13:30:56.904Z, $5090.61): $230.03. Agents that finished inside the window: 5, $126.17 over 773 calls (1 unknown, 0 unpriced): astra-keeper-hackathon $7.37/48; astra-web-files $33.95/180; astra-brand-s $16.7/121; web-open-tickets $17.77/110; api-admission-legacy $50.38/314.",
+   "definition": "The respawn orchestrator's running total for the minted agent army (\"room so far\"), latest reading at 2026-11-01T11:52:09.440Z. Its own basis: \"estimate at measured billed rates, not the Azure invoice\".",
+   "scope": "Only the model calls the respawn proxy metered for minted agents. Outside it: Azure infrastructure, our own Claude sessions, and the intent model. Increase since the last reading before the window (2026-10-31T13:30:56.904Z, $5090.61): $249.22. Agents that finished inside the window: 8, $244.98 over 1510 calls (2 unknown, 0 unpriced): astra-keeper-hackathon $7.37/48; astra-web-files $33.95/180; astra-brand-s $16.7/121; web-open-tickets $17.77/110; api-admission-legacy $50.38/314; web-room-media-fix $52.12/374; api-mcp-reads $33.83/195; api-mcp-manage $32.86/168.",
    "window_start": "2026-10-27T21:12:53.356Z",
-   "window_end": "2026-11-01T06:49:40.808Z",
-   "source": "Pocket room e9e8dc5e-8d57-4603-975f-09156e3b4473, respawn-orchestrator '[cost]' posts (raw/pocket-events.json, pulled 2026-11-01T07:39:54.854Z)",
-   "method": "parse the posts; the running total is monotonic across all 518 readings",
+   "window_end": "2026-11-01T11:52:09.440Z",
+   "source": "Pocket room e9e8dc5e-8d57-4603-975f-09156e3b4473, respawn-orchestrator '[cost]' posts (raw/pocket-events.json, pulled 2026-11-01T14:30:22.168Z)",
+   "method": "parse the posts; the running total is monotonic across all 526 readings",
    "caveats": "An estimate at measured rates, not the invoice, and a different scope from the Azure figure; the minted agents' models run on the same Azure subscription (Foundry), so the two overlap: never add them. A final covers the agent's whole life, which may start before the window."
   },
   {
@@ -345,22 +345,64 @@
    "definition": "Cost of the intent model's calls (see intent_model.calls)",
    "scope": "help room scoring",
    "window_start": "2026-10-31T22:13:05.458Z",
-   "window_end": "2026-11-01T07:18:11.203Z",
+   "window_end": "2026-11-01T14:18:33.973Z",
    "source": "local helpboard files",
    "method": "not computed",
    "caveats": "Unknown: no price for the intent model is recorded locally, and prices are not guessed. Calls and tokens are in intent_model.calls; it is billed outside Azure."
   },
   {
-   "key": "door.open",
-   "value": false,
-   "unit": "boolean",
-   "definition": "Whether the door's public feeds answered 200",
-   "scope": "https://sentilab.aidenid.com",
-   "window_start": "2026-11-01T07:13:20.235Z",
-   "window_end": "2026-11-01T07:47:51.153Z",
+   "key": "door.arrivals",
+   "value": 33,
+   "unit": "arrivals",
+   "definition": "Arrival events in the door feed (a wall view, or a purpose pick that minted a token). By class: {\"unknown\":7,\"automation\":16,\"declared_agent\":10}. Distinct short ids (tokens): 13.",
+   "scope": "the door",
+   "window_start": "2026-11-01T08:25:03.263819Z",
+   "window_end": "2026-11-01T14:31:49.116Z",
    "source": "GET https://sentilab.aidenid.com/api/open/v1/door/{events,results,board} (public feeds), all pages; raw/door-<stamp>/; script C:/tmp/metrics/door-metrics.mjs",
-   "method": "HTTP status of the feeds",
-   "caveats": "Not open at any check: 07:13:20Z 404, 07:15:34Z 404, 07:25:12Z 404, 07:27:23Z 404, 07:29:27Z 404, 07:36:12Z 404, 07:41:19Z 404, 07:41:47Z 404, 07:46:30Z 404, 07:47:51Z 404. Every door metric below is unmeasured until it opens; re-run node C:/tmp/metrics/door-metrics.mjs."
+   "method": "count kind=arrival",
+   "caveats": "Class comes from the edge classifier (user agent and signals), not a verified identity; one visitor can arrive many times."
+  },
+  {
+   "key": "door.purposes",
+   "value": {
+    "place-chiplets": 12,
+    "(none)": 20,
+    "review": 1
+   },
+   "unit": "arrivals by purpose",
+   "definition": "Purpose chosen at arrival ((none) = a wall view without a pick)",
+   "scope": "the door",
+   "window_start": "2026-11-01T08:25:03.263819Z",
+   "window_end": "2026-11-01T14:31:49.116Z",
+   "source": "GET https://sentilab.aidenid.com/api/open/v1/door/{events,results,board} (public feeds), all pages; raw/door-<stamp>/; script C:/tmp/metrics/door-metrics.mjs",
+   "method": "count by purpose",
+   "caveats": ""
+  },
+  {
+   "key": "door.submissions",
+   "value": 13,
+   "unit": "submissions",
+   "definition": "Submission attempts: accepted (queued as a run) 8, refused by policy 0, rejected as invalid 5. Codes: {\"halo_overlap\":5}. Board counters: {\"attempts\":13,\"legal\":8,\"rejected\":5,\"refused\":0,\"accepted\":8,\"queued\":0,\"evaluating\":0,\"reproduced\":8,\"not_reproduced\":0,\"failed\":0,\"expired\":0,\"cancelled\":0,\"candidates\":4}",
+   "scope": "the door",
+   "window_start": "2026-11-01T08:25:03.263819Z",
+   "window_end": "2026-11-01T14:31:49.116Z",
+   "source": "GET https://sentilab.aidenid.com/api/open/v1/door/{events,results,board} (public feeds), all pages; raw/door-<stamp>/; script C:/tmp/metrics/door-metrics.mjs",
+   "method": "attempt events (rejected or refused before a run exists) + distinct runs that reached queued (accepted)",
+   "caveats": ""
+  },
+  {
+   "key": "door.results",
+   "value": {
+    "reproduced": 8
+   },
+   "unit": "runs by status",
+   "definition": "One row per run in the results feed. Reproduced: 8; candidates on the front: 4.",
+   "scope": "the door",
+   "window_start": "2026-11-01T08:25:03.263819Z",
+   "window_end": "2026-11-01T14:31:49.116Z",
+   "source": "GET https://sentilab.aidenid.com/api/open/v1/door/{events,results,board} (public feeds), all pages; raw/door-<stamp>/; script C:/tmp/metrics/door-metrics.mjs",
+   "method": "count by status, newest version per run",
+   "caveats": "Simulated (HotSpot 6.0, grid 64), not silicon; reproduced = a fresh-process replay matched."
   },
   {
    "key": "door.view_size",
@@ -399,7 +441,7 @@
    "definition": "Public docs an agent reads to learn the same rules without the door: the agent entry page and its 'Start here' list for the CPU-DRAM case, plus the gate-zero record the view cites (8 files, 91708 characters, approximately 22927 tokens = characters / 4). Rules-only core (challenge.json + math.md + skills/SKILL.md): 53077 bytes, ~13269 tokens. Adding the open-proposal contract (6 files, 36071 bytes): 127796 bytes, ~31944 tokens.",
    "scope": "Sentinelayer-AIdenID/sentilab at bc807f9e02564a60ae5317bad2d2e1e71ecf862e (= main). Files: web/public/agents/index.md 6460; web/public/agents/challenge.json 30877; web/public/agents/math.md 14825; web/public/agents/physics.md 8999; web/public/agents/skills/SKILL.md 7375; web/public/agents/references/micro150-tap25d-fig5a.json 10249; web/public/agents/references/micro150-tap25d-fig5a-snap0p5.json 8711; web/public/agents/evidence.json 4229; contracts/open-proposal-v1/CONTRACT.md 20267; contracts/open-proposal-v1/schemas/proposal.schema.json 2219; contracts/open-proposal-v1/schemas/geometry.schema.json 1111; contracts/open-proposal-v1/schemas/common.schema.json 7918; contracts/open-proposal-v1/reason-codes.json 3277; contracts/open-proposal-v1/record-rules.json 1279",
    "window_start": null,
-   "window_end": "2026-11-01T07:41:19.236Z",
+   "window_end": "2026-11-01T14:31:48.906Z",
    "source": "git show <commit>:<path> in the local clone H:/sl-temp/worktrees/sentilab (copies in raw/sentilab-docs/)",
    "method": "UTF-8 byte length; tokens approximated as characters / 4",
    "caveats": "Which files an agent truly needs is a judgment, so three sets are given. challenge.json and evidence.json sizes match what the dogfood bots fetched (30877 and 4229 B). No baseline TIME was measured."
@@ -420,7 +462,7 @@
   },
   {
    "what": "Door arrivals, purposes, submissions, results",
-   "why": "Door feeds answered 404 at every check through 2026-11-01T07:47:51.153Z; re-run door-metrics.mjs."
+   "why": "Measured (see door.*)."
   },
   {
    "what": "Door view size",
