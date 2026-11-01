@@ -174,3 +174,9 @@ the operator.
 | --- | ---: | --- |
 | `sundai_hotspot/gate0_operator.py` (`subprocess.Popen(argv)`) | 1 | `run`: one `validate-reference` per listed call, concurrency 1, with `argv` checked against the manifest row's command before launch. `validate-reference` is the solver entry above, and it refuses under `CI_ALLOCATION=1`. The operator watches the container's cumulative CPU. |
 | `sundai_hotspot/gate0_operator.py` (`subprocess.run(argv)`) | 1 | `record` and `report`: `reference_validation record` and `report`, which only read the ledger, the tags and the retained runs. |
+
+The cap-path repair (root #57395) adds no operator site. It adds one test site:
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sundai_hotspot/test_gate0_operator.py` (`subprocess.run([sys.executable, '-c', SUPERVISOR, json.dumps(spec)])`) | 1 | A fresh Python process that acts as the supervisor: it runs `gate0_operator.run_call` on two Python stand-ins, one for `validate-reference` and one for the solver, which starts its own session and ignores SIGTERM. Its child-subreaper flag and its reaping therefore never touch the test runner. The stand-in solver spins for a fraction of a CPU-second until the cap kills it. On its own it is bounded by RLIMIT_CPU 5 s and a 10 s wall deadline. No HotSpot. |

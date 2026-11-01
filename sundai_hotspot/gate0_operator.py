@@ -13,17 +13,30 @@ ledger directory's absolute path.
 
 The cumulative CPU budget (contract item 5) covers the whole container, descendants included, read from the
 container's own cgroup v2 cpu.stat. A call starts only if what has been used plus its envelope still fits under the
-cap, and a watcher kills the call's process group the moment the total passes the cap. Usage carries over between
-container runs through /srv/gate0/runs/cpu-used.json. A call whose validate-reference dies without printing its
-settlement is settled as unknown, charged its full envelope (contract item 6), and never relaunched.
+cap. Usage carries over between container runs through /srv/gate0/runs/cpu-used.json.
+
+Everything a call starts is the call's to stop (root #57395). validate-reference runs in its own session, and it
+launches the solver in another one (reference_validation, step 9), so killing validate-reference's process group
+alone would leave the solver running. While a call runs, this supervisor is the child subreaper of everything the
+call starts (OwnedProcesses; in the container it is PID 1 as well), so a process whose parent dies stays its
+descendant. When the total passes the cap, a watcher SIGKILLs every process group the call owns: validate-reference's
+and the group of each live descendant, the solver's own session included. After validate-reference exits, for any
+reason, whatever it left behind is killed and reaped the same way. The CPU is read only after that reap, so a call is
+charged for everything it started. The container's cgroup cannot be killed from inside: cgroupfs is read-only there,
+and the supervisor is a member of that cgroup. Tracking every owned descendant group is the fallback root names.
+
+A call whose validate-reference printed no settlement is settled by the operator (contract item 6), and never
+relaunched. Its status is supervisor_cap when the cap killed it, and supervisor_unknown when it died on its own. It is
+charged its full envelope, or the CPU measured after the reap if that is larger.
 
 Never prints the key, the token or the anchor credential.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
+import ctypes
 import datetime as dt
-import hashlib
 import json
 import os
 import signal
@@ -34,11 +47,13 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, "/app")
-from sundai_hotspot import gate0_anchor, reference_validation, slab049  # noqa: E402
+from sundai_controller import process_budget  # noqa: E402
+from sundai_hotspot import gate0_anchor, reference_validation  # noqa: E402
 
 RUNS = Path("/srv/gate0/runs")
 CPU_FILE = RUNS / "cpu-used.json"
 LOG = RUNS / "operator-log.jsonl"
+PR_SET_CHILD_SUBREAPER, PR_GET_CHILD_SUBREAPER = 36, 37
 
 
 def now() -> str:
@@ -120,10 +135,95 @@ def settle_tag(request, grant_id: str, manifest_sha256: str, call: str, message:
     return gate0_anchor._create_tag(request, ref, message, tree=parent[1]["tree"]["sha"], parents=[parent[1]["sha"]])
 
 
-def run_call(call: dict, args, manifest_sha256: str, budget: dict) -> dict:
-    """Runs one call under the cumulative budget. Returns the validate-reference summary (or a supervisor one)."""
-    out = RUNS / f"{call['id']}-{int(time.time())}"
-    out.mkdir(parents=True)
+def _kill(send, target: int) -> None:
+    with contextlib.suppress(ProcessLookupError, PermissionError):
+        send(target, signal.SIGKILL)
+
+
+class OwnedProcesses:
+    """Everything one call owns: every live, or exited and unreaped, descendant of this supervisor. While the call
+    runs, the supervisor is their child subreaper, so the solver stays a descendant after validate-reference dies.
+    It refuses to start while anything is already owned, so a call's cleanup never reaches other work (the rule of
+    process_budget.ProcessTreeScope), and it restores the subreaper flag on exit."""
+
+    def __init__(self):
+        self.libc = ctypes.CDLL(None, use_errno=True)
+        self.previous = ctypes.c_int()
+
+    def _prctl(self, option: int, value) -> None:
+        if self.libc.prctl(option, value, 0, 0, 0) != 0:
+            raise OSError(ctypes.get_errno(), "the operator supervisor needs Linux child-subreaper support")
+
+    def __enter__(self) -> "OwnedProcesses":
+        self._prctl(PR_GET_CHILD_SUBREAPER, ctypes.byref(self.previous))
+        self._prctl(PR_SET_CHILD_SUBREAPER, 1)
+        try:
+            if process_budget.tree_snapshot()[1]:
+                raise RuntimeError("the supervisor already has child processes: a call's cleanup must never reach "
+                                   "other work")
+        except BaseException:
+            self._prctl(PR_SET_CHILD_SUBREAPER, self.previous.value)
+            raise
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self._prctl(PR_SET_CHILD_SUBREAPER, self.previous.value)
+
+    @staticmethod
+    def groups() -> dict[int, int]:
+        """Each owned process and its process group, read from /proc (process_budget.tree_snapshot). A pid reused by
+        another process, which has a different start time, is never included."""
+        owned = {}
+        for pid, row in process_budget.tree_snapshot()[1].items():
+            with contextlib.suppress(ProcessLookupError):
+                group = os.getpgid(pid)
+                current = process_budget._stat(pid)
+                if current is not None and current["start"] == row["start"]:
+                    owned[pid] = group
+        return owned
+
+    def kill(self, child: subprocess.Popen) -> None:
+        """One SIGKILL pass over the call. While validate-reference is unreaped its pid still names its process group,
+        so that group is killed first. Then each owned process is killed together with its group, the solver's own
+        session included. The supervisor's own group is never signalled."""
+        if child.returncode is None:
+            _kill(os.killpg, child.pid)
+        own = os.getpgrp()
+        for pid, group in self.groups().items():
+            if group != own:
+                _kill(os.killpg, group)
+            _kill(os.kill, pid)
+
+    def stop_and_reap(self, child: subprocess.Popen, stop_s: float) -> tuple[list[int], list[int]]:
+        """Runs once validate-reference has been reaped. Kills and reaps whatever the call still owns, until the
+        kernel reports no child left (and so no descendant either) or stop_s passes. Returns the pids reaped here, and
+        any processes still owned at the deadline: none, unless a kill cannot take effect."""
+        reaped, deadline = [], time.monotonic() + stop_s
+        while True:
+            self.kill(child)
+            while True:
+                try:
+                    pid, _ = os.waitpid(-1, os.WNOHANG)
+                except ChildProcessError:
+                    return reaped, []
+                if not pid:
+                    break
+                reaped.append(pid)
+            if time.monotonic() >= deadline:
+                return reaped, sorted(self.groups())
+            time.sleep(0.01)
+
+
+def supervisor_settlement(killed: str | None, envelope_cpu_s: float, cpu_s: float) -> dict:
+    """The operator's settlement of a call whose validate-reference printed none (contract item 6). The call stays
+    consumed and is never relaunched. Its status is supervisor_cap when the cap killed it and supervisor_unknown
+    otherwise. It is charged its full envelope, or the CPU measured after the reap if that is larger."""
+    return {"status": "supervisor_cap" if killed else "supervisor_unknown",
+            "charged_cpu_s": round(max(envelope_cpu_s, cpu_s), 3)}
+
+
+def call_argv(call: dict, args, out: Path) -> list[str]:
+    """validate-reference exactly as the manifest's row writes it."""
     argv = [sys.executable, "-m", "sundai_hotspot.reference_validation", "validate-reference", "--call", call["id"],
             "--timeout", f"{call['timeout_s']:g}", "--out", str(out), "--ledger-root", str(args.ledger_root),
             "--operator-key", str(args.key)]
@@ -131,27 +231,45 @@ def run_call(call: dict, args, manifest_sha256: str, budget: dict) -> dict:
         "<operator ledger root>", str(args.ledger_root)).replace("<operator key file>", str(args.key))
     if " ".join(["python"] + argv[1:]) != expected:
         raise SystemExit(f"{call['id']}: the command differs from the manifest's row: {expected}")
-    start = cgroup_cpu_s()
-    child = subprocess.Popen(argv, cwd="/app", stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                             start_new_session=True)
+    return argv
+
+
+def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None, cwd: str = "/app",
+             poll_s: float = 0.25, stop_s: float = 10.0) -> dict:
+    """Runs one call's validate-reference under the cumulative budget, in its own session. It returns only once
+    nothing the call started is left (OwnedProcesses). When the total passes the cap, the watcher kills every process
+    group the call owns. When validate-reference exits, for any reason, whatever it left behind is killed and reaped.
+    The CPU is read after that reap and saved. The result carries validate-reference's printed summary; when there is
+    none, it carries the operator's own settlement instead (supervisor_settlement)."""
+    meter = meter or cgroup_cpu_s
+    # Beside the out dir, never inside it: the strict reader verifies the out dir's own files. The output is written
+    # as it comes, not through pipes, so a process left holding a pipe cannot stall the supervisor.
+    stdout_path, stderr_path = out.with_name(out.name + ".stdout"), out.with_name(out.name + ".stderr")
     killed = {"reason": None}
+    with OwnedProcesses() as owned:
+        start = meter()
+        with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
+            child = subprocess.Popen(argv, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
 
-    def watch() -> None:
-        while child.poll() is None:
-            used = budget["carried"] + cgroup_cpu_s()
-            if used > budget["cap"]:
-                killed["reason"] = f"cumulative CPU {used:.2f} s passed the cap {budget['cap']:g} s"
-                os.killpg(child.pid, signal.SIGKILL)
-                return
-            time.sleep(0.25)
+        def watch() -> None:
+            while child.poll() is None:
+                used = budget["carried"] + meter()
+                if used > budget["cap"]:
+                    killed["reason"] = f"cumulative CPU {used:.2f} s passed the cap {budget['cap']:g} s"
+                    owned.kill(child)  # validate-reference's group and every other group the call owns
+                    return
+                time.sleep(poll_s)
 
-    watcher = threading.Thread(target=watch, daemon=True)
-    watcher.start()
-    stdout, stderr = child.communicate()
-    watcher.join(timeout=5)
-    # beside the out dir, never inside it: the strict reader verifies the out dir's own files
-    out.with_name(out.name + ".stdout").write_text(stdout, encoding="utf-8")
-    out.with_name(out.name + ".stderr").write_text(stderr, encoding="utf-8")
+        watcher = threading.Thread(target=watch, daemon=True)
+        watcher.start()
+        child.wait()
+        watcher.join(timeout=5)
+        reaped, survivors = owned.stop_and_reap(child, stop_s)
+    used = meter()
+    used_now = budget["carried"] + used
+    save_cpu(used_now)
+    stdout = stdout_path.read_text(encoding="utf-8", errors="replace")
+    stderr = stderr_path.read_text(encoding="utf-8", errors="replace")
     summary = None
     for line in reversed(stdout.strip().splitlines()):
         try:
@@ -161,10 +279,11 @@ def run_call(call: dict, args, manifest_sha256: str, budget: dict) -> dict:
         if isinstance(candidate, dict) and candidate.get("settle_tag_message"):
             summary = candidate
             break
-    used_now = budget["carried"] + cgroup_cpu_s()
-    save_cpu(used_now)
+    settlement = None if summary else supervisor_settlement(
+        killed["reason"], float(call["accounting"]["reserved_cpu_s"]), used - start)
     return {"out": str(out), "exit": child.returncode, "summary": summary, "killed": killed["reason"],
-            "cpu_s_this_call": round(cgroup_cpu_s() - start, 3), "cumulative_cpu_s": round(used_now, 3),
+            "reaped": reaped, "survivors": survivors, "settlement": settlement,
+            "cpu_s_this_call": round(used - start, 3), "cumulative_cpu_s": round(used_now, 3),
             "stderr_tail": stderr.strip().splitlines()[-3:]}
 
 
@@ -201,7 +320,14 @@ def cmd_run(args) -> int:
             sha = gate0_anchor._create_tag(request, ref, gate0_anchor.tag_message(
                 "reserve", args.grant_id, manifest_sha256, cid), tree=build_tree, parents=[build])
             log("reserved", call=cid, ref=ref, commit=sha)
-        result = run_call(call, args, manifest_sha256, budget)
+        out = RUNS / f"{cid}-{int(time.time())}"
+        out.mkdir(parents=True)
+        result = run_call(call, call_argv(call, args, out), out, budget)
+        if result["survivors"]:
+            log("stop_survivors", call=cid, survivors=result["survivors"], killed=result["killed"], out=result["out"],
+                cumulative_cpu_s=result["cumulative_cpu_s"], note="owned processes outlived every kill: reconcile "
+                "by hand")
+            return 7
         if result["summary"]:
             sha = settle_tag(request, args.grant_id, manifest_sha256, cid, result["summary"]["settle_tag_message"])
             log("settled", call=cid, status=result["summary"].get("status"), exit=result["exit"],
@@ -212,13 +338,15 @@ def cmd_run(args) -> int:
             admitted = bool(gate0_anchor.call_entries(gate0_anchor.read_ledger(
                 args.ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256), cid))
             log("no_settlement_printed", call=cid, exit=result["exit"], killed=result["killed"], admitted=admitted,
-                stderr_tail=result["stderr_tail"], out=result["out"], cumulative_cpu_s=result["cumulative_cpu_s"])
+                reaped=result["reaped"], stderr_tail=result["stderr_tail"], out=result["out"],
+                cumulative_cpu_s=result["cumulative_cpu_s"])
             if admitted:
+                settlement = result["settlement"]
                 message = gate0_anchor.tag_message("settle", args.grant_id, manifest_sha256, cid,
-                                                   status="supervisor_unknown", receipt_sha256=None, outputs={},
-                                                   charged_cpu_s=envelope)
+                                                   status=settlement["status"], receipt_sha256=None, outputs={},
+                                                   charged_cpu_s=settlement["charged_cpu_s"])
                 sha = settle_tag(request, args.grant_id, manifest_sha256, cid, message)
-                log("settled_unknown", call=cid, charged_cpu_s=envelope, settle_commit=sha)
+                log("settled_by_supervisor", call=cid, settle_commit=sha, **settlement)
             return 5
         if result["killed"]:
             log("stop_killed", call=cid, reason=result["killed"])

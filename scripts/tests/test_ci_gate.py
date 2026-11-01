@@ -302,6 +302,12 @@ RAW_SPAWNS += [('sundai_hotspot/provenance.py', 'subprocess.Popen', ('[loader, s
 RAW_SPAWNS += [('sundai_hotspot/gate0_operator.py', 'subprocess.Popen', ('argv',)),
                ('sundai_hotspot/gate0_operator.py', 'subprocess.run', ('argv',))]
 
+# The supervisor's synthetic cap-path test (root #57395): a fresh Python supervisor process running gate0_operator's
+# run_call on Python stand-ins for validate-reference and the solver. The stand-in solver is under RLIMIT_CPU 5 s and
+# a 10 s wall deadline. No HotSpot.
+RAW_SPAWNS += [('sundai_hotspot/test_gate0_operator.py', 'subprocess.run',
+                ("[sys.executable, '-c', SUPERVISOR, json.dumps(spec)]",))]
+
 
 class GateTests(unittest.TestCase):
     @classmethod
