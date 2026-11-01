@@ -201,6 +201,26 @@ function markSvg(kind) {
   el.append(path);
   return el;
 }
+// The selected proposal's agent: still here, or no longer present, by its last recorded activity (exact links only),
+// or only this run's last record when the run carries no visit_arrival. Shown on the model and on its timeline row.
+function presenceText(L, now = Date.now()) {
+  const decl = S.decl.ok === true && S.decl.at && now - S.decl.at <= M.VISITORS_FRESH_MS ? S.decl.items ?? [] : [];
+  const act = M.agentActivity(L.id, [...S.records.values(), ...feed.state.events], decl);
+  if (!act) return null;
+  const t = W.ago(act.at, now);
+  return !act.bound ? W.PRESENCE.runOnly(t) : now - act.at <= M.AGENT_HERE_MS ? W.PRESENCE.here(t) : W.PRESENCE.gone(t);
+}
+function presenceLine(L, now, cls) {
+  const text = presenceText(L, now);
+  return text ? h("small", { class: cls, title: W.PRESENCE.title }, text) : null;
+}
+function renderPresence() {
+  const L = shownRun().L, el = $("modelPresence");
+  const text = L ? presenceText(L) : null;
+  el.textContent = text ?? "";
+  el.hidden = !text;
+  if (text) el.setAttribute("title", W.PRESENCE.title); else el.removeAttribute("title");
+}
 function renderProposals() {
   const box = $("proposalList");
   if (!box) return;
@@ -225,7 +245,8 @@ function renderProposals() {
           ? [h("small", { class: "proposal-received", title: W.PROPOSALS.receivedTitle }, markSvg("received"), W.PROPOSALS.received),
             h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]
           : h("small", { class: "proposal-refused", title: o.title }, markSvg("refused"), o.text),
-        h("small", { class: "proposal-when" }, at ? W.when(at, now) : W.TEXT.submittedEarlier)));
+        h("small", { class: "proposal-when" }, at ? W.when(at, now) : W.TEXT.submittedEarlier),
+        shown && shown.id === L.id ? presenceLine(L, now, "proposal-presence") : null));
     row.addEventListener("click", () => selectRun(L.id));
     return row;
   }));
@@ -354,6 +375,7 @@ function renderModel() {
   $("newProposal").hidden = !(L && following && Date.now() < newProposalUntil);
   $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
   const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
+  renderPresence();
   $("modelCap").textContent = !L ? "" : [runNamed === null ? W.layoutFrom(L.short) : `${runNamed}${W.namedLayout(L)}`, view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,
     W.RESULT_CHECK[L.status] ?? null, lastRun?.at ? W.when(lastRun.at) : null].filter(Boolean).join(" · ");
   const picked = Boolean(L && S.selectedId === L.id && M.pickRun(layouts(), null)?.id !== L.id);
@@ -1097,7 +1119,7 @@ feed.start();
 pollBoard();
 pollVisitors();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); if (namesChanged()) render(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); renderPresence(); if (namesChanged()) render(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.

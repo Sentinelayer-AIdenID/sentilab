@@ -122,6 +122,14 @@ export const PROPOSALS = Object.freeze({
   fresh: "New proposal",
   none: "No proposals yet. The first one appears here as it arrives.",
 });
+// Whether the agent behind the selected proposal is still around (Carter, 20:13Z): its last RECORDED activity,
+// through exact links only; not presence detection, and the tooltip says so.
+export const PRESENCE = Object.freeze({
+  here: (t) => `Agent still here \u00b7 last active ${t}`,
+  gone: (t) => `Agent no longer present \u00b7 last active ${t}`,
+  runOnly: (t) => `This run\u2019s last record: ${t}`,
+  title: "Last recorded activity, not presence detection",
+});
 export const YOUR_PICK = "your pick";
 
 // A design's steps in plain words, for the newest-event line and the model's caption.

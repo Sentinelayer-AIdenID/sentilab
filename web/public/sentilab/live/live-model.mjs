@@ -450,6 +450,23 @@ export function doorVisitors(records, nowMs, linked = new Set()) {
   return [...out.values()].sort((a, b) => b.seq - a.seq);
 }
 // The arrivals runs name as their visit (visit_arrival on their run records).
+// The last recorded activity behind a run (Carter, 20:13Z), through exact links only. With visit_arrival on the run's
+// records, "the agent" is that pass: its arrival record, the shown declarations that carry that arrival, and every
+// run whose records carry the same visit_arrival. Without it, only the run's own records count. Returns
+// { bound, at (ms) } or null when nothing has a time. Recorded activity, not presence detection.
+export const AGENT_HERE_MS = 10 * 60 * 1000;
+export function agentActivity(runId, records, declarations = []) {
+  const own = (records ?? []).filter((e) => e.kind === "run" && e.run_id === runId);
+  const visit = own.find((e) => count(e.visitArrival))?.visitArrival ?? null;
+  const times = [];
+  if (visit === null) for (const e of own) times.push(e.at);
+  else {
+    for (const e of records ?? []) if ((e.kind === "arrival" && e.seq === visit) || (e.kind === "run" && e.visitArrival === visit)) times.push(e.at);
+    for (const d of declarations ?? []) if (d.kind === "declaration" && !d.hidden && d.arrival === visit) times.push(d.at);
+  }
+  const ms = times.map((t) => (t ? Date.parse(t) : NaN)).filter(Number.isFinite);
+  return ms.length ? { bound: visit !== null, at: Math.max(...ms) } : null;
+}
 export const linkedArrivals = (records) => new Set((records ?? []).filter((e) => e.kind === "run" && count(e.visitArrival)).map((e) => e.visitArrival));
 // at: run id -> a recorded step the run is playing back (live.mjs). runs and the counts are always the live state (each
 // run at its latest station); a run playing back is also listed under `playback` at the station of the step it shows
