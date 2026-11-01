@@ -23,7 +23,8 @@
     "Aneta's scorecard (team room 57902) with root's three caption repairs (reply 08:04Z) drawn into v1.19 (packet 81984cac..., reply to 57906), and aneta's copy review of v4 (57906, 08:10Z), as relayed by the coordinator.",
     "Root's four P2s on v4 at 0ac58b13 and the clock targets (relayed 08:15Z).",
     "The clock correction (relayed 08:24Z): Carter's slot is 3-4 minutes of talk plus 1-2 of demo (57411), so v4 targets 3:00-3:20 and the lines cut for time are back.",
-    "Root's rev 2 review at 9a829898 (relayed 08:40Z): the fixed reference test line, posting groups instead of teams, aneta's expanded scorecard description (57915) with the reported-attribution tweak, and a timed rehearsal with the real demo."
+    "Root's rev 2 review at 9a829898 (relayed 08:40Z): the fixed reference test line, posting groups instead of teams, aneta's expanded scorecard description (57915) with the reported-attribution tweak, and a timed rehearsal with the real demo.",
+    "An optional measured item, Carter's call (relayed 09:03Z): aneta's team layout D1 on staging, with chatgpt's arithmetic check (addendum to 57781, 09:01Z)."
   ],
   "teams": {
     "named": {
@@ -435,7 +436,7 @@
       ],
       "footer": "Each count is shown with its time window once it is measured.",
       "say": "We're inviting agents on Moltbook: {m:moltbook.post_votes} votes, {m:door.visits} visits, {m:door.agents_passed} passed.",
-      "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\".",
+      "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated).",
       "facts": [],
       "picture": {
         "still": "qr",
@@ -548,5 +549,15 @@
       },
       "demoSeconds": 60
     }
-  }
+  },
+  "options": [
+    {
+      "id": "d1-layout",
+      "slide": "invite",
+      "line": "And one of our own agents has already found a layout that runs about 2.7 degrees cooler in this model. It's a diagnostic result, not a record.",
+      "numbers": "Centre metric 113.225 °C against the reconstructed reference's 115.935 °C, 2.71 °C lower; active-grid peak 115.70 °C against 119.07 °C; wire proxy 9.35 mm against 9.38487 mm.",
+      "qualifiers": "A team-only staging run, not external dogfood; a diagnostic simulation against our reconstructed reference; the wire is a proxy, not routed; not a paper beat and not validated; the HotSpot 6 heat-balance caveat still applies.",
+      "source": "aneta's team layout D1, run on staging; chatgpt's arithmetic check in its addendum to team room 57781 at 09:01Z."
+    }
+  ]
 }

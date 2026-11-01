@@ -268,6 +268,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       // With the demo the slot plans for (Carter's slot, 57411: 3-4 minutes of talk, then 1-2 of demo).
       demoSeconds: S.demoSeconds ?? 0, withDemoSeconds: tenths(total + (S.demoSeconds ?? 0)), slowWithDemoSeconds: tenths(slowSeconds + c.transitionSeconds + (S.demoSeconds ?? 0)) },
     placeholders: fills,
+    options: v4.options ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
   };
@@ -298,6 +299,9 @@ export function speakerScript(data, v4) {
   for (const s of data.slides.filter((x) => x.main)) {
     out.push(`## ${s.label.split(" ")[0]}. ${s.content.title ?? s.content.punch} (${s.kicker})`, "", s.notes.text, "", `${s.notes.words} words, ${s.notes.seconds} s at ${u.wordsPerMinute} wpm.${s.notes.cue ? ` Cue: ${s.notes.cue}` : ""}`, "");
   }
+  for (const o of data.options) {
+    out.push(`## Option, Carter's call: not spoken unless he asks (slide ${o.slide})`, "", o.line, "", `Numbers: ${o.numbers} Qualifiers that travel with it: ${o.qualifiers} Source: ${o.source}`, "");
+  }
   if (data.placeholders.length) {
     out.push("## Still measuring", "", "Each shows \"measuring…\" on its slide and is read out only once it is filled:", "");
     for (const p of data.placeholders) out.push(`- ${p.label} (${p.where}; metric \`${p.id}\`)`);
@@ -309,7 +313,9 @@ export function speakerScript(data, v4) {
 export function fillInTable(data) {
   const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label} | \`${p.id}\` | ${p.need} |`);
   return ["# FILL-IN: the founder deck's placeholders", "", `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`, "",
-    "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), ""].join("\n");
+    "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
+    ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
+      ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : [])].join("\n");
 }
 
 export function sourcesList(data) {

@@ -217,3 +217,16 @@ test("cost and the other solvers are backup pages, each with its scope, never on
   assert.match(solvers, /unnamed until it consents/);
   assert.doesNotMatch(solvers, /three outside teams|within 0\.01 K in both cases/i);
 });
+
+test("the optional D1 layout result is Carter's call: in the notes and FILL-IN with its qualifiers, never on a slide or spoken", () => {
+  const o = loaded.v4.options.find((x) => x.id === "d1-layout");
+  assert.equal(o.line, "And one of our own agents has already found a layout that runs about 2.7 degrees cooler in this model. It's a diagnostic result, not a record.");
+  for (const q of ["team-only staging run, not external dogfood", "diagnostic simulation against our reconstructed reference", "proxy, not routed", "not a paper beat and not validated", "HotSpot 6 heat-balance caveat"]) assert.ok(o.qualifiers.includes(q), q);
+  for (const d of [data, buildFounderData(loaded, { slot: "2min" })]) {
+    for (const x of d.slides.filter((y) => y.main)) assert.doesNotMatch(x.notes.text + shown(d, x.id), /2\.7 degrees cooler|113\.225|D1/, x.id);
+  }
+  assert.match(slide(data, "invite").notes.cue, /Carter's option, not spoken unless he asks: the D1 layout line/);
+  const fill = readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8");
+  assert.ok(fill.includes("## Optional, Carter's call: notes only, not on a slide") && fill.includes(o.line) && fill.includes(o.qualifiers));
+  for (const slot of ["3min", "2min"]) assert.ok(readFileSync(scriptPath(slot), "utf8").includes("## Option, Carter's call: not spoken unless he asks (slide invite)"), slot);
+});

@@ -11,7 +11,7 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "ae00462379b23e1299f78f42f60fa2469bde175e73118a96ad194fd7a54d4526",
+    "sourceSha256": "d5a21ccb2ea27fcb280b40a2d437c919f5c4026164776d09a005c81d05af2391",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
@@ -56,6 +56,16 @@
       "label": "what an agent is served, per view",
       "need": "the agent view's measured size against the human page, with the method",
       "dropped": false
+    }
+  ],
+  "options": [
+    {
+      "id": "d1-layout",
+      "slide": "invite",
+      "line": "And one of our own agents has already found a layout that runs about 2.7 degrees cooler in this model. It's a diagnostic result, not a record.",
+      "numbers": "Centre metric 113.225 °C against the reconstructed reference's 115.935 °C, 2.71 °C lower; active-grid peak 115.70 °C against 119.07 °C; wire proxy 9.35 mm against 9.38487 mm.",
+      "qualifiers": "A team-only staging run, not external dogfood; a diagnostic simulation against our reconstructed reference; the wire is a proxy, not routed; not a paper beat and not validated; the HotSpot 6 heat-balance caveat still applies.",
+      "source": "aneta's team layout D1, run on staging; chatgpt's arithmetic check in its addendum to team room 57781 at 09:01Z."
     }
   ],
   "slides": [
@@ -395,7 +405,7 @@
         "words": 11,
         "seconds": 4.4,
         "slowSeconds": 4.9,
-        "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\"."
+        "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated)."
       }
     },
     {
