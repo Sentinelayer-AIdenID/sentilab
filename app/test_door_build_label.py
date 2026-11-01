@@ -217,10 +217,13 @@ class ImageDigestTests(unittest.TestCase):
     def test_p1_another_images_digest_under_the_gate_zero_tag_reads_unvalidated(self):
         """warden's measured case: the 5cedde1 runtime's digest (cde9ce80...) with the tag sentilab-gate0:2d35e9c
         read reproduction_tested at 3c7b3062. It is another image: unvalidated under the real builds.json, under a
-        registry recording the test digest and under one recording none."""
+        registry recording the test digest and under one recording none, whether the signed manifest names the test
+        image or, as the 5cedde1 deployment would sign it, cde9ce80 too (all three run-side digests agreeing)."""
         for name, registered in (("builds.json", None), ("a test digest", registry(D)), ("no digest", registry(None))):
-            with self.subTest(name):
-                self.assert_unvalidated(self.receipt(CDE9), self.grant(CDE9), registered)
+            for manifest_build in (D, CDE9):
+                with self.subTest(name, manifest_build=manifest_build):
+                    self.assert_unvalidated(self.receipt(CDE9), self.grant(CDE9), registered,
+                                            self.manifest_building(manifest_build))
         with self.assertRaises(ValueError, msg="a signed grant names no image tag"):
             Grant.parse(tk.grant(scorer_image_digest=CDE9, scorer_image_tag=TAG))
 
@@ -229,10 +232,14 @@ class ImageDigestTests(unittest.TestCase):
             with self.subTest(receipt=receipt, grant=grant):
                 self.assert_unvalidated(self.receipt(receipt), self.grant(grant), registry(D))
 
-    def test_agreeing_is_not_enough_both_must_be_the_recorded_digest(self):
+    def test_agreeing_is_not_enough_all_must_be_the_recorded_digest(self):
+        """The receipt and the grant agreeing, or all three run-side digests agreeing (the manifest's build too), on a
+        digest the registry does not record is another image."""
         for digest in (OTHER, CDE9):
-            with self.subTest(digest):
-                self.assert_unvalidated(self.receipt(digest), self.grant(digest), registry(D))
+            for manifest_build in (D, digest):
+                with self.subTest(digest, manifest_build=manifest_build):
+                    self.assert_unvalidated(self.receipt(digest), self.grant(digest), registry(D),
+                                            self.manifest_building(manifest_build))
 
     def test_a_missing_or_malformed_digest_reads_unvalidated(self):
         hexits = D[len("sha256:"):]
@@ -252,10 +259,11 @@ class ImageDigestTests(unittest.TestCase):
         for name, receipt, grant in cases:
             with self.subTest(name):
                 self.assert_unvalidated(receipt, grant, registry(D))
-        # A malformed digest is no digest, even as recorded: the same malformed value everywhere never matches.
+        # A malformed digest is no digest, even as recorded: the same malformed value everywhere (receipt, grant,
+        # manifest build and registry) never matches.
         for bad in malformed:
             with self.subTest(recorded=bad):
-                self.assert_unvalidated(self.receipt(bad), self.grant(bad), registry(bad))
+                self.assert_unvalidated(self.receipt(bad), self.grant(bad), registry(bad), self.manifest_building(bad))
 
     def test_a_build_with_no_recorded_digest_is_never_matched(self):
         """null never equals null here: a build whose image_digest is null, or not recorded at all, matches no run,
@@ -343,11 +351,13 @@ class DoorImageDigestTests(tk.DoorCase, unittest.TestCase):
 
 
 class DoorP1Tests(tk.DoorCase, unittest.TestCase):
-    """warden's measured case through the door: the binding pins the 5cedde1 runtime's digest and its receipts name it.
-    The run attests that image, not the gate-zero build's: unvalidated under any registry that does not record it."""
+    """warden's measured case through the door, as the 5cedde1 deployment would sign it: the manifest's build and the
+    binding both pin the 5cedde1 runtime's digest and its receipts name it, so all three run-side digests agree. The
+    run attests that image, not the gate-zero build's: unvalidated under any registry that does not record it."""
 
     def policy_kwargs(self):
-        return {"grant_value": tk.grant(scorer_image_digest=CDE9)}
+        return {"grant_value": tk.grant(scorer_image_digest=CDE9),
+                "manifest": tk.door_manifest(**{"statistic.evaluator.build": CDE9})}
 
     def test_the_5cedde1_runtime_reads_unvalidated(self):
         self.scorer.image_digest = CDE9
