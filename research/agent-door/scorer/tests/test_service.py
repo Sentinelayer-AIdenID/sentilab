@@ -31,7 +31,8 @@ class Harness:
         self.control.write_text(mode)
         self.engine = tmp_path / 'fake-engine'
         source = (Path(__file__).with_name('fake_engine.py')).read_text().replace('__CONTROL__', str(self.control))
-        self.engine.write_bytes(Path(engine).read_bytes()) if engine else self.engine.write_text(source)
+        # The solver environment has no PATH; use the interpreter running the tests.
+        self.engine.write_bytes(Path(engine).read_bytes()) if engine else self.engine.write_text(f'#!{sys.executable}\n{source}')
         self.engine.chmod(0o700)
         self.secret = secrets.token_urlsafe(24)  # memory only; never a test token on disk
         self.key = Ed25519PrivateKey.generate()  # memory only; only the public key/signature are serialized
@@ -108,6 +109,17 @@ def harness(tmp_path, monkeypatch):
     yield create
     for h in instances:
         h.close()
+
+
+def test_fake_engine_executes_with_sandbox_environment(harness):
+    h = harness()
+    status, score = h.call('/v1/score', h.request())
+    assert status == 200 and score['state'] == 'evaluated', score
+    observed = json.loads((h.path / f"observed-{score['receipt']['engine_pid']}.json").read_text())
+    assert observed['executable'] == sys.executable
+    assert 'PATH' not in observed['environment']
+    assert 'SCORER_TOKEN' not in observed['environment']
+    assert observed['network_denied']
 
 
 def test_http_score_replay_identity_and_isolation(harness, capsys):
