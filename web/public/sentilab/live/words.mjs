@@ -153,7 +153,11 @@ export const PACKAGE = Object.freeze({
   viewOnly: "View only: shown under the door\u2019s terms, not licensed for redistribution",
   topReadme: "SentiLab top layouts: only layouts whose owners licensed them for redistribution (each row carries its "
     + "licence), accepted with a matching fresh-process replay, sorted by the highest chiplet-centre average (lower first) "
-    + "with wire_proxy_mm alongside. The reference value is for comparison only. Every temperature is simulated "
+    + "with wire_proxy_mm alongside. The reference value is for comparison only. "
+    + "Scientific limits: every temperature is diagnostic, from HotSpot 6.0 at grid 64; for the saved reference case the "
+    + "simulator’s heat balance is off by about +1.39%, with no established cause in the deployed build, and HotSpot 7.0 "
+    + "reads very differently on the same inputs; these temperatures are withdrawn from comparison with published layouts. "
+    + "Every temperature is simulated "
     + "(HotSpot 6.0, grid 64), not measured, with no warranty; wire_proxy_mm is a proxy from chip distances, not routed "
     + "wire; none of these is a manufacturing design, an optimum, or checked on hardware.",
   referenceRow: "reference (for comparison only)",
@@ -163,7 +167,7 @@ export const PACKAGES_PAGE = Object.freeze({
   lead: (n) => (n ? `${n} accepted layout${n === 1 ? "" : "s"} whose fresh-process replay matched, coolest first, as the door’s public results feed gives them.` : "No accepted layout whose replay matched yet."),
   reading: "Reading every page of the door’s results…",
   done: (n) => `Every page read · ${n} listed`,
-  failed: (e) => `The door’s results could not be read (${e}). Nothing is listed in their place.`,
+  failed: (e) => `The door’s results could not all be read (${e}). Any layouts shown are incomplete, and the bulk downloads stay off.`,
   visit: (short) => (short ? `visit ${short}` : "a visit"),
   facts: (value, wire) => `highest chiplet-centre average ${Number.isFinite(value) ? value.toFixed(2) : "?"} °C · simulated · wire proxy ${Number.isFinite(wire) ? wire : "?"} mm`,
   outcome: "replay matched",
@@ -172,9 +176,14 @@ export const PACKAGES_PAGE = Object.freeze({
   noTime: "submission time not recorded",
   download: "Download package",
   licence: (l) => `licensed ${l}`,
-  allReadme: "SentiLab packages: every accepted layout whose fresh-process replay matched, coolest first, each as the "
-    + "same package the Live Lab downloads (see each package’s readme). Every temperature is simulated, not measured on "
-    + "silicon; each package’s verification.not_claimed lists what the feed does not claim. This file adds no claim of its own.",
+  allReadme: "SentiLab packages: only layouts whose owners licensed them for redistribution (each package carries its "
+    + "licence), accepted with a matching fresh-process replay, coolest first, each as the same package the Live Lab "
+    + "downloads (see each package’s readme). Layouts shown on the page as view only are not in this file. "
+    + "Scientific limits: every temperature is diagnostic, from HotSpot 6.0 at grid 64; for the saved reference case the "
+    + "simulator’s heat balance is off by about +1.39%, with no established cause in the deployed build, and HotSpot 7.0 "
+    + "reads very differently on the same inputs; these temperatures are withdrawn from comparison with published layouts. "
+    + "Every temperature is simulated, not measured on silicon; each package’s verification.not_claimed lists what the "
+    + "feed does not claim. This file adds no claim of its own.",
 });
 export const YOUR_PICK = "your pick";
 
