@@ -128,12 +128,14 @@ test("switching runs clears the old field and the old value at once", async () =
   assert.equal(M.runView(M.pickRun(list, withField.id)).field.available, true);
   // A run that left the feed is not kept selected: the page falls back to a run it has, never to stale content.
   assert.equal(M.pickRun(feed.state.layouts, "open-00000000-00000000000000000000000000000000").label, "unknown · 5cb8");
-  // A replay cursor at a state that is not a score shows no value for that run.
+  // A replay cursor at one of a run's records shows that record's state and no value (a record carries none).
   const L = feed.state.layouts[0];
-  const atQueued = M.runView(L, { at: { kind: "run", run_id: L.id, state: "queued" } });
+  const atQueued = M.runView(L, { at: { kind: "run", run_id: L.id, state: "queued", seq: 1, at: null } });
   assert.equal(atQueued.metric, null);
-  assert.match(atQueued.none, /not scored at this point in the record · queued/);
-  assert.ok(M.runView(L, { at: { kind: "run", run_id: L.id, state: "reproduced" } }).metric);
+  assert.match(atQueued.none, /state at this record: queued/);
+  assert.equal(M.runView(L, { at: { kind: "run", run_id: L.id, state: "reproduced", seq: 2, at: null } }).metric, null);
+  // A cursor at another run's record changes nothing for this run.
+  assert.equal(M.runView(L, { at: { kind: "run", run_id: "open-00000000-00000000000000000000000000000000", state: "queued" } }).metric.text, M.runView(L).metric.text);
 });
 
 test("a feed error never shows LIVE; stale and empty are explicit", async () => {
@@ -196,29 +198,32 @@ test("the board: door, scorer, queue and budget from their own fields; anything 
   assert.equal((await M.fetchLabRuns({ fetchImpl: recordedFetch({ status: () => 502 }) })).ok, false);
 });
 
-test("follow the work: opaque ids and classes only; a finished run never moves its visitor", async () => {
+test("follow the work: full run ids and classes only; a finished run never moves its submission", async () => {
   const feed = await liveFeed(recordedFetch());
   await feed.pollOnce();
-  const { rows, anonymous } = M.followRows(feed.state.events, feed.state.layouts);
-  for (const r of rows) {
+  const { runs, door, anonymous } = M.followWork(feed.state.events, feed.state.layouts);
+  assert.equal(runs.length, new Set(runs.map((r) => r.run_id)).size, "one row per full run id");
+  for (const L of feed.state.layouts) assert.ok(runs.some((r) => r.run_id === L.id), `${L.label} has its row`);
+  for (const r of runs) {
+    assert.match(r.run_id, /^open-[0-9a-f]{8}-[0-9a-f]{32}$/);
     assert.match(r.label, /^[a-z_]+ · [0-9a-f]{4}$/, "a class and a 4-hex short id, never a name");
-    if (r.last) assert.ok(["arrival", "attempt", "submission"].includes(r.last.kind), r.label);
   }
+  for (const d of door) assert.match(d.label, /^[a-z_]+ · [0-9a-f]{4}$/);
   for (const a of anonymous) assert.ok(a.count > 0 && !("short" in a));
-  // Synthetic order check on the real shapes: arrive, submit, then the scorer's work. The location stays at the
-  // submission; only the task follows the run.
+  // Arrive, submit, then the scorer's work: the run's submission stays where it was; only its task follows the run.
   const base = { cls: "unknown", short: "abcd", label: "unknown · abcd" };
+  const run = "open-00000001-00000000000000000000000000000001";
   const ev = [
     { ...base, seq: 1, kind: "arrival", at: "2026-11-01T10:00:00Z" },
-    { ...base, seq: 2, kind: "run", run_id: "open-00000001-00000000000000000000000000000001", state: "queued", codes: [], at: "2026-11-01T10:00:05Z" },
-    { ...base, seq: 3, kind: "run", run_id: "open-00000001-00000000000000000000000000000001", state: "evaluating", codes: [], at: "2026-11-01T10:00:09Z" },
-    { ...base, seq: 4, kind: "run", run_id: "open-00000001-00000000000000000000000000000001", state: "reproduced", codes: [], at: "2026-11-01T10:01:00Z" },
+    { ...base, seq: 2, kind: "run", run_id: run, state: "queued", codes: [], at: "2026-11-01T10:00:05Z" },
+    { ...base, seq: 3, kind: "run", run_id: run, state: "evaluating", codes: [], at: "2026-11-01T10:00:09Z" },
+    { ...base, seq: 4, kind: "run", run_id: run, state: "reproduced", codes: [], at: "2026-11-01T10:01:00Z" },
   ];
-  const [row] = M.followRows(ev, []).rows;
-  assert.deepEqual([row.last.kind, row.last.seq, row.last.at], ["submission", 2, "2026-11-01T10:00:05Z"]);
+  const [row] = M.followWork(ev, []).runs;
+  assert.deepEqual([row.submitted.seq, row.submitted.at], [2, "2026-11-01T10:00:05Z"]);
   assert.deepEqual([row.task.state, row.task.seq], ["reproduced", 4]);
-  // A stale or reordered page: the same records in any order give the same answer.
-  assert.deepEqual(M.followRows([...ev].reverse(), []).rows, M.followRows(ev, []).rows);
+  // A reordered page gives the same answer.
+  assert.deepEqual(M.followWork([...ev].reverse(), []), M.followWork(ev, []));
 });
 
 test("the atlas and the flight record count real records only", async () => {
@@ -240,4 +245,75 @@ test("the atlas and the flight record count real records only", async () => {
   assert.equal(M.clampCursor(2, 0), null);
   assert.equal(M.readAt("2026-11-01T15:21:02.558110Z"), "2026-11-01T15:21:02.558110Z");
   for (const bad of ["2026-11-01 15:21:02Z", "<b>", 12, null, "2026-13-45T99:99:99Z"]) assert.equal(M.readAt(bad), null, String(bad));
+});
+
+// ── review P2s (root, at 2eb51527) ─────────────────────────────────────────────────────────────────────────────────
+// P2-1: without WebGL2 the page draws the selected run in 2D (the Package view's renderer) and disables the 3D-only
+// controls. The 2D input is exactly the run's dies, as the Package view's 2D path builds it.
+test("P2-1: the 2D fallback draws the selected run's own dies, and the 3D-only controls are off", async () => {
+  const { dieRects } = await import("../public/sentilab/package/model.mjs");
+  const feed = await liveFeed(recordedFetch());
+  await feed.pollOnce();
+  for (const L of feed.state.layouts) {
+    const chips = M.chiplets2d(L);
+    const rects = dieRects(L.dies);
+    assert.equal(chips.length, 8);
+    assert.deepEqual(chips.map((c) => [c.id, c.x, c.y, c.w, c.h, c.layer, c.temp]), rects.map((r) => [r.id, r.x0, r.y0, r.w, r.h, 0, null]), L.label);
+  }
+  assert.deepEqual(M.FOOTPRINT_2D.interposer, { x0: 0, y0: 0, x1: 45, y1: 45 });
+  assert.deepEqual(M.viewControls("2d"), { explode: false, orbit: false, reset: false, renderer: "2d" });
+  assert.deepEqual(M.viewControls("3d"), { explode: true, orbit: true, reset: true, renderer: "3d" });
+  assert.deepEqual(M.viewControls("none"), { explode: false, orbit: false, reset: false, renderer: "none" });
+});
+
+// P2-2: a label (class · 4-hex short id) can repeat across distinct runs. Rows and links are keyed on the full run id;
+// two runs with one label are never merged, and nothing asserts that one visitor carried on across runs.
+test("P2-2: two runs with the same label stay apart, keyed on their full run ids", () => {
+  const A = "open-0000000a-0000000000000000000000000000000a", B = "open-0000000b-0000000000000000000000000000000b";
+  const base = { cls: "unknown", short: "abcd", label: "unknown · abcd" };
+  const ev = [
+    { ...base, seq: 1, kind: "arrival", at: "2026-11-01T10:00:00Z" },
+    { ...base, seq: 2, kind: "run", run_id: A, state: "queued", codes: [], at: "2026-11-01T10:00:05Z" },
+    { ...base, seq: 3, kind: "run", run_id: B, state: "queued", codes: [], at: "2026-11-01T10:00:06Z" },
+    { ...base, seq: 4, kind: "run", run_id: A, state: "reproduced", codes: [], at: "2026-11-01T10:01:00Z" },
+    { ...base, seq: 5, kind: "attempt", outcome: "refused", codes: [], at: "2026-11-01T10:02:00Z" },
+  ];
+  const w = M.followWork(ev, []);
+  assert.deepEqual(w.runs.map((r) => r.run_id).sort(), [A, B]);
+  const a = w.runs.find((r) => r.run_id === A), b = w.runs.find((r) => r.run_id === B);
+  assert.deepEqual([a.submitted.seq, a.task.state, a.task.seq], [2, "reproduced", 4]);
+  assert.deepEqual([b.submitted.seq, b.task.state, b.task.seq], [3, "queued", 3], "B keeps its own submission and state");
+  assert.equal(a.sameLabel, 1);
+  assert.equal(b.sameLabel, 1);
+  // Door records (arrivals, attempts) carry no run id: they are a qualified label group, never a run's location.
+  assert.deepEqual(w.door.map((d) => [d.label, d.arrivals, d.attempts, d.last.seq]), [["unknown · abcd", 1, 1, 5]]);
+  for (const r of w.runs) assert.equal("door" in r || "last" in r, false, "a run row holds only its own run's records");
+  // Trail links join records of one full run id only: A's two records, nothing to B or to the door records.
+  const links = M.traceLinks(ev);
+  assert.deepEqual(links, [[2, 4]]);
+});
+
+// P2-3: an older replay cursor shows the state as of that record. The latest receipt stays separate, labelled latest.
+test("P2-3: a replay cursor shows the state at that record; the latest receipt is separate", async () => {
+  const feed = await liveFeed(recordedFetch());
+  await feed.pollOnce();
+  const L = feed.state.layouts.find((l) => l.label === "unknown · 5cb8");
+  assert.equal(L.status, "reproduced");
+  const at = { kind: "run", run_id: L.id, state: "evaluated", seq: 85, at: "2026-11-01T14:40:09Z" };
+  const v = M.runView(L, { at });
+  assert.equal(v.metric, null, "a record carries no value: none is shown as of it");
+  assert.equal(v.verification, null);
+  assert.equal(v.replay, null);
+  assert.deepEqual(v.distinct, []);
+  assert.deepEqual(v.atRecord, { state: "evaluated", seq: 85, at: "2026-11-01T14:40:09Z" });
+  assert.equal(v.state, "Evaluated", "the state at the cursor, not the latest");
+  assert.match(v.none, /state at this record: evaluated/);
+  assert.equal(v.latest.status, "reproduced");
+  assert.equal(v.latest.seq, L.seq);
+  assert.equal(v.latest.metric.text, "113.23 °C");
+  assert.equal(v.latest.verification.replay, "reproduced");
+  // Live (no cursor): the latest is the state, and no separate latest block is needed.
+  const live = M.runView(L);
+  assert.equal(live.atRecord, null);
+  assert.equal(live.metric.text, "113.23 °C");
 });

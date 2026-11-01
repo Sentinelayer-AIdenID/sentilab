@@ -7,6 +7,7 @@ import { createDoorFeed } from "../package/source3d.mjs";
 import { buildRenderModel, displayBoxes, formatThickness, fieldTexels, VIEW } from "../package/model.mjs";
 import { STACK_LAYERS, INTERPOSER_MM, CASE_TITLE } from "../package/case-cpu-dram.mjs";
 import { webgl2Available } from "../package/render3d.mjs";
+import { drawPackage as draw2dPackage, TrackAnimation } from "../package/render.mjs";
 import { scorerChip, utcTime, stateLine } from "../package/status.mjs";
 import { NOTICE } from "../../temperature-label.mjs";
 import * as M from "./live-model.mjs";
@@ -116,7 +117,7 @@ function shownRun() {
   const at = cursorEvent();
   if (at && at.kind === "run" && at.run_id) {
     const L = layouts().find((l) => l.id === at.run_id);
-    if (L) return { L, at: { kind: "run", run_id: at.run_id, state: at.state } };
+    if (L) return { L, at: { kind: "run", run_id: at.run_id, state: at.state, seq: at.seq, at: at.at } };
   }
   return { L: M.pickRun(layouts(), S.selectedId), at: null };
 }
@@ -217,20 +218,19 @@ function renderModel() {
   const view = M.runView(L, { at });
   const empty = $("modelEmpty");
   const st = M.feedStatus(feed.state, { hostname: location.hostname }).state;
+  const renderer = !L ? "none" : can3d && !S.v3Failed ? "3d" : "2d";
   if (!L) {
     empty.hidden = false;
     $("modelEmptyTitle").textContent = st === "error" ? "The door feed is not answering" : st === "connecting" ? "Waiting for the door" : "No runs yet";
     $("modelEmptyText").textContent = st === "error" ? "No geometry is drawn: nothing has arrived from the door, and no sample stands in for it."
       : st === "connecting" ? "Reading the runs." : "Connected. The first proposal is drawn here as it arrives.";
-  } else if (!can3d || S.v3Failed) {
-    empty.hidden = false;
-    $("modelEmptyTitle").textContent = S.v3Lost ? "The 3D view lost its graphics context" : "The 3D view needs WebGL2";
-    $("modelEmptyText").textContent = S.v3Lost ? "Reload the page to draw it again. The Package view draws the same run in 2D."
-      : "This browser can't start it. The Package view draws the same run in 2D.";
   } else empty.hidden = true;
+  applyControls(M.viewControls(renderer));
+  $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
   $("modelTitle").textContent = L ? `Run ${L.label}` : "A closer look at the package.";
-  $("modelKindText").textContent = L ? `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}` : "NO RUN";
-  // Metrics, bound to this run's own record.
+  $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `AT RECORD ${view.atRecord.seq ?? "?"} · ${view.state.toUpperCase()}`
+    : `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}`;
+  // Metrics, bound to this run's own record; at a replay cursor, the state as of that record, and the latest apart.
   const mv = $("metricValue");
   mv.replaceChildren();
   mv.className = view?.metric ? "" : "none";
@@ -239,22 +239,28 @@ function renderModel() {
     mv.append(num, h("small", null, unit), h("em", { title: view.metric.title }, view.metric.qualifier));
     mv.title = `${view.metricDefinition} ${view.metric.title} Rounded to 0.01 °C for display.`;
     $("metricDescription").textContent = `${view.metricName} · simulated, not silicon${view.diagnostic ? " · diagnostic" : ""}`;
+  } else if (view?.atRecord) {
+    mv.textContent = view.state.toLowerCase();
+    mv.title = "";
+    $("metricDescription").textContent = `record ${view.atRecord.seq ?? "?"} · ${M.hms(view.atRecord.at)} · a record carries a state and a time, no value`;
   } else {
     mv.textContent = L ? "not scored" : "--";
     mv.title = "";
     $("metricDescription").textContent = view ? view.none : "No run selected";
   }
-  $("metricLabel").textContent = at ? "BOARD METRIC · AT THIS RECORD" : "BOARD METRIC · SELECTED RUN";
+  $("metricLabel").textContent = view?.atRecord ? "STATE AT THIS RECORD" : "BOARD METRIC · SELECTED RUN";
   $("frameValue").replaceChildren(...(L ? [`${INTERPOSER_MM} × ${INTERPOSER_MM}`, h("small", null, "mm")] : ["--"]));
   $("frameNote").textContent = L ? `Interposer frame · 8 dies from this run's record (arrival ${L.arrival ?? "?"})` : "Interposer square of the model";
   const src = $("metricSource"), det = $("metricSourceDetail");
-  if (view?.metric) {
-    src.textContent = "HotSpot 6.0";
-    det.replaceChildren(`grid 64 · ${M.verificationWords(view.verification).split(";")[0] || "as the feed reports it"}`,
-      h("button", { type: "button", "aria-label": "Open this run's receipt", dataset: { modal: "receipt" } }, "↗"));
+  const latest = view?.atRecord ? view.latest : view;
+  $("sourceLabel").textContent = view?.atRecord ? `LATEST RECEIPT · RECORD ${latest.seq ?? "?"} · NOT AT THE CURSOR` : "EVALUATION SOURCE";
+  if (latest?.metric) {
+    src.textContent = view.atRecord ? `${latest.metric.text} · ${latest.metric.qualifier}` : "HotSpot 6.0";
+    det.replaceChildren(view.atRecord ? `latest state ${latest.state.toLowerCase()} · HotSpot 6.0, grid 64` : `grid 64 · ${M.verificationWords(latest.verification).split(";")[0] || "as the feed reports it"}`,
+      h("button", { type: "button", "aria-label": "Open this run's latest receipt", dataset: { modal: "receipt" } }, "↗"));
   } else {
     src.textContent = L ? "No result" : "--";
-    det.textContent = L ? (view.none ?? "") : "No result selected";
+    det.textContent = L ? (latest?.none ?? "") : "No result selected";
   }
   for (const b of det.querySelectorAll("[data-modal]")) b.addEventListener("click", () => showModal(b.dataset.modal));
   // The field overlay: never without a verified, associated field.
@@ -262,11 +268,48 @@ function renderModel() {
   $("heatMode").disabled = !field.available;
   $("heatMode").title = field.available ? "Show the verified field" : field.reason;
   $("fieldNote").textContent = field.available ? "" : field.reason.replace("Field overlay unavailable: ", "Field overlay unavailable · ");
-  $("modelNote").replaceChildren(`Thin layers drawn ×${VIEW.THIN_Z} in z · cooling stack lifted`, h("br"), S.explode > 0 ? "Exploded · spacing not to scale" : "Schematic · not manufacturing CAD");
-  $("packageCanvas").setAttribute("aria-label", L ? `3D view of the ${CASE_TITLE}: run ${L.label}, ${(stateLine(L) ?? L.status).toLowerCase()}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}. Arrow keys orbit, plus and minus zoom.` : "No run drawn");
-  if (!L) return;
+  $("modelNote").replaceChildren(...(renderer === "2d"
+    ? ["2D view: this browser can't run the 3D view", h("br"), "Schematic · not manufacturing CAD"]
+    : [`Thin layers drawn ×${VIEW.THIN_Z} in z · cooling stack lifted`, h("br"), S.explode > 0 ? "Exploded · spacing not to scale" : "Schematic · not manufacturing CAD"]));
+  const words = L ? `run ${L.label}, ${view.state.toLowerCase()}${view.atRecord ? " at this record" : ""}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}.` : "";
+  $("packageCanvas").setAttribute("aria-label", L ? `3D view of the ${CASE_TITLE}: ${words} Arrow keys orbit, plus and minus zoom.` : "No run drawn");
+  $("packageCanvas2d").setAttribute("aria-label", L ? `2D drawing of the ${CASE_TITLE}: ${words}` : "No run drawn");
+  $("packageCanvas").hidden = renderer === "2d";
+  $("packageCanvas2d").hidden = renderer !== "2d";
+  if (!L) { draw2d(null); return; }
+  if (renderer === "2d") { draw2d(L); return; }
   if (S.v3) { if (!S.drawn || S.drawn.key !== drawKey(L, at)) { const first = !S.drawn; drawPackage(L, view, at); if (first) frameCamera(); } }
-  else if (can3d && !S.v3Failed) ensure3d().then((v) => { if (v) { S.drawn = null; renderModel(); } else renderModel(); });
+  else ensure3d().then(() => renderModel());
+}
+// The controls the renderer in use supports; the others are disabled and say why.
+function applyControls(c) {
+  for (const id of ["explodeButton", "explodeRange", "orbitButton", "modelReset"]) {
+    const el = $(id);
+    const on = id === "orbitButton" ? c.orbit : id === "modelReset" ? c.reset : c.explode;
+    el.disabled = !on;
+    if (!on) el.title = c.renderer === "2d" ? "3D view only: this browser draws the package in 2D" : "No run drawn";
+    else el.removeAttribute("title");
+  }
+  if (!c.orbit && S.orbit) setOrbit(false);
+}
+// The 2D fallback: the Package view's own 2D renderer, a hard cut to the selected run's dies (no temperature).
+const anim2d = new TrackAnimation();
+function draw2d(L) {
+  const c = $("packageCanvas2d");
+  if (c.hidden && L) return;
+  const r = c.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(r.width)), hgt = Math.max(1, Math.round(r.height));
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(hgt * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(hgt * dpr); }
+  const ctx = c.getContext("2d");
+  if (!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const now = performance.now();
+  anim2d.reset(L ? { chiplets: M.chiplets2d(L), overlaps: [] } : null, { now });
+  const compact = w < 700;
+  draw2dPackage(ctx, L ? { ...anim2d.frame(now), footprint: M.FOOTPRINT_2D, unit: "°C", field: null } : null, {
+    width: w, height: hgt, azimuthDeg: -45, labels: true, callouts: false, lid: false,
+    pad: compact ? { l: 12, r: 12, t: 56, b: 56 } : { l: 24, r: 24, t: 44, b: 40 },
+  });
 }
 
 // ── the work: atlas, visitors, newest record ─────────────────────────────────────────────────────────────────────
@@ -299,22 +342,30 @@ function drawAtlas(svg, { large = false } = {}) {
 }
 function renderWork() {
   drawAtlas($("atlasSvg"));
-  const { rows, anonymous } = M.followRows(feed.state.events, layouts());
+  // Keyed on the full run id: two runs with one label are two rows, and door records (no run id) are a qualified label
+  // group, never attached to a run (live-model.mjs followWork).
+  const { runs, door, anonymous } = M.followWork(feed.state.events, layouts());
   const shown = shownRun().L;
-  $("visitorCount").textContent = `${rows.length} ID${rows.length === 1 ? "" : "S"}`;
+  $("visitorCount").textContent = `${runs.length} RUN${runs.length === 1 ? "" : "S"}`;
   const list = $("visitorList");
   list.replaceChildren();
-  for (const r of rows.slice(0, 30)) {
-    const task = r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "no run";
-    const btn = h("button", { type: "button", class: `agent-row${shown && r.task?.run_id === shown.id ? " selected" : ""}`, dataset: { visitor: r.key } },
+  for (const r of runs.slice(0, 30)) {
+    const task = r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown";
+    const where = r.submitted ? `submitted ${M.hms(r.submitted.at)}` : "submission not in the newest records";
+    const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
       h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, r.label), h("small", null, r.last ? `seen ${M.hms(r.last.at)} · ${r.last.line}` : "location unknown: not in the newest records")),
+      h("span", null, h("strong", null, r.label), h("small", null, r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this label` : where)),
       h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
-    btn.addEventListener("click", () => { if (r.task && layouts().some((l) => l.id === r.task.run_id)) selectRun(r.task.run_id); openVisitor(r); });
+    btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
     list.append(btn);
   }
+  if (door.length || anonymous.length) list.append(h("p", { class: "door-head" }, "DOOR RECORDS · BY LABEL · NOT LINKED TO RUNS"));
+  for (const d of door.slice(0, 12)) {
+    list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, d.label),
+      `${d.arrivals} arrival(s)${d.attempts ? `, ${d.attempts} attempt(s)` : ""} · last ${M.hms(d.last.at)}`));
+  }
   for (const a of anonymous) list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, a.cls), `${a.count} arrival(s) without a token · last ${M.hms(a.lastAt)}`));
-  if (!rows.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
+  if (!runs.length && !door.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
   // The newest record, or the replay cursor's.
   const pts = points();
   const c = M.clampCursor(S.cursor, pts.length);
@@ -333,17 +384,14 @@ function renderTrace() {
   const ys = [0.18, 0.5, 0.82].map((f) => f * hgt);
   const xOf = (p) => 10 + p.x * (w - 20);
   svg.replaceChildren(...ys.map((y) => s("path", { d: `M0 ${y} H${w}`, fill: "none", stroke: "#355040", "stroke-width": 0.6 })));
-  // A trail joins records of the same short id (the same run or visitor): a real link, not an invented handoff.
-  const byLabel = new Map();
-  for (const p of pts) {
-    if (p.label.includes(" · ")) {
-      const prev = byLabel.get(p.label);
-      if (prev) {
-        const [px, py, x, y] = [xOf(prev), ys[prev.lane], xOf(p), ys[p.lane]];
-        svg.append(s("path", { d: `M${px} ${py} C${px + 18} ${py},${x - 18} ${y},${x} ${y}`, stroke: LANE_COLOR[p.kind], "stroke-width": 0.8, fill: "none", opacity: 0.45 }));
-      }
-      byLabel.set(p.label, p);
-    }
+  // A trail joins consecutive records of one full run id (live-model.mjs traceLinks): never across runs, never from a
+  // door record to a run, and never on a label, which can repeat.
+  const bySeq = new Map(pts.map((p) => [p.seq, p]));
+  for (const [from, to] of M.traceLinks(feed.state.events)) {
+    const p0 = bySeq.get(from), p1 = bySeq.get(to);
+    if (!p0 || !p1) continue;
+    const [px, py, x, y] = [xOf(p0), ys[p0.lane], xOf(p1), ys[p1.lane]];
+    svg.append(s("path", { d: `M${px} ${py} C${px + 18} ${py},${x - 18} ${y},${x} ${y}`, stroke: LANE_COLOR.run, "stroke-width": 0.8, fill: "none", opacity: 0.45 }));
   }
   const c = M.clampCursor(S.cursor, pts.length);
   pts.forEach((p, i) => {
@@ -485,27 +533,29 @@ function openRecord(i) {
       ["Page route", "not recorded: the door's events carry no page route", "unknown"], ["Identity", "not established: a class is an observation, not an identity", "unknown"]]),
     h("pre", { class: "json-block" }, JSON.stringify(e ?? p, null, 2)));
 }
-function openVisitor(r) {
-  const runs = layouts().filter((l) => l.label === r.label);
-  openDialog(r.label, "VISITOR · CLASS · SHORT ID",
-    lead(CLASS_NOTE[r.cls] ?? "A classification, not an identity."),
+function openRun(r) {
+  const L = layouts().find((l) => l.id === r.run_id) ?? null;
+  openDialog(`Run ${r.label}`, "RUN · KEYED ON ITS FULL RUN ID",
+    lead(`${CLASS_NOTE[r.cls] ?? "A classification, not an identity."} The label is a class and a 4-character short id; short ids can repeat, so this page never joins two runs, or a run and the door's other records, on it.`),
     h("div", { class: "modal-grid" },
-      h("div", { class: "modal-card" }, h("span", { class: "label" }, "LAST OBSERVED (LOCATION)"), h("h3", null, r.last ? r.last.line : "unknown"),
-        h("p", null, r.last ? `${r.last.kind} record · seq ${r.last.seq} · ${M.hms(r.last.at)}` : "The newest records the door kept show no action by this id."),
-        h("p", null, "A record says where the door saw this id act. It stays here until a new record says otherwise.")),
-      h("div", { class: "modal-card" }, h("span", { class: "label" }, "TASK (RUN STATE)"), h("h3", null, r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "no run"),
-        h("p", null, r.task ? `run record · seq ${r.task.seq >= 0 ? r.task.seq : "?"} · ${M.hms(r.task.at ?? null)}` : "No run record for this id."),
-        h("p", null, runs.length ? runs.map((l) => stateLine(l) ?? l.status).join(" · ") : "No run of this id is in the results list."),
-        h("p", null, "A run finishing changes the task, not the location."))),
-    table([["Presence now", "unknown: the door does not publish presence to this page", "unknown"], ["Page route", "not recorded", "unknown"],
-      ["Identity", "not established (classification only)", "unknown"], ["Records in the newest window", String(r.records)]]));
+      h("div", { class: "modal-card" }, h("span", { class: "label" }, "SUBMITTED (WHERE THE DOOR SAW IT ACT)"), h("h3", null, r.submitted ? `submitted · ${r.submitted.state}` : "unknown"),
+        h("p", null, r.submitted ? `run record · seq ${r.submitted.seq} · ${M.hms(r.submitted.at)}` : "This run's first record is not among the newest records."),
+        h("p", null, "The scorer's later work changes the run's state, not where its submitter was.")),
+      h("div", { class: "modal-card" }, h("span", { class: "label" }, "TASK (RUN STATE)"), h("h3", null, r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown"),
+        h("p", null, r.task && r.task.seq >= 0 ? `run record · seq ${r.task.seq} · ${M.hms(r.task.at)}` : "From the results list (no record in the newest window)."),
+        h("p", null, L ? stateLine(L) ?? L.status : "This run is not in the results list."))),
+    table([["Other runs with this label", r.sameLabel ? `${r.sameLabel}: shown as separate rows, never merged` : "none in view"],
+      ["Presence now", "unknown: the door does not publish presence to this page", "unknown"], ["Page route", "not recorded", "unknown"],
+      ["Identity", "not established (classification only)", "unknown"], ["Records of this run in the newest window", String(r.records)]]));
 }
 function showModal(kind) {
   const { L, at } = shownRun();
   if (kind === "receipt" || kind === "evidence") {
     const rc = M.receiptOf(L);
-    const v = M.runView(L, { at });
-    openDialog(L ? `Run ${L.label}` : "No run selected", kind === "receipt" ? "RECEIPT · AS THE FEED REPORTS IT" : "EVIDENCE",
+    const v = M.runView(L);
+    const cursorNote = at ? `The replay cursor is at record ${at.seq ?? "?"} (${String(at.state).replace(/_/g, " ")}). This is the run's LATEST receipt, not its state at the cursor.` : "";
+    openDialog(L ? `Run ${L.label}` : "No run selected", at ? "LATEST RECEIPT · NOT THE STATE AT THE CURSOR" : kind === "receipt" ? "RECEIPT · AS THE FEED REPORTS IT" : "EVIDENCE",
+      at ? note(cursorNote, true) : "",
       lead("Every number here is the scorer's, as the door's results feed reports it, for this run's own record. The page shows it; it does not recompute or verify it."),
       L ? table([["Board metric", v.metric ? `${v.metric.text} · ${v.metric.qualifier}${v.diagnostic ? " · diagnostic" : ""}` : v.none],
         ["Definition", v.metricDefinition], ...v.distinct.map((d) => [`${d.name} (a different statistic)`, `${d.text.text} · ${d.text.qualifier}`]),
@@ -596,7 +646,7 @@ function wire() {
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden) stopPlay(); else pollBoard(); });
   new ResizeObserver(() => renderTrace()).observe($("traceSvg"));
-  new ResizeObserver(() => frameCamera()).observe($("modelViewport"));
+  new ResizeObserver(() => { frameCamera(); if (!$("packageCanvas2d").hidden) draw2d(shownRun().L); }).observe($("modelViewport"));
 }
 
 // ── the entrance (skippable; once per session; none with reduced motion) ─────────────────────────────────────────────

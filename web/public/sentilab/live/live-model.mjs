@@ -11,10 +11,12 @@
 //   lab runs       GET /api/view/runs (../runs-list.mjs): how many lab runs are listed, by status.
 // Nothing here invents a value: no clock-driven movement, no random numbers, no sample records. A field the feeds do not
 // carry (presence, identity, a page route) is reported as unknown, never guessed.
-import { normalizeEvents, fetchDoorResults, LIVE_FRESH_MS, SCORED, BOARD_METRIC, readScorer, statusLine, hostEnv, DOOR_EVENTS_PATH }
+import { normalizeEvents, fetchDoorResults, LIVE_FRESH_MS, BOARD_METRIC, readScorer, statusLine, hostEnv, DOOR_EVENTS_PATH }
   from "../package/source3d.mjs";
 import { stateLine, summaryLine, eventLine, codeWords } from "../package/status.mjs";
 import { formatTemp } from "../package/temps.mjs";
+import { dieRects } from "../package/model.mjs";
+import { INTERPOSER_MM } from "../package/case-cpu-dram.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson, fetchRunsList } from "../runs-list.mjs";
 
@@ -132,27 +134,39 @@ export function pickRun(layouts, selectedId) {
 }
 // What the result panel shows for one run. Bound to this run's own record: when the run changes, every value here
 // changes with it (one object in, one view out); a run without a result in a scored state shows why there is none.
-// at: an optional replay cursor event; while it points at this run in a state that is not a score, no value shows.
+// at: a replay cursor at one of this run's records ({ kind: "run", run_id, state, seq, at }). A record carries a state
+// and a time, never a value or a check, so as of that record the view shows only its state; the run's latest result
+// and checks stay apart under `latest`, labelled as the latest, never as the state at the cursor.
 export function runView(L, { at = null } = {}) {
   if (!L) return null;
-  const atState = at && at.kind === "run" && at.run_id === L.id ? at.state : null;
-  const scoredNow = atState === null || SCORED.includes(atState);
-  const r = scoredNow ? L.result : null;
-  const metric = r ? formatTemp(r.metric.value, r.label, { digits: 2 }) : null;
-  let none = null;
-  if (!metric) {
-    if (atState && !SCORED.includes(atState)) none = `not scored at this point in the record · ${atState.replace(/_/g, " ")}`;
-    else if (L.result_refused) none = `score not shown · ${L.result_refused.replace(/_/g, " ")}`;
-    else none = stateLine(L) ? `not scored · ${stateLine(L)}` : "not scored";
+  const cursor = at && at.kind === "run" && at.run_id === L.id ? at : null;
+  const latest = latestOf(L);
+  if (cursor) {
+    const word = STATE_WORDS[cursor.state] ?? cursor.state.replace(/_/g, " ");
+    return {
+      id: L.id, label: L.label, cls: L.cls, short: L.short, status: cursor.state, seq: cursor.seq ?? null, arrival: L.arrival,
+      state: word, summary: null, metric: null, metricName: BOARD_METRIC.name, metricDefinition: BOARD_METRIC.definition,
+      none: `state at this record: ${word.toLowerCase()} · a record carries no value`,
+      diagnostic: false, claim: null, evaluator: null, distinct: [], verification: null, replay: null, guard: null,
+      atRecord: { state: cursor.state, seq: cursor.seq ?? null, at: cursor.at ?? null },
+      latest, field: fieldOverlay(null),
+    };
   }
+  return { ...latest, id: L.id, label: L.label, cls: L.cls, short: L.short, arrival: L.arrival, summary: summaryLine(L), atRecord: null, latest: null, field: fieldOverlay(L) };
+}
+const STATE_WORDS = Object.freeze({ queued: "Queued", held: "Held", evaluating: "Evaluating", evaluated: "Evaluated", replaying: "Replaying",
+  reproduced: "Reproduced", not_reproduced: "Not reproduced", cross_checked: "Cross-checked", failed: "Failed", cancelled: "Cancelled",
+  expired: "Expired", rejected: "Rejected" });
+// The run's latest record and result, as the results feed has it now.
+function latestOf(L) {
+  const r = L.result;
+  const metric = r ? formatTemp(r.metric.value, r.label, { digits: 2 }) : null;
+  const none = metric ? null : L.result_refused ? `score not shown · ${L.result_refused.replace(/_/g, " ")}` : stateLine(L) ? `not scored · ${stateLine(L)}` : "not scored";
   return {
-    id: L.id, label: L.label, cls: L.cls, short: L.short, status: L.status, seq: L.seq, arrival: L.arrival,
-    state: stateLine(L) ?? L.status, summary: summaryLine(L),
-    metric, metricName: BOARD_METRIC.name, metricDefinition: BOARD_METRIC.definition, none,
+    status: L.status, seq: L.seq, state: stateLine(L) ?? L.status, metric, metricName: BOARD_METRIC.name, metricDefinition: BOARD_METRIC.definition, none,
     diagnostic: Boolean(r?.diagnostic), claim: r ? r.claim : null,
     evaluator: r?.evaluator ?? null, distinct: r ? r.distinct.map((d) => ({ ...d, text: formatTemp(d.value, r.label, { digits: 2 }) })) : [],
     verification: r?.verification ?? null, replay: r?.replay ?? null, guard: r?.guard ?? null,
-    field: fieldOverlay(L),
   };
 }
 // The heat overlay: only a verified field whose association to this exact layout was checked (source3d.mjs
@@ -161,6 +175,7 @@ export function runView(L, { at = null } = {}) {
 export function fieldOverlay(L) {
   const r = L?.result;
   if (r && r.field_state === "verified" && r.grid && r.field_key) return { available: true, key: r.field_key, reason: "" };
+  if (!L) return { available: false, key: null, reason: "Field overlay unavailable: a record carries no field" };
   if (!r) return { available: false, key: null, reason: "Field overlay unavailable: this run has no result" };
   return { available: false, key: null, reason: "Field overlay unavailable: the door feed carries a scalar result, no temperature field for this layout" };
 }
@@ -217,48 +232,75 @@ export function atlas(layouts, events) {
   return { stations: STATIONS.map((s) => ({ ...s, count: counts[s.id], runs: runs.get(s.id) })), out };
 }
 
-// ── follow the work: one row per opaque short id, newest first ────────────────────────────────────────────────────
-// Location and task are kept apart:
-//   last (location)  the newest record of something the visitor did that the door observed: an arrival, a refused or
-//                    rejected attempt, or a submission (the first record of a run, in its creation state queued, held or
-//                    rejected). A run's later state changes are the scorer's work, not a move: they never change it.
-//   task             the newest run state the records give for the id.
-// Arrivals without a token have no short id: they are counted by class, never merged into a row.
+// ── follow the work: keyed on the full run id ────────────────────────────────────────────────────────────────────
+// A label (class · 4-hex short id) can repeat across distinct runs and visitors, so nothing is merged on it:
+//   runs   one row per full run id (results and run records): its submission (the run's first record, in a creation
+//          state: queued, held or rejected; the run's own "location") and its task (its newest state). A run's later
+//          state changes are the scorer's work, not a move. sameLabel counts the other runs in view with its label.
+//   door   arrivals and refused attempts carry no run id: they are counted per label as a qualified group, never
+//          attached to a run, and never presented as one visitor's history.
+//   anonymous  arrivals without a token (no short id), counted by class.
 const CREATION = Object.freeze(["queued", "held", "rejected"]);
-export function followRows(events, layouts) {
-  const rows = new Map();
-  const anonymous = new Map();
-  const seenRuns = new Set();
+export function followWork(events, layouts) {
+  const runs = new Map(), door = new Map(), anonymous = new Map();
   for (const e of [...(events ?? [])].sort((x, y) => x.seq - y.seq)) {
-    if (e.short === null) {
+    if (e.kind === "run") {
+      const r = runs.get(e.run_id) ?? { run_id: e.run_id, label: e.label, cls: e.cls, short: e.short, submitted: null, task: null, records: 0, sameLabel: 0 };
+      if (r.records === 0 && CREATION.includes(e.state)) r.submitted = { seq: e.seq, at: e.at ?? null, state: e.state };
+      r.records += 1;
+      r.task = { seq: e.seq, at: e.at ?? null, state: e.state };
+      runs.set(e.run_id, r);
+    } else if (e.short === null) {
       const a = anonymous.get(e.cls) ?? { cls: e.cls, count: 0, lastAt: null, lastSeq: -1 };
-      a.count += 1;
-      if (e.seq > a.lastSeq) { a.lastSeq = e.seq; a.lastAt = e.at ?? null; }
+      a.count += 1; a.lastSeq = e.seq; a.lastAt = e.at ?? null;
       anonymous.set(e.cls, a);
-      continue;
+    } else {
+      const d = door.get(e.label) ?? { label: e.label, cls: e.cls, short: e.short, arrivals: 0, attempts: 0, last: null };
+      if (e.kind === "arrival") d.arrivals += 1; else d.attempts += 1;
+      d.last = { seq: e.seq, at: e.at ?? null, kind: e.kind, line: eventLine(e) };
+      door.set(e.label, d);
     }
-    const key = e.label;
-    const row = rows.get(key) ?? { key, label: e.label, cls: e.cls, short: e.short, last: null, task: null, records: 0 };
-    row.records += 1;
-    const firstOfRun = e.kind === "run" && !seenRuns.has(e.run_id);
-    if (e.kind === "run") seenRuns.add(e.run_id);
-    const observed = e.kind === "arrival" || e.kind === "attempt" || (firstOfRun && CREATION.includes(e.state));
-    if (observed && (!row.last || e.seq > row.last.seq)) {
-      row.last = { seq: e.seq, at: e.at ?? null, kind: e.kind === "run" ? "submission" : e.kind, line: e.kind === "run" ? `submitted a layout (run ${e.state.replace(/_/g, " ")})` : eventLine(e) };
-    }
-    if (e.kind === "run" && (!row.task || e.seq > row.task.seq)) row.task = { seq: e.seq, run_id: e.run_id, state: e.state, at: e.at ?? null };
-    rows.set(key, row);
   }
-  // A run in the results list whose short id has no event in the window still has a known task state.
+  // A run in the results list with no record in the newest window still has its state, from the results feed.
   for (const L of layouts ?? []) {
-    if (rows.has(L.label)) continue;
-    rows.set(L.label, { key: L.label, label: L.label, cls: L.cls, short: L.short, last: null, task: { seq: L.seq ?? -1, run_id: L.id, state: L.status }, records: 0 });
+    if (runs.has(L.id)) continue;
+    runs.set(L.id, { run_id: L.id, label: L.label, cls: L.cls, short: L.short, submitted: null, task: { seq: L.seq ?? -1, at: null, state: L.status }, records: 0, sameLabel: 0 });
   }
-  const order = (r) => Math.max(r.last?.seq ?? -1, r.task?.seq ?? -1);
+  const list = [...runs.values()];
+  for (const r of list) r.sameLabel = list.filter((x) => x.label === r.label && x.run_id !== r.run_id).length;
   return {
-    rows: [...rows.values()].sort((a, b) => order(b) - order(a)),
+    runs: list.sort((a, b) => (b.task?.seq ?? -1) - (a.task?.seq ?? -1)),
+    door: [...door.values()].sort((a, b) => b.last.seq - a.last.seq),
     anonymous: [...anonymous.values()].sort((a, b) => b.lastSeq - a.lastSeq),
   };
+}
+// The flight record's trails: consecutive records of one full run id, as [seq, seq] pairs. Never across run ids, and
+// never from a door record (which has no run id) to a run.
+export function traceLinks(events) {
+  const last = new Map(), links = [];
+  for (const e of [...(events ?? [])].sort((x, y) => x.seq - y.seq)) {
+    if (e.kind !== "run") continue;
+    if (last.has(e.run_id)) links.push([last.get(e.run_id), e.seq]);
+    last.set(e.run_id, e.seq);
+  }
+  return links;
+}
+
+// ── the 2D fallback: the Package view's own 2D renderer (render.mjs), for a browser without WebGL2 ─────────────────
+// The selected run's dies as render.mjs chiplets, exactly as the Package view's 2D path builds them (no temperature).
+export const KIND_FILL_2D = Object.freeze({ CPU: "#9c86c8", DRAM: "#6f93b4" });
+export const FOOTPRINT_2D = Object.freeze({
+  substrate: Object.freeze({ x0: -1.5, y0: -1.5, x1: INTERPOSER_MM + 1.5, y1: INTERPOSER_MM + 1.5 }),
+  interposer: Object.freeze({ x0: 0, y0: 0, x1: INTERPOSER_MM, y1: INTERPOSER_MM }),
+});
+export function chiplets2d(L) {
+  const rects = dieRects(L?.dies);
+  return rects ? rects.map((r) => ({ id: r.id, x: r.x0, y: r.y0, w: r.w, h: r.h, layer: 0, kind: "die", temp: null, temp_state: null, color: KIND_FILL_2D[r.kind] })) : [];
+}
+// Which view controls work with the renderer in use: explode, orbit and the camera reset are the 3D view's only.
+export function viewControls(renderer) {
+  const on = renderer === "3d";
+  return { explode: on, orbit: on, reset: on, renderer };
 }
 
 // ── the flight record: the newest records the feed kept, in seq order, on three lanes ─────────────────────────────
