@@ -7,7 +7,7 @@ provisions one build agent (the "Astra ultra box") that implements it phase by p
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
 (testable criteria, AC-01 to AC-46), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
-moves since lane 3 was written).
+moves since lane 3 was written), and root's case crosswalk as data, `CROSSWALK.json` and `CROSSWALK.md` (W0.2).
 
 ## 0. How to read this
 
@@ -80,6 +80,10 @@ moves since lane 3 was written).
     with 4x CPU throttling, labelled "emulated, not a phone"; it does not throttle the GPU), with Carter's own phone
     as the real-device check at the screenshot gate, and the targets as root proposed them (G8, 6.1, 6.10, 6.11, 11,
     W0.3, W0.4, W10, W11; AC-34).
+  - W0.2 crosswalk (A#57498): root's case-level crosswalk of `7f5fdaf` is committed next to ACCEPTANCE.md as data,
+    byte-exact (`CROSSWALK.json`, `CROSSWALK.md`): all 41 source cases kept (30 web, 11 anatomy), 18 direct, 23
+    partial, none missing and none executed; W-C04 maps to AC-43, with source-matrix retention as its W16 residual
+    (W0.2; ACCEPTANCE.md crosswalk section).
 
 ## 1. Goals and non-goals
 
@@ -1643,7 +1647,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | Item | Scope | Exit check |
 |---|---|---|
 | W0.1 | forge, warden and astra sign this exact document (section 5 schemas at version 1, the operation names in PSEUDOCODE §0, the no-result behaviour in sections 4.5 and 7, the AC list). | three sign-offs naming the commit |
-| W0.2 | Root's crosswalk of her 41 source cases (30 web, 11 anatomy; A#57059) maps v0.1 as 10 direct, 29 partial and 2 missing, zero executed (A#57218); this version adds W-E12 (AC-42), keeps W-C04 for W16 (AC-43) and tightens the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases (ACCEPTANCE.md crosswalk section). Root's 41-row table is committed next to ACCEPTANCE.md. | the table committed, with no row missing |
+| W0.2 | Root's crosswalk of her 41 source cases (30 web, 11 anatomy; A#57059) mapped v0.1 as 10 direct, 29 partial and 2 missing, zero executed (A#57218); this version added W-E12 (AC-42), kept W-C04 for W16 (AC-43) and tightened the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases (ACCEPTANCE.md crosswalk section). Her crosswalk of `7f5fdaf` (A#57498) is committed next to ACCEPTANCE.md as data: `CROSSWALK.json` and `CROSSWALK.md`, 18 direct, 23 partial, none missing, none executed. | done: both files byte-exact (sha256 `419dda2d…`, `12b9cb43…`), all 41 rows present |
 | W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolved D5 (option B) and D4's reference device (#57424); no separate human decision is needed (A#57278). Carter approves the rendered page, from real-browser screenshots, before any deploy (section 11). | warden's co-sign names the commit |
 | W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; no physical phone: D4's reference device is Chromium's mobile emulation on this box (section 6.11); the W4 review fixture pack placed read-only, its sha256 `908655f7…` checked (section 5.10; contributed code is never run); the adopted W13 module's delivery (C#57385, ZIP sha256 `0d614aae…`) placed read-only, with `field-validator-proposal.mjs` checked against `af0d24a7…` before W13 vendors it (section 5.7; its tests are the author's and root's, A#57404). | warden's admission record |
 

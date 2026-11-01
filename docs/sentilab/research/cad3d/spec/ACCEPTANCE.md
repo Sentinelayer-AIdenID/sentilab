@@ -615,7 +615,7 @@ lands.
 
 astra's input binding holds 41 source cases: 30 web cases (7 conversion, 8 interface, 15 evidence and streaming) and
 11 anatomy cases (A#57059). Root's crosswalk of the v0.1 draft preserves every one of them: 10 direct, 29 partial and
-2 missing, with zero executed (A#57218; the case-level table is retained by root with her review, sha256
+2 missing, with zero executed (A#57218; that case-level table is retained by root with her review, sha256
 `a8c13fee…`, seal `dffaec2f…`: TRACE.md section 1). This version changes the ACs as root asked:
 
 | Case or family (root's id) | Root's request (A#57218) | This version | ACs |
@@ -629,6 +629,10 @@ astra's input binding holds 41 source cases: 30 web cases (7 conversion, 8 inter
 
 **Traceability.** Every AC id of v0.1 (AC-01 to AC-40) keeps its number and meaning: criteria were tightened, never
 removed or renumbered, so every case root's crosswalk maps to them still resolves. New criteria are appended (AC-41
-onward). The case-level table (41 rows: case id, ACs, and direct, partial or missing) is root's; W0.2 commits it next
-to this file, and its exit check is that no row is missing. Deferred CAD cases do not block the first
+onward). Root's case-level crosswalk of `7f5fdaf` (A#57498) is committed next to this file as data, byte-exact:
+`CROSSWALK.json` (sha256 `419dda2d…`) and `CROSSWALK.md` (`12b9cb43…`), one row per source case with its coverage,
+ACs, phase and what remains. All 41 cases are kept (30 web, 11 anatomy): 18 direct, 23 partial, none missing and none
+executed (direct includes explicitly gated future features and never means a runtime pass). W-C04 now maps to AC-43,
+and the retention of the original source matrices stays its W16 residual. The 41 source cases, the 46 ACs and the
+historical 41 tickets and 234 requirements are separate counts. Deferred CAD cases do not block the first
 original-primitive page.

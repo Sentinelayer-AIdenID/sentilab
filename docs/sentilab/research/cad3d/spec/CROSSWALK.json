@@ -1,0 +1,1176 @@
+{
+  "schema": "cad-source-case-crosswalk-review-v2",
+  "at": "2026-11-01T01:45:20.081Z",
+  "reviewed_commit": "7f5fdaf1ea497df8a5eb8c3294ac416ba43cf209",
+  "reviewed_tree": "968da0ab04bf2ff50577a6093710eb961d49d6f0",
+  "source_case_count": 41,
+  "web_cases": 30,
+  "anatomy_cases": 11,
+  "executed_cases": 0,
+  "counts": {
+    "direct": 18,
+    "partial": 23,
+    "missing": 0
+  },
+  "previous": {
+    "commit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+    "sha256": "eb4ca75ba17ba6d0f7a9b4d4f323ee8b8c1672399888898ab59571e3192d01e6",
+    "counts": {
+      "direct": 10,
+      "partial": 29,
+      "missing": 2
+    }
+  },
+  "coverage_meaning": {
+    "direct": "The case's required outcome is explicitly covered by the cited proposed criteria and normative rules in the current bounded scope. This is not an executed pass.",
+    "partial": "Related coverage exists, but an original trigger/outcome needs an explicit fixture, a sharper criterion, or a named later-stage gate.",
+    "missing": "The original case has no adequate explicit counterpart in the draft. Related background provisions may be cited for context."
+  },
+  "source_binding": {
+    "input_sha256": "c2b2a8ba14c9bb46bfa2933cc65ee503bd10fcf032f8d5baf0587aa6c6c80dc5",
+    "report_sha256": "cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97",
+    "documents": {
+      "SPEC.md": {
+        "sha256": "bcdfff532deaf8d113fc1d7e4611cad3b635e1e85e0f17d6d6ca3bcc90592495",
+        "bytes": 176270
+      },
+      "PSEUDOCODE.md": {
+        "sha256": "eaa8d7e92c63ef0efa3908d015c5790c92d4e0e2c98a451455c0c052e9833481",
+        "bytes": 74019
+      },
+      "ACCEPTANCE.md": {
+        "sha256": "f9bb5f28a5912e327066ec32c8c927b0d2f6ffc025a1fd5b00404f9261704712",
+        "bytes": 59723
+      },
+      "TRACE.md": {
+        "sha256": "13a45454e7990b2df274270d1060182f2cf093bff981cd56b0649cdf6f34f0a8",
+        "bytes": 80496
+      }
+    },
+    "citation_root": "docs/sentilab/research/cad3d/spec at the reviewed commit; captured source in ../cad3d-spec-review-0140/source/7f5fdaf1"
+  },
+  "notes": [
+    "Original cases retain their original IDs and PROPOSED_NOT_EXECUTED status. Case counts overlap thematically and are not a score or independent-gate count.",
+    "This is a static acceptance crosswalk, not an implementation, JSON-schema correctness, model-stack transcription, physics, statistics, or runtime review.",
+    "Later CAD, field, SSE and MCP cases must remain explicit conditional acceptance work; they need not be added to the first primitive-only page execution scope.",
+    "The existing root reviewer remains the third signer. This artifact creates no additional approval gate.",
+    "These 41 source cases are distinct from the historical 41 tickets and 234 requirements. Neither historical count is changed.",
+    "The 46 proposed AC IDs are not the 41 source cases. All source records and their proposed/not-executed state are preserved byte-for-byte as JSON values.",
+    "Partial rows are explicit residual or deferred clauses, not newly invented first-page gates. W16 CAD, P1 producer, W14 field and future MCP obligations stay in their named phases.",
+    "This packet satisfies delivery of the 41-row W0.2 table; committing it next to ACCEPTANCE.md remains Forge's work. Exact spec sign-off, implementation, screenshot product approval, and numerical admission remain separate.",
+    "R1-R6/D4/D5 source review is reported separately. Open P5 producer/model preimages and the AC-46(d) future caller-boundary repair are not closed by coverage mapping."
+  ],
+  "cases": [
+    {
+      "id": "W-C01",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-10",
+        "AC-13",
+        "AC-38",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:119",
+        "ACCEPTANCE.md:158",
+        "ACCEPTANCE.md:467",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "current units; W16 import",
+      "remaining": "Golden 45 mm and centre-to-lower-left conversions are explicit. At W16, retain refusal of unspecified source units and an unset conversion declaration; never infer the source unit.",
+      "original_source_case": {
+        "id": "W-C01",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 1,
+        "trigger": "mm source imported as meters; unspecified source length unit; conversion flag unset",
+        "required_result": "Refuse claimed scale; no guessed unit;45 mm golden edge catches a1000× error",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C02",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-14",
+        "AC-33",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:166",
+        "ACCEPTANCE.md:395",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "current identity; W16 shared meshes",
+      "remaining": "Stable IDs and order-free hashing are explicit. Retain the repeated-display-name/shared-mesh fixture with distinct occurrence result associations before general CAD import.",
+      "original_source_case": {
+        "id": "W-C02",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 2,
+        "trigger": "Two dies with identical display names and shared mesh",
+        "required_result": "Selection and result binding use different occurrence IDs; definitions may share mesh storage",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C03",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-14",
+        "AC-36",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:166",
+        "ACCEPTANCE.md:448",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "W16 CAD/derivative gate",
+      "remaining": "Source instance reorder is explicit. Still require reordered nodes, merged faces and reindexed vertices with a new derivative mapping, refusing old mappings even at equal cardinality.",
+      "original_source_case": {
+        "id": "W-C03",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 3,
+        "trigger": "Exporter reorders nodes, merges faces, or simplifier reindexes vertices",
+        "required_result": "New derivative hash/mapping; source identities and result associations cannot silently follow old array positions",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C04",
+      "coverage": "partial",
+      "previous_coverage": "missing",
+      "ac": [
+        "AC-38",
+        "AC-43"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:467",
+        "ACCEPTANCE.md:519"
+      ],
+      "phase": "W16 only; no first-page gate",
+      "remaining": "AC-43 now expressly covers nested rotation/reflection, winding, normals, picking, boxes and GLB hierarchy/ID round-trip. Retain the original source matrices as explicit fixture evidence at W16; the text currently specifies composed expected matrices, not a separate original-matrix retention check. This closes the absent-counterpart finding, but keeps that residual.",
+      "original_source_case": {
+        "id": "W-C04",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 4,
+        "trigger": "Nested assembly with rotated and mirrored instance",
+        "required_result": "Correct basis, anchors, winding and picking; source matrix retained; no silent flattening of identity",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C05",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-11",
+        "AC-14",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:128",
+        "ACCEPTANCE.md:166",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "current validation; W16 tessellation",
+      "remaining": "Drawn/undrawn union now covers honest unavailable geometry, complete semantic identity and no placeholder box. Missing required occurrence, transformed-away part and tessellation-failure fixtures remain at the CAD boundary.",
+      "original_source_case": {
+        "id": "W-C05",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 5,
+        "trigger": "Missing or duplicate part, transformed-away layer, degenerate/tessellation failure",
+        "required_result": "Explicit import/export failure or documented unavailable part; no apparently complete package",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C06",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-10",
+        "AC-11",
+        "AC-40"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:119",
+        "ACCEPTANCE.md:128",
+        "ACCEPTANCE.md:478"
+      ],
+      "phase": "current",
+      "remaining": "Unknown, sourced range and display-only basis are separated; appearance cannot supply a physical material parameter. No remaining clause in the primitive-only scope.",
+      "original_source_case": {
+        "id": "W-C06",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 6,
+        "trigger": "Color/material named“copper”with no physical parameter record",
+        "required_result": "Appearance allowed as qualified annotation; no conductivity or solver input is invented",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-C07",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-27",
+        "AC-36",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:353",
+        "ACCEPTANCE.md:448",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "W16 imported derivatives",
+      "remaining": "Current generated GLB has no loaders or external dependencies in the display path. Before importing derivatives, explicitly refuse unlisted textures/decoders, invalid paths and unsupported required extensions; same-origin alone is insufficient.",
+      "original_source_case": {
+        "id": "W-C07",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Adversarial conversion acceptance cases proposed for the author box.**",
+        "source_ordinal": 7,
+        "trigger": "GLB references an unlisted external texture/decoder, invalid relative path or unsupported required extension",
+        "required_result": "Deterministic refusal/fallback with a reason; no arbitrary dependency fetch",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U01",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-12",
+        "AC-43"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:148",
+        "ACCEPTANCE.md:519"
+      ],
+      "phase": "current transforms; W16 nesting",
+      "remaining": "The stable-ID geometry preimage and 1,000 operations cover immutable assembled geometry. Retain interrupted explode transitions with anchor identity checks; nested cases belong to AC-43 at W16.",
+      "original_source_case": {
+        "id": "W-U01",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 1,
+        "trigger": "Repeated explode 0→1→0, nested rotated parts, interrupted transitions",
+        "required_result": "No transform drift; underlying physical/source/result hashes unchanged; anchors track the correct occurrence",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U02",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-11",
+        "AC-33",
+        "AC-36"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:128",
+        "ACCEPTANCE.md:395",
+        "ACCEPTANCE.md:448"
+      ],
+      "phase": "current UI",
+      "remaining": "Undrawn parts remain in the tree and twin. Add hide-lid/isolate/buried-part vectors proving complete tree, preserved selection and an explicit hidden/selected detail state.",
+      "original_source_case": {
+        "id": "W-U02",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 2,
+        "trigger": "Hide lid, isolate die, or select a buried component",
+        "required_result": "Accessible tree remains complete; selection survives; evidence panel identifies hidden/selected state",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U03",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-14",
+        "AC-33",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:166",
+        "ACCEPTANCE.md:395",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "W16 mesh semantics",
+      "remaining": "Current output remains one node per drawn box. Retain one occurrence spanning several primitives and one shared mesh used by two occurrences before claiming general mesh selection/result parity.",
+      "original_source_case": {
+        "id": "W-U03",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 3,
+        "trigger": "Same part spans several mesh primitives; same mesh instanced twice",
+        "required_result": "One semantic selection per occurrence, correct mapped result for each instance",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U04",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-33",
+        "AC-34",
+        "AC-35"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:395",
+        "ACCEPTANCE.md:403",
+        "ACCEPTANCE.md:435"
+      ],
+      "phase": "current fallback; adaptive fallback if admitted",
+      "remaining": "No-WebGL/context-loss/reduced-motion paths preserve usable content and selection. Performance is measured against named targets; automatic low-performance detection with state-preserving fallback is still not specified. Record that feature as deferred or define its threshold before enabling it.",
+      "original_source_case": {
+        "id": "W-U04",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 4,
+        "trigger": "WebGL 2 unavailable, context lost, reduced-motion on, low-performance detection",
+        "required_result": "T0 content remains usable; state preserved; clear recovery/fallback with no fabricated result",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U05",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-32",
+        "AC-33"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:388",
+        "ACCEPTANCE.md:395"
+      ],
+      "phase": "current accessibility",
+      "remaining": "Viewport/zoom, keyboard, tap and reduced-motion checks exist. Long translated labels, a chosen touch-target standard and single-pointer non-drag alternatives for every drag operation still need explicit fixtures or disposition.",
+      "original_source_case": {
+        "id": "W-U05",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 5,
+        "trigger": "200% zoom,320/390 px, long translated label, keyboard-only and touch-only use",
+        "required_result": "Reflowing controls/details; label collision does not hide necessary content; non-drag explode/rotate controls and visible focus; touch targets checked against the chosen WCAG requirement",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U06",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-25",
+        "AC-26",
+        "AC-46"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:584"
+      ],
+      "phase": "current field path",
+      "remaining": "The host stamp checks epoch, mode, selected measurement and current allowlist before and after validation, discarding even verified late completions. This directly covers the present result-field path; carry the same invariant to any later geometry asset loader.",
+      "original_source_case": {
+        "id": "W-U06",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 6,
+        "trigger": "Rapid result/part switch while an earlier asset fetch finishes",
+        "required_result": "Generation guard prevents a stale asset replacing the currently selected geometry/result",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U07",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-34",
+        "AC-35"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:403",
+        "ACCEPTANCE.md:435"
+      ],
+      "phase": "current mode switches; LOD conditional",
+      "remaining": "AC-35 expressly specifies 100 switches, per-switch resource baselines, one live model and a 5% post-GC heap bound. No LOD loader is currently admitted; retain the same measured cleanup gate if one is added.",
+      "original_source_case": {
+        "id": "W-U07",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 7,
+        "trigger": "100 view switches or repeated LOD promotion/demotion in an admitted profile",
+        "required_result": "Retained resources stabilize within an explicitly measured bound; resource cleanup receipt; no unbounded cache by object identity",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-U08",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-09",
+        "AC-26",
+        "AC-33"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:111",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:395"
+      ],
+      "phase": "current",
+      "remaining": "Only qualified view/replay motion is admitted; Results has no flow arrows or simulated physical-time axis. Any later explanatory animation must keep the original nonphysical labeling requirement.",
+      "original_source_case": {
+        "id": "W-U08",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed interface acceptance cases.**",
+        "source_ordinal": 8,
+        "trigger": "Educational flow animation enabled with no flux or transient result",
+        "required_result": "Text says explanatory animation; no temperatures, solver timestep, progress count or physical flow quantity is manufactured",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E01",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-19",
+        "AC-21",
+        "AC-41",
+        "AC-46"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:240",
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:486",
+        "ACCEPTANCE.md:584"
+      ],
+      "phase": "current geometry; W13/W14 field binding",
+      "remaining": "Candidate/problem hash mismatches and stale-target identity are explicit refusal vectors even when other identities match. Signed geometry and reference matching remain separate. No geometry-hash equivalence is inferred from IDs or dimensions.",
+      "original_source_case": {
+        "id": "W-E01",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 1,
+        "trigger": "Same part IDs and dimensions but different physicalGeometrySha256",
+        "required_result": "Refuse result attachment until an explicit reviewed association exists",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E02",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-21",
+        "AC-22",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:309",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "W13/W14 field mapping",
+      "remaining": "Asymmetric 3x5/20x9 mm fixtures now catch transpose, reflection, corner-for-centre and out-of-range indices. Grid/extent/layer association mismatches reject a wrong origin, domain or layer. These are written fixtures, not an executed field acceptance result.",
+      "original_source_case": {
+        "id": "W-E02",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 2,
+        "trigger": "Correct field byte count but swapped axis order, reflected frame, wrong origin/layer or corner/centre convention",
+        "required_result": "Golden asymmetric field and known anchors catch wrong placement; association rejected rather than silently rotated",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E03",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-21",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "P1 conversion plus W13/W14 artifact gate",
+      "remaining": "The contract now explicitly divides native duplicate-cell/header/index-reset checks into P1 and wrapped shape/layer/unit/nonfinite/schema checks into W13. All-or-nothing field refusal prevents partial rendering. P1-only rows remain required of that producer, not claimed as executed by the adopted module.",
+      "original_source_case": {
+        "id": "W-E03",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 3,
+        "trigger": "Duplicate/missing grid cell, extra row/layer header, NaN/infinity, unsupported unit or wrong component count",
+        "required_result": "Deterministic refusal; no partial attractive heatmap or normal-looking exported numbers",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E04",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-18",
+        "AC-21",
+        "AC-22",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:229",
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:309",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "W13/W14 field typing",
+      "remaining": "Pointer/artifact K-versus-C disagreement now refuses before conversion; unsupported units and J/centre separation are explicit. Retain a per-cell versus per-point association vector and supported-but-wrong jointly declared units against authoritative source evidence.",
+      "original_source_case": {
+        "id": "W-E04",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 4,
+        "trigger": "°C source interpreted asK, per-cell field interpreted as per-point, or J used as chip colors",
+        "required_result": "Definition/unit/association validation rejects the mismatch",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E05",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-36",
+        "AC-38"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:448",
+        "ACCEPTANCE.md:467"
+      ],
+      "phase": "W16/LOD if admitted",
+      "remaining": "No remesh or LOD import exists in the current box path. Retain changed derivative identity plus verified remapping, and reject reuse of old indices by equal length alone, before that feature ships.",
+      "original_source_case": {
+        "id": "W-E05",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 5,
+        "trigger": "Remeshed/quantizedLOD with reordered vertices",
+        "required_result": "Physical result stays attached through a verified new mapping; old indices cannot be reused by size alone",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E06",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-04",
+        "AC-07",
+        "AC-18"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:51",
+        "ACCEPTANCE.md:94",
+        "ACCEPTANCE.md:229"
+      ],
+      "phase": "current",
+      "remaining": "Per-measurement labels, statistics and receipt references remain distinct; contributor-derived legends preserve the exact identities.",
+      "original_source_case": {
+        "id": "W-E06",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 6,
+        "trigger": "J from one evaluator and centre temperatures from another",
+        "required_result": "Distinct visible qualifiers and evidence references; aggregate legend follows its exact contributors",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E07",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-04",
+        "AC-06",
+        "AC-07"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:51",
+        "ACCEPTANCE.md:77",
+        "ACCEPTANCE.md:94"
+      ],
+      "phase": "current",
+      "remaining": "Withdrawn, unvalidated, fixture and absent identities retain their labels across serialization. A consistent label edit is still checked by reproducing the twin from pinned replay, not by trusting a rendered label.",
+      "original_source_case": {
+        "id": "W-E07",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 7,
+        "trigger": "Withdrawn HS7 result, new unaccepted native version, or source registry unavailable",
+        "required_result": "Historical numbers retained under their proper state; no accepted/validated implication from render success",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E08",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-20",
+        "AC-23",
+        "AC-25",
+        "AC-26"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:250",
+        "ACCEPTANCE.md:320",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339"
+      ],
+      "phase": "current verified-prefix path",
+      "remaining": "Only applied rows within the verified prefix contribute. Rejected rows, after-K data, conflicts and duplicates retain their reasons and cannot populate the scene.",
+      "original_source_case": {
+        "id": "W-E08",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 8,
+        "trigger": "Validly delivered but projector-rejected event, gap, duplicate or conflicting replay row",
+        "required_result": "No geometry/result beyond the verified applied prefix reaches the committed scene; record/reason retained",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E09",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-24",
+        "AC-26"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:324",
+        "ACCEPTANCE.md:339"
+      ],
+      "phase": "optional SSE/P10 before enabling",
+      "remaining": "Doorbells never count as data or progress. Retain explicit duplicate/reconnect/Last-Event-ID-with-missed-canonical-rows fixtures proving canonical catch-up and no double application when P10 is enabled.",
+      "original_source_case": {
+        "id": "W-E09",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 9,
+        "trigger": "SSE duplicate or reconnect with Last-Event-ID but missed canonical rows",
+        "required_result": "Catch up by canonical cursor/hash; no double application or lost event from treating transportID as proof",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E10",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-23",
+        "AC-24",
+        "AC-26",
+        "AC-42"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:320",
+        "ACCEPTANCE.md:324",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:509"
+      ],
+      "phase": "current",
+      "remaining": "Mode and progress come from authenticated applicable records, not rendering, backgrounding, keepalives, backlog or a queued job. Pause does not stop ingestion or make arrivals into scientific progress.",
+      "original_source_case": {
+        "id": "W-E10",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 10,
+        "trigger": "Background tab, render 60 fps, connection heartbeat, queued solve or provider progress event",
+        "required_result": "No solve completion or scientific progress inferred; lifecycle only changes from an authenticated applicable record",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E11",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-24",
+        "AC-25",
+        "AC-26",
+        "AC-46"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:324",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:584"
+      ],
+      "phase": "current terminal and asynchronous results",
+      "remaining": "Late completion and finished-run behavior are explicit; a valid late result may remain evidence with ENDED. Add STOP/failure-specific attempt/claim vectors plus abort-ignoring responses to distinguish retained evidence from an invalid selection or invented success. Do not replace the specified late-valid-result behavior with unconditional deletion.",
+      "original_source_case": {
+        "id": "W-E11",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 11,
+        "trigger": "STOP/failure arrives, then delayed result or stale asset response",
+        "required_result": "Follow terminal attempt/claim contract; old asynchronous generation cannot repopulate an invalid selection",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E12",
+      "coverage": "direct",
+      "previous_coverage": "missing",
+      "ac": [
+        "AC-23",
+        "AC-25",
+        "AC-26",
+        "AC-42"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:320",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:509"
+      ],
+      "phase": "current live/replay presentation",
+      "remaining": "Pause holds values, field and playhead while verification grows; pending verified-result count excludes keepalives/duplicates; Resume announces once. Prefix shrink overrides a paused scene immediately. The previous missing counterpart is closed.",
+      "original_source_case": {
+        "id": "W-E12",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 12,
+        "trigger": "User pauses presentation while ingestion continues",
+        "required_result": "Stable chosen scene plus clear pending-new-data count; resume explicitly; evidence remains retained",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E13",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-04",
+        "AC-07",
+        "AC-25",
+        "AC-26"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:51",
+        "ACCEPTANCE.md:94",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339"
+      ],
+      "phase": "current claim transitions",
+      "remaining": "Prefix shrink now purges data and asynchronous completions. Retain explicit withdrawal/reclassification of an already visible claim and show the revised scene, legend and cached qualifiers without deleting raw history.",
+      "original_source_case": {
+        "id": "W-E13",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 13,
+        "trigger": "Freeze/prefix shrink or claim withdrawal",
+        "required_result": "Rebuild scene/legend from remaining committed contributors; remove stale cached qualifiers and show the change",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E14",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-08",
+        "AC-20",
+        "AC-21",
+        "AC-22",
+        "AC-41",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:101",
+        "ACCEPTANCE.md:250",
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:309",
+        "ACCEPTANCE.md:486",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "W13/W14 selected parts/layers",
+      "remaining": "Wrong run and un-emitted layer are explicit; missing association is visibly unassociated and has no numeric export. Still add a selected part/layer with absent data, neutral unavailable styling, reason, no zero/nearest-neighbor substitution, and distinct last-valid provenance if shown.",
+      "original_source_case": {
+        "id": "W-E14",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 14,
+        "trigger": "Data absent for a selected layer/part or results belong to another run",
+        "required_result": "Neutral unavailable state with reason and last-valid provenance where relevant; no zero fill or nearest-neighbor substitution",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "W-E15",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-12",
+        "AC-14",
+        "AC-25",
+        "AC-26",
+        "AC-36"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:148",
+        "ACCEPTANCE.md:166",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:448"
+      ],
+      "phase": "current live/view interleaving",
+      "remaining": "Geometry preimage is now frozen and excludes view state. Retain an interleaved live-update plus explode/orbit/section fixture proving that view changes affect only display revision while each committed model/result association stays immutable.",
+      "original_source_case": {
+        "id": "W-E15",
+        "source_note": "web3d_contracts.md",
+        "source_note_sha256": "42d6414dfc0f4f18d684dbf566b6264a865a16fecdf53bb330db27fc4dd3e5b9",
+        "source_marker": "**Proposed adversarial evidence and streaming acceptance cases.**",
+        "source_ordinal": 15,
+        "trigger": "Explode/orbit/clip toggles during live update",
+        "required_result": "All underlying artifact hashes and physical association unchanged; only display transform revision changes",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A01",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-17",
+        "AC-19",
+        "AC-21"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:219",
+        "ACCEPTANCE.md:240",
+        "ACCEPTANCE.md:256"
+      ],
+      "phase": "current layout identity",
+      "remaining": "Raw and snapped identities remain distinct; reference matching uses centres, footprints and rotations, while quantitative fields bind the signed candidate rather than the matched reference.",
+      "original_source_case": {
+        "id": "A01",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 1,
+        "test_text": "Load raw and 0.5 mm variants and verify centers, rotated footprints, part counts and distinct source identities. Attempt to bind the raw result to the snapped scene and require refusal of the quantitative overlay.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A02",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-13",
+        "AC-21",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:158",
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "current lengths; W14 temperatures",
+      "remaining": "Exactly-once length conversion and supported-unit disagreement are explicit. Retain raw-K provenance, exactly-once absolute conversion and a separately typed temperature-difference vector; static omission of temperature text does not test runtime conversion.",
+      "original_source_case": {
+        "id": "A02",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 2,
+        "test_text": "Exercise meter-to-mm and kelvin-to-Celsius conversion exactly once. Preserve raw values/units; prohibit an unlabeled conversion of a temperature difference as an absolute temperature.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A03",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-08",
+        "AC-11",
+        "AC-12",
+        "AC-14"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:101",
+        "ACCEPTANCE.md:128",
+        "ACCEPTANCE.md:148",
+        "ACCEPTANCE.md:166"
+      ],
+      "phase": "current",
+      "remaining": "Immutable assembled geometry, order-free geometry hashing, view-only transforms and unknown/model separation cover the required outcome. Display spacing never fills model thickness.",
+      "original_source_case": {
+        "id": "A03",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 3,
+        "test_text": "Explode, collapse, rotate camera and hide layers; original geometry/model hashes and measurement values remain invariant. Unknown model thickness is never filled from a display spacing.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A04",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-18",
+        "AC-21",
+        "AC-22",
+        "AC-45",
+        "AC-46"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:229",
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:309",
+        "ACCEPTANCE.md:538",
+        "ACCEPTANCE.md:584"
+      ],
+      "phase": "W13/W14 association",
+      "remaining": "Map mode, evaluator, dimensions, layer identity and wrong-layer request now have explicit vectors. Retain a single-part-ID association mutation at the producer/result boundary; candidate hash checks alone do not enumerate that namespace error.",
+      "original_source_case": {
+        "id": "A04",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 4,
+        "test_text": "Swap active layer, grid shape, mapping mode, evaluator hash or one part ID; require a visible mismatch rather than a plausible heatmap.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A05",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-21",
+        "AC-45"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:256",
+        "ACCEPTANCE.md:538"
+      ],
+      "phase": "P1 plus W13/W14 producer/artifact checks",
+      "remaining": "Duplicate/extra layers, native duplicate/missing indices, same-count wrong shape and nonfinite values are now explicit. Out-of-range metric argmax, grid/metric cardinality and graph/filler/real-chiplet namespace fixtures remain separate producer obligations.",
+      "original_source_case": {
+        "id": "A05",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 5,
+        "test_text": "Supply duplicate layer headers, duplicate/missing cells, extra cells, out-of-range argmax, non-finite temperatures, or inconsistent grid/metric cardinality; reject the malformed field. Separate graph, filler and real-chiplet namespaces.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A06",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-18",
+        "AC-24",
+        "AC-25",
+        "AC-26",
+        "AC-41"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:229",
+        "ACCEPTANCE.md:324",
+        "ACCEPTANCE.md:335",
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:486"
+      ],
+      "phase": "current result states",
+      "remaining": "ENDED, pending-at-end, transport terminal states, missing association and stale asynchronous output are explicit. Retain the complete completed-ineligible/failed/interrupted/partial/stale attempt matrix; no success fallback or invented temperature.",
+      "original_source_case": {
+        "id": "A06",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 6,
+        "test_text": "Deliver a completed but claim-ineligible call, failed call, interrupted call, partial stream and stale result; preserve their identities and appropriate status, with no success fallback and no invented temperature.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A07",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-26",
+        "AC-39"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:339",
+        "ACCEPTANCE.md:473"
+      ],
+      "phase": "current steady-only scope",
+      "remaining": "Steady replay has no physical-time axis and transient behavior remains out of scope. If transient mode is later admitted, missing initial state, step times and transient identity must refuse.",
+      "original_source_case": {
+        "id": "A07",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 7,
+        "test_text": "Replay retained steady snapshots at different display speeds; simulated physical-time labels remain absent. A transient mode refuses missing initial state, step times or transient-state identity.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A08",
+      "coverage": "partial",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-22",
+        "AC-26"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:309",
+        "ACCEPTANCE.md:339"
+      ],
+      "phase": "W14 fields; cross-run comparison if admitted",
+      "remaining": "Hard raw-cell boundaries, layer/statistic names and per-run scale are explicit. Require a shared declared quantitative scale for cross-scene comparison, or explicitly defer that comparison feature; scales from separate runs cannot imply equal values.",
+      "original_source_case": {
+        "id": "A08",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 8,
+        "test_text": "Compare scenes with identical quantitative color scales and explicit metric/layer names. If smoothing is used, mark it as display interpolation and retain raw-cell inspection and raw extrema.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A09",
+      "coverage": "direct",
+      "previous_coverage": "direct",
+      "ac": [
+        "AC-09",
+        "AC-18",
+        "AC-36"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:111",
+        "ACCEPTANCE.md:229",
+        "ACCEPTANCE.md:448"
+      ],
+      "phase": "current",
+      "remaining": "Schematic overlay qualifiers remain in twins; Results has no flow arrows, and wire proxy is never described as routed length or a measured protocol/flux quantity.",
+      "original_source_case": {
+        "id": "A09",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 9,
+        "test_text": "Toggle schematic heat arrows and electrical edges; neither becomes a quantitative flux, routed wirelength, protocol rate or power claim without the corresponding result field and unit.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A10",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-08",
+        "AC-10",
+        "AC-11",
+        "AC-36",
+        "AC-37",
+        "AC-44"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:101",
+        "ACCEPTANCE.md:119",
+        "ACCEPTANCE.md:128",
+        "ACCEPTANCE.md:448",
+        "ACCEPTANCE.md:458",
+        "ACCEPTANCE.md:529"
+      ],
+      "phase": "current UI/CLI/twins; MCP conditional",
+      "remaining": "Unknown values and sourced ranges remain null with a separate display basis. AC-44 now requires the actual MCP path to return the CLI twin bytes and refusal outcomes before any room MCP tool ships. This is a conditional written gate, not current MCP runtime parity.",
+      "original_source_case": {
+        "id": "A10",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 10,
+        "test_text": "Inspect every unknown part/property; null remains null in data, exports and CLI/MCP responses. The UI may show a separately labeled typical illustration, whose source and schematic geometry do not overwrite the selected model.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    },
+    {
+      "id": "A11",
+      "coverage": "direct",
+      "previous_coverage": "partial",
+      "ac": [
+        "AC-06",
+        "AC-31",
+        "AC-36",
+        "AC-37",
+        "AC-44"
+      ],
+      "refs": [
+        "ACCEPTANCE.md:77",
+        "ACCEPTANCE.md:382",
+        "ACCEPTANCE.md:448",
+        "ACCEPTANCE.md:458",
+        "ACCEPTANCE.md:529"
+      ],
+      "phase": "current UI/CLI/twins; MCP conditional",
+      "remaining": "Shared code, byte-identical twin outputs, refusal/exit-code mapping, serialized labels and no extra fetch/solve/write ability are now explicit MCP conformance requirements. The future MCP bridge is not executed or accepted by this crosswalk.",
+      "original_source_case": {
+        "id": "A11",
+        "source_note": "package_science.md",
+        "source_note_sha256": "2238f1faa75352687eb36f550bc0453ea11ba00dad24778753eb72290a29cce9",
+        "source_ordinal": 11,
+        "test_text": "Export a scene/result provenance record and load it through the UI, CLI and MCP; each reports the same reference/variant, claim status, units and missing fields. Mutation/solve requests remain separately admitted operations, not side effects of viewing.",
+        "status": "PROPOSED_NOT_EXECUTED"
+      }
+    }
+  ]
+}
