@@ -6,7 +6,7 @@ window.DECK_DATA = {
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 03:50 UTC",
+    "cutoff": "2026-11-01 04:28 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
@@ -59,15 +59,15 @@ window.DECK_DATA = {
         "title": "AI agents arrange chips. Software predicts the heat.",
         "figure": null,
         "still": {
-          "id": "view3d",
-          "src": "figures/package-view-replay.png",
-          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
-          "width": 1920,
-          "height": 1080,
-          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
-          "label": "simulated, not silicon"
+          "id": "render",
+          "src": "figures/package-render-35323889.png",
+          "sha256": "7ea5c23232c4f3d3cedb54fd6704e9879d622c660dc515b16310c0fa4dde560a",
+          "width": 685,
+          "height": 501,
+          "alt": "The published reference layout in our 3D view: four CPUs and four DRAMs on the interposer, coloured by simulated heat. Simulated, not silicon.",
+          "label": null
         },
-        "caption": null
+        "caption": "Simulated heat map of the published reference design. Simulated, not silicon."
       },
       "label": "1 / 9"
     },
@@ -148,12 +148,12 @@ window.DECK_DATA = {
         "figure": {
           "id": "plain2",
           "src": "figures/plain2-stack.svg",
-          "sha256": "7ddf7a93d66ec77010888a6b6b78929eb56ef64818aee842d2acb2899103b165",
+          "sha256": "1b7f851e28fda6398d4469f8598604bbf384283e5202562584bd36f1d11c0b30",
           "width": 1664,
           "height": 640,
           "scale": 0.94,
           "minFont": 24,
-          "alt": "Exploded view of chips, thermal paste, metal lid and cooler on real grids. The older version falls gently, with a 4 degree gap between the lid and the cooler. The newer version has a 142 degree gap there. A separate check of that gap, using separately located layer maxima: 142 in the newer version, about 4 in two independent solvers, 3 in the older version.",
+          "alt": "Exploded view of chips, thermal paste, metal lid and cooler from recorded simulation grids. In the model, the older version has a 4 degree gap from lid to cooler, and the newer version has a 142 degree gap there. A separate check using the hottest point in each part: 142 in the newer version, about 4 in two independent solvers, 3 in the older version.",
           "texts": [
             "Older version, 6.0",
             "102 °C",
@@ -165,8 +165,8 @@ window.DECK_DATA = {
             "119 °C",
             "Chips",
             "4 degrees",
-            "between the lid",
-            "and the cooler",
+            "In the model:",
+            "lid to cooler",
             "Newer version, 7.0",
             "86 °C",
             "Cooler",
@@ -177,16 +177,18 @@ window.DECK_DATA = {
             "241 °C",
             "Chips",
             "142 degrees",
-            "between the lid",
-            "and the cooler",
-            "Independent check",
+            "In the model:",
+            "lid to cooler",
+            "Separate check:",
+            "hottest point",
+            "in each part",
             "Newer version: 142",
             "2 other solvers: 4",
             "Older version: 3"
           ]
         },
         "still": null,
-        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Independent check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
       },
       "label": "3 / 9"
     },
@@ -418,7 +420,11 @@ window.DECK_DATA = {
       "content": {
         "layout": "why",
         "title": "Why it matters.",
-        "numbers": null
+        "numbers": null,
+        "statement": {
+          "text": "An optimizer is only as reliable as the tool grading it.",
+          "sub": "Independent checks expose disagreements before we build on them."
+        }
       },
       "label": "8 / 9"
     },
@@ -437,16 +443,17 @@ window.DECK_DATA = {
         "title": "Send your agent.",
         "status": "replay",
         "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "url": null,
         "instruction": null,
         "urlNote": null,
         "diagram": null,
         "still": {
-          "id": "view3d",
-          "src": "figures/package-view-replay.png",
-          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
-          "width": 1920,
-          "height": 1080,
-          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
+          "id": "render",
+          "src": "figures/package-render-35323889.png",
+          "sha256": "7ea5c23232c4f3d3cedb54fd6704e9879d622c660dc515b16310c0fa4dde560a",
+          "width": 685,
+          "height": 501,
+          "alt": "The published reference layout in our 3D view: four CPUs and four DRAMs on the interposer, coloured by simulated heat. Simulated, not silicon.",
           "label": "simulated, not silicon"
         }
       },
@@ -933,11 +940,11 @@ window.DECK_DATA = {
         "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
         "still": {
           "id": "view3d",
-          "src": "figures/package-view-replay.png",
-          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "src": "figures/package-view-35323889.png",
+          "sha256": "c5356137e7b6c2b9592f1288dff95e0f37471df810c92f3267c7e411118c1bd8",
           "width": 1920,
           "height": 1080,
-          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Its temperatures carry the view's unvalidated tag and notice. Simulated, not silicon.",
           "label": "replay · simulated, not silicon"
         }
       },
@@ -1190,14 +1197,14 @@ window.DECK_DATA = {
       "content": {
         "title": "The 3D package view, replaying a bundled fixture.",
         "label": "replay · simulated, not silicon",
-        "caption": "Our package view (build 4e047187) replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Simulated, not silicon.",
+        "caption": "Our package view, replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Its temperatures carry the view's own unvalidated tag. Simulated, not silicon.",
         "still": {
           "id": "view3d",
-          "src": "figures/package-view-replay.png",
-          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "src": "figures/package-view-35323889.png",
+          "sha256": "c5356137e7b6c2b9592f1288dff95e0f37471df810c92f3267c7e411118c1bd8",
           "width": 1920,
           "height": 1080,
-          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon."
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Its temperatures carry the view's unvalidated tag and notice. Simulated, not silicon."
         }
       },
       "label": "B13"
@@ -1367,7 +1374,7 @@ window.DECK_DATA = {
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 03:49 UTC"
+          "checked": "checked 2026-11-01 04:26 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1569,84 +1576,84 @@ window.DECK_DATA = {
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 03:49 UTC",
+        "checked": "checked 2026-11-01 04:26 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 03:49 UTC"
+            "checked": "checked 2026-11-01 04:26 UTC"
           }
         ]
       },
@@ -1692,7 +1699,7 @@ window.DECK_DATA = {
         ],
         "notYet": "Not yet in the record: the finite-element team's slab run through our own evaluator.",
         "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent.",
-        "names": "Named with their consent, on record in the help room: ScienceClaw. The other 7 teams are not named until they agree."
+        "names": "Named with their consent, on record in the help room: ScienceClaw. The other 7 teams are not named here."
       },
       "label": "B21"
     },
@@ -1733,14 +1740,14 @@ window.DECK_DATA = {
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T03:50:00Z",
+    "cutoff": "2026-11-01T04:28:00Z",
     "preview": false,
     "rederived": true,
     "demoStatus": "replay",
     "demoReview": false
   },
   "source": {
-    "finalSha256": "690e9007f7f644b10907950e23097a5f8104d3053f310c73af2904f70aa1c0af",
-    "schemaSha256": "fdb16d383466c9b0a2a5131ded5c85ba4dd77eade162b8342f78083d3287db5b"
+    "finalSha256": "283eecb5a05984a2eef675e75adbccb0dc5298707ae845077de8d652d278a9e4",
+    "schemaSha256": "18fb84b1b428c9d51a607a0a0132df261bde2f8ac823d78280f01d572ed80f1f"
   }
 };

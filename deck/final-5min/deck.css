@@ -276,6 +276,17 @@ body.print #notes { display: none; }
 .still-label { margin-top: 14px; align-self: flex-start; color: #1a1208; background: var(--amber); border-color: var(--amber); }
 .why-title { margin-top: auto; margin-bottom: auto; font-size: 76px; max-width: 1500px; }
 .why-numbers { flex: 0 0 auto; margin-top: 40px; }
+.why-statement { margin: auto 0; max-width: 1600px; }
+.ws-main { font: 750 92px/1.12 var(--display); color: var(--text); letter-spacing: -0.01em; }
+.ws-sub { margin-top: 34px; font: 600 46px/1.3 var(--display); color: var(--body); }
+.dcta { margin-top: 22px; padding: 22px 34px 26px; border-left: 10px solid var(--cyan); background: var(--cy-bg); border-radius: 6px 18px 18px 6px; }
+.dcta-url { font: 800 104px/1.05 var(--mono); color: var(--cyan); letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.dcta-inst { margin-top: 14px; font: 650 46px/1.25 var(--display); color: var(--text); }
+.dflow-compact { margin-top: 22px; gap: 12px; }
+.dflow-compact li { padding: 12px 14px 14px; gap: 4px; }
+.dflow-compact li::before { width: 34px; height: 34px; font-size: 24px; }
+.dflow-compact b { font-size: 28px; }
+.dflow-compact span { font-size: 28px; line-height: 1.2; }
 .qa { margin: 26px 0 0; display: grid; gap: 22px; }
 .qa-item { padding: 20px 28px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
 .qa dt { font: 700 34px/1.2 var(--display); color: var(--text); }

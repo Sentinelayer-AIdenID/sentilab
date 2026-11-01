@@ -5,7 +5,7 @@
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo"
   },
-  "cutoff": "2026-11-01T03:50:00Z",
+  "cutoff": "2026-11-01T04:28:00Z",
   "talk": {
     "maxSeconds": 300,
     "talkCapSeconds": 180,
@@ -1052,7 +1052,7 @@
           "head": "83995e783274c3504a36da4ea170527891a3d903",
           "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
           "mergedAt": "2026-10-31T23:04:17Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 73,
@@ -1061,7 +1061,7 @@
           "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
           "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
           "mergedAt": "2026-10-31T23:40:43Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 57,
@@ -1070,7 +1070,7 @@
           "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
           "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
           "mergedAt": "2026-10-31T18:04:42Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 58,
@@ -1079,7 +1079,7 @@
           "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
           "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
           "mergedAt": "2026-10-31T16:27:35Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 60,
@@ -1088,7 +1088,7 @@
           "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
           "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
           "mergedAt": "2026-10-31T17:59:15Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 64,
@@ -1097,7 +1097,7 @@
           "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
           "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
           "mergedAt": "2026-10-31T19:38:22Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 61,
@@ -1106,7 +1106,7 @@
           "head": "3513ad709165a6afa43e665929a8e5f10908f885",
           "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
           "mergedAt": "2026-10-31T16:48:53Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 59,
@@ -1115,7 +1115,7 @@
           "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
           "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
           "mergedAt": "2026-10-31T17:53:53Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 55,
@@ -1124,7 +1124,7 @@
           "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
           "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
           "mergedAt": "2026-10-31T15:38:53Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 37,
@@ -1133,7 +1133,7 @@
           "head": "113c1347cb154c4f909783dde17f531ad1267235",
           "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
           "mergedAt": "2026-10-31T17:09:11Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         },
         {
           "number": 25,
@@ -1142,7 +1142,7 @@
           "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
           "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
           "mergedAt": "2026-10-31T12:05:13Z",
-          "checkedAt": "2026-11-01T03:49:00Z"
+          "checkedAt": "2026-11-01T04:26:00Z"
         }
       ]
     },
@@ -1323,7 +1323,7 @@
       "kicker": "Backup · replay",
       "title": "The 3D package view, replaying a bundled fixture.",
       "label": "replay · simulated, not silicon",
-      "caption": "Our package view (build 4e047187) replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Simulated, not silicon."
+      "caption": "Our package view, replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Its temperatures carry the view's own unvalidated tag. Simulated, not silicon."
     },
     "qa": {
       "kicker": "Backup · questions",
@@ -1841,7 +1841,7 @@
     },
     "plain2": {
       "file": "plain2-stack.svg",
-      "sha256": "7ddf7a93d66ec77010888a6b6b78929eb56ef64818aee842d2acb2899103b165",
+      "sha256": "1b7f851e28fda6398d4469f8598604bbf384283e5202562584bd36f1d11c0b30",
       "width": 1664,
       "height": 640,
       "scale": 0.94,
@@ -2121,11 +2121,27 @@
   },
   "stills": {
     "view3d": {
-      "file": "package-view-replay.png",
-      "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+      "file": "package-view-35323889.png",
+      "sha256": "c5356137e7b6c2b9592f1288dff95e0f37471df810c92f3267c7e411118c1bd8",
       "width": 1920,
       "height": 1080,
-      "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon."
+      "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Its temperatures carry the view's unvalidated tag and notice. Simulated, not silicon."
+    },
+    "render": {
+      "file": "package-render-35323889.png",
+      "sha256": "7ea5c23232c4f3d3cedb54fd6704e9879d622c660dc515b16310c0fa4dde560a",
+      "width": 685,
+      "height": 501,
+      "alt": "The published reference layout in our 3D view: four CPUs and four DRAMs on the interposer, coloured by simulated heat. Simulated, not silicon.",
+      "crop": {
+        "from": "view3d",
+        "box": [
+          540,
+          280,
+          1225,
+          781
+        ]
+      }
     }
   },
   "plainTalk": {
@@ -2137,9 +2153,9 @@
         "title": "AI agents arrange chips. Software predicts the heat.",
         "say": "Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.",
         "picture": {
-          "still": "view3d",
-          "label": "simulated, not silicon"
-        }
+          "still": "render"
+        },
+        "caption": "Simulated heat map of the published reference design. Simulated, not silicon."
       },
       {
         "id": "talk2",
@@ -2159,7 +2175,7 @@
         "picture": {
           "figure": "plain2"
         },
-        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Independent check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
       },
       {
         "id": "talk4",
@@ -2221,7 +2237,11 @@
             "value": "about $6,400",
             "label": "posted to the shared cloud account when checked at 02:44 UTC; includes delayed postings; not the price of this experiment"
           }
-        ]
+        ],
+        "statement": {
+          "text": "An optimizer is only as reliable as the tool grading it.",
+          "sub": "Independent checks expose disagreements before we build on them."
+        }
       },
       {
         "id": "talk9",
@@ -2233,7 +2253,7 @@
           "replay": "The live submission flow is still being finished. This preview uses saved simulation data and sample arrivals to show how it will work. No agent has a verified better layout yet. That's the challenge."
         },
         "picture": {
-          "still": "view3d",
+          "still": "render",
           "label": "simulated, not silicon"
         }
       }

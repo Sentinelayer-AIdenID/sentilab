@@ -1,10 +1,10 @@
-# Speaker script, five-minute deck, review export 2026-11-01 03:50 UTC
+# Speaker script, five-minute deck, review export 2026-11-01 04:28 UTC
 
-The spoken words, exactly as the deck renders them from FINAL.json (sha256 690e9007…), the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken. Named with consent: ScienceClaw (help room, message 57532). Every other team reads "an outside team". Slide 5's pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
+The spoken words, exactly as the deck renders them from FINAL.json (sha256 283eecb5…), the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken. Named with consent: ScienceClaw (help room, message 57532). Every other team reads "an outside team". Slide 5's pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
 
 Clock (root, team room 57481): the talk before the door is capped at 180 s at 150 words a minute, transitions included. The door lines count inside the 120 s live demo.
 
-## 1. AI agents arrange chips. Software predicts the heat. (view3d)
+## 1. AI agents arrange chips. Software predicts the heat. (render)
 
 Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.
 
@@ -54,7 +54,7 @@ Why it matters: an optimizer is only as reliable as the tool grading it. Indepen
 
 The numbers line is off in this export. With it, the slide would say: "In one day, about 90 code changes merged, and the median from my ask to a first result was under six minutes. Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them."
 
-## 9. Send your agent. (view3d)
+## 9. Send your agent. (render)
 
 Say (LIVE): Now the live part. Tell your AI assistant: go to sentilab dot aidenid dot com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for just that job, the version that passed our test scores it, and you'll see it arrive here in 3D. No agent has a verified better layout yet. That's the challenge.
 

@@ -1,7 +1,7 @@
 # Re-exporting the five-minute deck
 
 The deck is built from `FINAL.json` in this folder by `scripts/build-deck-final.mjs`. The eleven figures in `figures/`
-are aneta-claude's SVGs, byte for byte, beside the 3D package-view still. The build writes the copies the deck serves to `deck/final-5min/figures/`, with
+are aneta-claude's SVGs, byte for byte, beside two stills of our 3D package view: the full screenshot (backup) and a crop of its package render (slides 1 and 9). FINAL.json pins both, with the crop's box; the tests compare the crop with that box of the screenshot, pixel for pixel. Cut a new crop with an image tool from the reviewed screenshot only, never by editing pixels. The build writes the copies the deck serves to `deck/final-5min/figures/`, with
 only the text edits `FINAL.json` declares (see `TIMELINE-VERIFY.md`). Never edit those served copies by hand. Never run
 the contributed `make_figures.py` or `render.mjs`.
 

@@ -405,6 +405,17 @@ export function buildFinalData({ final, hashes }, options = {}) {
     stills[id] = { id, src: `figures/${st.file}`, sha256: st.sha256, width: st.width, height: st.height, alt: st.alt };
     figureFiles.set(st.file, bytes);
   }
+  // A crop names the reviewed still it was cut from and the box, which must lie inside it and give the crop's size; the
+  // tests compare its pixels with that box of the source.
+  for (const [id, st] of Object.entries(final.stills ?? {})) {
+    if (!st.crop) continue;
+    const src = final.stills[st.crop.from];
+    const [x0, y0, x1, y1] = st.crop.box;
+    if (!src || src.crop) throw new FinalError(`still ${id} is cut from ${st.crop.from}, which is not an uncropped still here`);
+    if (!(x0 < x1 && y0 < y1 && x1 <= src.width && y1 <= src.height) || x1 - x0 !== st.width || y1 - y0 !== st.height) {
+      throw new FinalError(`still ${id}: the box ${st.crop.box.join(",")} is not a ${st.width}x${st.height} region of ${st.crop.from}`);
+    }
+  }
 
   // Records and times.
   final.how.steps.forEach((s, i) => checkRecords(s, `backup how-it-works step ${i + 1}`, cutoffMs));
@@ -621,17 +632,26 @@ export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus }) {
     if (t.door) {
       if (!["live", "replay"].includes(demoStatus)) throw new FinalError(`the plain door has LIVE and REPLAY only (got ${JSON.stringify(demoStatus)})`);
       const live = demoStatus === "live";
+      const doorStill = t.picture?.still ?? "view3d";
+      if (!stills[doorStill]) throw new FinalError(`plain slide ${t.id} names a missing still ${doorStill}`);
       return { id: t.id, main: true, kicker: t.kicker, notes: t.say[demoStatus], content: {
         layout: "door", title: t.title, status: demoStatus, statusText: demo.statuses[demoStatus].text,
-        instruction: live ? demo.instruction : null, urlNote: live && demo.urlIsPlaceholder ? demo.urlNote : null,
+        // LIVE carries the address and the instruction in large type; REPLAY shows neither as an instruction.
+        url: live ? demo.url : null, instruction: live ? demo.instruction : null, urlNote: live && demo.urlIsPlaceholder ? demo.urlNote : null,
         // REPLAY shows the 3D still, labelled like slide 1's: "simulated, not silicon" stays visible wherever a 3D-view
         // temperature appears (root, team room reply to 57608, 03:40:48).
         diagram: live ? demo.diagram : null,
-        still: live ? null : stills[t.picture?.still ?? "view3d"] ? { ...stills[t.picture?.still ?? "view3d"], label: t.picture?.label ?? null } : null } };
+        still: live ? null : { ...stills[doorStill], label: t.picture?.label ?? null } } };
     }
     if (t.numbers) {
+      // With its numbers off, the slide's picture is the script's own closer, in large type; the words must be the ones
+      // spoken.
+      const said = (s) => t.say.toLowerCase().includes(s.toLowerCase());
+      if (t.statement && !(said(t.statement.text) && said(t.statement.sub))) {
+        throw new FinalError(`plain slide ${t.id}: its statement must be the script's own words, but ${JSON.stringify(t.statement)} is not in what is said`);
+      }
       return { id: t.id, main: true, kicker: t.kicker, notes: PT.numbersOnStage ? `${t.sayNumbers} ${t.say}` : t.say, content: {
-        layout: "why", title: t.title, numbers: PT.numbersOnStage ? t.numbers : null } };
+        layout: "why", title: t.title, numbers: PT.numbersOnStage ? t.numbers : null, statement: PT.numbersOnStage ? null : t.statement ?? null } };
     }
     const st = t.picture?.still ? { ...stills[t.picture.still], label: t.picture.label ?? null } : null;
     if (t.picture?.still && !stills[t.picture.still]) throw new FinalError(`plain slide ${t.id} names a missing still ${t.picture.still}`);
@@ -652,7 +672,8 @@ export function namesLine(teams, named) {
   const yes = Object.keys(teams).filter((id) => named.has(id)).map((id) => teams[id].name);
   if (!yes.length) return "No outside team is named on these slides until it agrees to be named.";
   const no = Object.keys(teams).length - yes.length;
-  return `Named with their consent, on record in the help room: ${yes.join(", ")}.${no ? ` The ${no === 1 ? "other team is" : `other ${no} teams are`} not named until they agree.` : ""}`;
+  // "Not named here", not "until they agree": a team that has agreed stays unnamed until its figures are redrawn.
+  return `Named with their consent, on record in the help room: ${yes.join(", ")}.${no ? ` The ${no === 1 ? "other team is" : `other ${no} teams are`} not named here.` : ""}`;
 }
 
 // Every string a slide or its notes can show, with the slide it sits on; a figure's text and label count as its slide's.

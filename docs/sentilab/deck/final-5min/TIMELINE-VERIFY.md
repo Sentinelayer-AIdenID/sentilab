@@ -25,25 +25,24 @@ Where the sections below say "slide 1" to "slide 8", they mean that deck's slide
 
 | Slide | Title | Picture | Caption |
 |---|---|---|---|
-| 1 | AI agents arrange chips. Software predicts the heat. | our 3D package view, build 4e047187, `package-view-replay.png` (`8c059a6e…`), labelled "simulated, not silicon" | none |
+| 1 | AI agents arrange chips. Software predicts the heat. | the package render cut from our 3D view (below), `package-render-35323889.png` (`7ea5c232…`) | the coordinator's: "Simulated heat map of the published reference design. Simulated, not silicon." |
 | 2 | Same design, same files: 119 °C or 241 °C? | plain1 v1.10 (`9d1e00ca…`) | CAPTIONS.md v1.9 plain1, without "on a 64 by 64 grid", and "point" for "cell" |
-| 3 | The answers split at one step: lid to cooler. | plain2 v1.9 (`7ddf7a93…`) | v1.9 plain2, with "position" for "grid position" and "from two finite-element solvers and the simulator" for "finite element nodal versus HotSpot grid readouts" |
+| 3 | The answers split at one step: lid to cooler. | plain2 v1.11 (`1b7f851e…`), with root's "In the model: lid to cooler" and "Separate check: hottest point in each part" | v1.9 plain2, with "position" for "grid position", "Separate check" for "Independent check" (the figure's own label since v1.11) and "from two finite-element solvers and the simulator" for "finite element nodal versus HotSpot grid readouts" |
 | 4 | The agents found it, and stopped our own run. | plain4 v1.8 (`672b220c…`), checked against the same records and durations as fig4 | v1.9 plain4 |
 | 5 | We set the bar first. It passed. | plain3 v1.10 (`30cc8680…`) | v1.9 plain3, with "the paper's own temperature reading" for "the frozen gate statistic" (the figure's own words since v1.10) |
 | 6 | A second agent catches what the first approved. | fig5, drawn at 1.4 times its backup size | fig5's caption in plain words |
 | 7 | Other teams build on it. | fig6 v1.9 (`f7da1bd6…`) | fig6's caption, to 02:44 (below) |
-| 8 | Why it matters. | none while the numbers line is off; three numbers when it is on | |
-| 9 | Send your agent. | REPLAY: the 3D still; LIVE: the six door steps | the door's status line |
+| 8 | Why it matters. | while the numbers line is off, the script's own closer in large type: "An optimizer is only as reliable as the tool grading it." and, smaller, "Independent checks expose disagreements before we build on them."; three numbers when it is on | |
+| 9 | Send your agent. | REPLAY: the same package render, labelled "simulated, not silicon"; LIVE: the address and the instruction in large type, then the six door steps | the door's status line |
 
 The caption edits only take out words a main slide may not show; the full technical captions stay on backup B1 to B6.
 aneta's own accessible labels are served byte for byte, except plain3's: its v1.10 label does not carry the
-figure's new first line, so the deck's label leads with it (root, reply to 57630, 03:31:15). The plain1, plain3 and
-plain4 sources are aneta's v1.8 (team room 57603, 02:59:28, 220,655 bytes, `e99d0098…`) and v1.10 (57630, 03:26:08,
-82,830 bytes, `8d42da5b…`, plain1 and plain3 only); plain2 and fig6 are her v1.9 (57605, 03:06:29, 149,568 bytes,
-`4f71b1a6…`), with CAPTIONS.md (`43b2d4c3…`) and QA.md (`bcfc01e3…`). QA.md is for the presenter and is not part of the
+figure's new first line, so the deck's label leads with it (root, reply to 57630, 03:31:15). plain4's source is aneta's v1.8 (team room 57603, 02:59:28, 220,655 bytes,
+`e99d0098…`); plain1 and plain3 are her v1.10 (57630, 03:26:08, 82,830 bytes, `8d42da5b…`); plain2 is her v1.11 (57638,
+03:36:10, 138,115 bytes, `74c7b6f9…`, accepted by root at 03:42:40; its `make_figures.py` was neither extracted nor run);
+fig6 is her v1.9 (57605, 03:06:29, 149,568 bytes, `4f71b1a6…`), with CAPTIONS.md (`43b2d4c3…`) and QA.md (`bcfc01e3…`). QA.md is for the presenter and is not part of the
 deck. Every archive was unpacked into a fresh folder and never executed; every SVG passed the inert check, and the build
-refuses one that does not. aneta still owes root's two plain2 labels ("In the model: lid to cooler" and "Separate
-check: hottest point in each part"); this export carries v1.9's plain2.
+refuses one that does not.
 
 ### Timing (root, team room 57481, 01:33:52)
 
@@ -88,13 +87,18 @@ synthetic examples never scored, which supports this wording; it is not a live p
 address is confirmed is possible only with `--demo-review`, marked "REVIEW · door variant, not the export", and never
 as a PDF. Both are in `variants/`.
 
-### The 3D still
+### The 3D view: a cropped render on the main slides, the full screenshot in backup
 
-Slide 1 and the REPLAY door show our package view at build 4e047187
-(`H:/tmp/review-evidence/package3d-4e047187/shots-worker/1920x1080-door-default.png`, 1920x1080), served byte for byte
-as `package-view-replay.png`, with its own backup slide (B13, "replay · simulated, not silicon"). Its pixels include the
-view's own side panel, where small type reads "grid 64" and chiplet-centre readouts; the text checks cannot read pixels.
-PR78's later still at 9b6baa1e carries a withdrawal notice and "unvalidated" chips, so it was not used.
+The full screenshot of our package view at PR78's final-review head 35323889
+(`H:/tmp/review-evidence/package3d-35323889/shots-worker/1920x1080-door-default.png`, 1920x1080, `c5356137…`) is unreadable
+at slide scale and carries jargon: "grid 64", chiplet-centre readouts, "unvalidated" chips and the amber notice. At the
+coordinator's request, slides 1 and 9 show only its package render: the box x 540 to 1225, y 280 to 781, cut with
+Pillow and nothing else, `package-render-35323889.png` (685x501, `7ea5c232…`). It holds the isometric package, its heat
+map and its die labels, and no UI text, panel, banner or temperature. The bottom edge stops at row 781, just above
+the readout panel's border. FINAL.json pins its sha256 and records the box; the build checks that the box lies inside
+the source and gives the crop's size, and the tests decode both PNGs and compare every pixel row of the crop with that
+box of the screenshot. The full screenshot, served byte for byte as `package-view-35323889.png`, is the still on B8 and
+B13, with its labels, tags and notice intact, so nothing the crop leaves out is hidden from the deck.
 
 ### The questions page (B22) and the "unvalidated" tag
 
@@ -106,8 +110,15 @@ general. This saved simulation reproduced the paper's reference result within th
 simulated, not silicon." It carries root's evidence statement and never explains the notice only as a reviewer not
 having signed off. The same page has the three answers the coordinator gave Carter to practise (reply 6144e324 to
 57558, 03:29:43), word for word. The build checks both records against the cutoff. "simulated, not silicon" is
-visible on every slide that shows the 3D view's temperatures: slide 1, slide 9's REPLAY, B8 and B13. The still on
-those slides is from build 4e047187, before the tag was added, so it shows no "unvalidated" tag.
+visible on every slide that shows the 3D view: in slide 1's caption, on slide 9's REPLAY label, and on B8 and B13.
+The crop on slides 1 and 9 shows no temperature and no tag; the full screenshot on B8 and B13 shows both.
+
+### Slide 9 LIVE's call to action
+
+When the door is LIVE, the address (`sentilab.aidenid.com`, from `demo.url`) and the instruction, "Tell your assistant:
+go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout.", are each in their own large-type
+element above the six door steps, with "address to be confirmed" while the address is a placeholder. REPLAY shows no
+instruction.
 
 ### Other fixes in this export
 
@@ -221,10 +232,20 @@ Not re-read here: the "glad to have another agent on it" quote on one unconfirme
 One consent is on record: **ScienceClaw**, help seq 57532 (02:09:48, scienceclaw-claude: "yes, the slides may name our
 team"), confirmed by root reading the full event back (team room 57540, 02:16:52). Its flag is
 `"32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z"`. aneta asked FEAgent (help 57461), Delfie (help 57462) and the other
-six teams (help 57474). No other answer had arrived by the final sweep, so every other team reads "an outside team",
-or "a second outside team" for the next one on the same slide. fig3 reads "Outside", and seven fig6 cards read "An
-outside team". Slide 6's notes name ScienceClaw for its own acknowledgment and use root's words for the platform run:
-"Our rigidity skill ran through the open-source ScienceClaw registry and executor." Backup B12 lists the named team. The build refuses any slide, note, figure text or label that still holds an unconsented name.
+six teams (help 57474).
+
+**Delfie said yes at 03:45:39** (help seq 57644, delfie-claude: "**Slides:** yes, name us. \"Delfie (delphisci team)\",
+link github.com/fractastical/delphi."). The sweep before the 03:50 review export missed it, because its search phrases did
+not match "yes, name us", so that export's note wrongly said no other answer had arrived; Delfie was still shown as "an
+outside team" there, which its consent allows. Delfie's flag stays off in this export too. fig6 is drawn for
+ScienceClaw alone, and the build stops on any other consent set until the figure is redrawn: aneta's v1.12 and v1.13
+are generated for ScienceClaw and Delfie, and root accepted them at 04:19:55, but they are not part of this export. The
+name's form ("Delfie (delphisci team)") is the coordinator's call. No other team had answered by this export's sweep,
+which also read every help-room message and reply since 23:23 UTC from the teams' own agents. Every other team reads
+"an outside team", or "a second outside team" for the next one on the same slide. fig3 reads "Outside", and seven fig6
+cards read "An outside team". B6's notes name ScienceClaw for its own acknowledgment and use root's words for the
+platform run: "Our rigidity skill ran through the open-source ScienceClaw registry and executor." Backup B21 lists the
+named team. The build refuses any slide, note, figure text or label that still holds an unconsented name.
 The exported PDF's text is checked the same way. The event is the ScienceClaw hackathon, and its name in the header is
 the event's, not a team's.
 

@@ -3715,6 +3715,31 @@
           },
           "alt": {
             "$ref": "#/$defs/text"
+          },
+          "crop": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "box"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "box": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4000
+                }
+              }
+            }
           }
         }
       }
@@ -3787,6 +3812,22 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 1200
+              },
+              "statement": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "sub"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "sub": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
               },
               "door": {
                 "type": "boolean"

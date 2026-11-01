@@ -32,24 +32,30 @@
   const still = (st, w, cls = "") => `<figure class="fig still ${cls}"><img src="${esc(st.src)}" alt="${esc(st.alt)}" width="${w}" height="${Math.round((st.height * w) / st.width)}" data-still="${esc(st.id)}"></figure>`;
   // Its label ("simulated, not silicon") sits above it wherever the view's temperatures are shown.
   const stillLabel = (st) => (st.label ? `<span class="pill still-label">${esc(st.label)}</span>` : "");
+  // A still as wide as its slide allows: no wider than `maxW`, and no taller than `maxH`.
+  const fitStill = (st, maxW, maxH, cls) => still(st, Math.min(maxW, Math.round((maxH * st.width) / st.height)), cls);
 
   // ── slide bodies ──────────────────────────────────────────────────────────────────────────────────────────────────
   // The plain talk: one title and one picture per slide; "why" may carry its numbers; the door is LIVE or REPLAY.
   const LAYOUTS = {
     talk(c) {
-      const pic = c.figure ? fig(c.figure) : c.still ? `${stillLabel(c.still)}${still(c.still, 1320)}` : "";
+      const pic = c.figure ? fig(c.figure) : c.still ? `${stillLabel(c.still)}${fitStill(c.still, 1320, c.still.label ? 680 : 700)}` : "";
       return `<h1 class="ftitle">${esc(c.title)}</h1>${pic}`;
     },
     why(c) {
-      // Without its numbers the slide is its title alone, centred; with them, the tiles take the height of their words.
+      // With its numbers, the tiles take the height of their words; without them, the closer is the picture, in large
+      // type; with neither, the title alone, centred.
       const tiles = c.numbers ? `<div class="ngrid why-numbers n${c.numbers.length}">${c.numbers.map((x) => `<div class="ntile"><b class="nval">${esc(x.value)}</b><p class="nlab">${esc(x.label)}</p></div>`).join("")}</div>` : "";
-      return `<h1 class="ftitle${c.numbers ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}`;
+      const words = !c.numbers && c.statement ? `<div class="why-statement"><p class="ws-main">${esc(c.statement.text)}</p><p class="ws-sub">${esc(c.statement.sub)}</p></div>` : "";
+      return `<h1 class="ftitle${c.numbers || words ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}${words}`;
     },
     door(c) {
-      if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${still(c.still, 1100, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${fitStill(c.still, 1100, 600, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      // LIVE: the address and the instruction are the call to action, large enough to read from the back of the room.
       const flow = c.diagram.map((d) => `<li><b>${esc(d.title)}</b><span>${esc(d.text)}</span></li>`).join("");
-      return `<h1>${esc(c.title)}</h1><div class="dinst"><p>${esc(c.instruction)}</p>${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}</div>`
-        + `<ol class="dflow">${flow}</ol><p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      return `<h1>${esc(c.title)}</h1><div class="dcta"><p class="dcta-url">${esc(c.url)}</p><p class="dcta-inst">${esc(c.instruction)}</p>`
+        + `${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}</div>`
+        + `<ol class="dflow dflow-compact">${flow}</ol><p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
     },
   };
   const BODY = {
