@@ -1,7 +1,7 @@
 # SLAB-049 coupling allocation
 
-Implementation status: allocation, exact numeric evaluation, the three pre-registered outcome wordings relayed
-by Warden from #57614/root, the confirmed deadline and mixed wording from aneta #57718/root under #57686,
+Implementation status: allocation, exact numeric evaluation, the four final outcome wordings relayed
+by Warden from aneta #57732/root, the confirmed deadline from aneta #57718/root under #57686,
 and the four-file replay policy are implemented. Signing and executing the experiment
 remain pending independent review and Warden's new allocation; this implementation makes no experimental claim.
 
@@ -87,24 +87,22 @@ from the exact rational, with no clipping to 0–100%. The report repeats that r
 does not affect the predicate: an exact 84.9% displays as 84% and misses `17/20`; exactly 85.0% displays as 85%
 and meets it. A pass always displays at least 85%, and a miss at most 84%.
 
-- **MEETS:** "With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the two
-  references. That localizes it to this term in this configured model. It doesn't tell us what the authors
-  intended, or which version matches hardware."
-- **MISSES:** "That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. Something
-  else also contributes."
+- **MEETS:** "With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on Ascend 910 and
+  [y]% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term in this configured
+  model. It doesn't tell us what the authors intended, or which version matches hardware."
+- **MISSES:** "That one change accounts for [x]% of the difference on Ascend 910 and [y]% on CPU-DRAM, rounded
+  down. Both are below the 85% we fixed. Something else also contributes."
+- **MIXED:** "On [reference], that one change accounts for [x]% of the difference, rounded down, meeting the 85%
+  we fixed. On [reference], it accounts for [y]%, rounded down, below the 85% we fixed, so something else also
+  contributes there. It doesn't meet the bar on both references. It doesn't tell us what the authors intended,
+  or which version matches hardware."
 - **DOESN'T COMPLETE:** "The run didn't complete, so we make no claim from it."
 
-When one reference meets and the other misses, the report puts the meeting reference first and uses this exact
-wording, confirmed by aneta #57718 and root under #57686. The manifest freezes both sentences and the labels
-**Ascend 910** and **CPU-DRAM**:
-
-"On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed. On [reference],
-it accounts for [y]%, below the 85% we fixed, so something else also contributes there. It doesn't tell us what
-the authors intended, or which version matches hardware."
-
-Here `[x]` is the meeting reference's percentage and `[y]` the other reference's percentage; the manifest's
-per-reference templates each use `[x]` for their own percentage. The three original wordings above remain
-unchanged. Only the all-meet wording says "localizes"; no-claim still takes precedence over mixed results.
+The manifest freezes all four complete templates in `evaluation.outcome_wordings`, along with the labels
+**Ascend 910** and **CPU-DRAM**. When one reference meets and the other misses, the report uses **MIXED** wording
+and puts the meeting reference first: `[x]` is its percentage and `[y]` is the other reference's percentage.
+The mechanical outcome remains **MISSES** with verdict **FAIL**. Only the all-meet wording says "localizes";
+no-claim takes precedence over the other three wordings, including a replay mismatch alongside a completed miss.
 
 ## Operator review and execution
 
@@ -138,8 +136,8 @@ placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing
 These commands exited zero:
 
 - `.venv/bin/python -m unittest -q sundai_hotspot.test_gate_zero sundai_hotspot.test_gate0_operator
-  sundai_hotspot.test_coupling_allocation` (from the repository root): 133 tests, no skips.
-- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 244 tests, no skips, including 30
+  sundai_hotspot.test_coupling_allocation` (from the repository root): 134 tests, no skips.
+- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 245 tests, no skips, including 31
   coupling tests.
 - `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)`: 55 tests.
 - `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: 2 tests.
@@ -179,10 +177,20 @@ worktree, covering the manifest, both mixed orientations and the combined 84.9%/
 boundary test checks exact receipt fractions `849/1000` and `17/20`, displayed percentages 84 and 85, and the
 respective miss/pass predicates. Changing floor to nearest makes it fail with `85 != 84`; changing `>= 17/20`
 to `> 17/20` loses the exact-85 pass. All 30 coupling tests pass with the amendment, including the existing
-late-call refusal and no-claim precedence tests. The three original wording constants are unchanged.
+late-call refusal and no-claim precedence tests. That earlier amendment left the three original wording
+constants unchanged; amendment 3 below supersedes the completed-run wordings.
+
+For PR #83 amendment 3 (aneta #57732/root), six presentation regressions fail against
+`40e2dabff28fd46dcf015cd0a02bf9be1af22be5` in a disposable worktree. They check the four complete manifest
+templates, both-meet and both-miss text, both mixed orientations and the 84.9%/85.0% boundary. All four templates
+also match the literal strings in Warden's amendment 3 message. All 31 coupling tests pass with the final
+strings. The new replay-mismatch/complete-miss test exercises existing precedence
+and passes before the amendment too; requiring all references to be incomplete instead of any makes it fail
+with `'MISSES' != "DOESN'T COMPLETE"`. The real signed-call/report path confirms four usable calls, no retry,
+and no claim despite the completed miss. Exact receipt fractions and the `17/20` predicate are unchanged.
 
 This tree generates coupling manifest SHA-256
-`e8670971967905f902ba45ba0ecbb946661a2254035eabf9a0846e3ea0c2232e`.
+`c0e4954fa814a37b4da9f4b1c56ebf4f94b349d6391cdfb65c0c7c6745722589`.
 The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
 its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.
 Docker is unavailable in this box, so the pinned-image suites/build check remain Warden's independent proof.

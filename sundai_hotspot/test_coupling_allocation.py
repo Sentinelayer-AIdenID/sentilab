@@ -36,17 +36,24 @@ class CouplingManifestTests(unittest.TestCase):
         self.assertIn("receipt.json", evaluation["replay_identity"]["excluded"])
         self.assertEqual(evaluation["percentage_rounding"],
                          "floor to whole percent from the exact rational; no clipping")
-        self.assertEqual(set(evaluation["mixed_outcome_wordings"]), {"MEETS", "MISSES"})
-        self.assertEqual(evaluation["mixed_outcome_wordings"], {
-            "MEETS": "On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed.",
-            "MISSES": ("On [reference], it accounts for [x]%, below the 85% we fixed, so something else also "
-                       "contributes there. It doesn't tell us what the authors intended, or which version matches hardware."),
+        self.assertEqual(evaluation["outcome_wordings"], {
+            "MEETS": ("With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on Ascend 910 "
+                      "and [y]% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this "
+                      "term in this configured model. It doesn't tell us what the authors intended, or which "
+                      "version matches hardware."),
+            "MISSES": ("That one change accounts for [x]% of the difference on Ascend 910 and [y]% on CPU-DRAM, "
+                       "rounded down. Both are below the 85% we fixed. Something else also contributes."),
+            "MIXED": ("On [reference], that one change accounts for [x]% of the difference, rounded down, meeting "
+                      "the 85% we fixed. On [reference], it accounts for [y]%, rounded down, below the 85% we fixed, "
+                      "so something else also contributes there. It doesn't meet the bar on both references. "
+                      "It doesn't tell us what the authors intended, or which version matches hardware."),
+            "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
         })
         self.assertEqual(evaluation["reference_labels"],
                          {"ascend910-tap25d-fig6a-raw": "Ascend 910", "micro150-tap25d-fig5a-raw": "CPU-DRAM"})
         self.assertEqual(evaluation["percentage_references"],
                          {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"})
-        self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "DOESN'T COMPLETE"})
+        self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "MIXED", "DOESN'T COMPLETE"})
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "manifest.json"
             evaluation["replay_identity"]["files"].remove("stderr.txt")
@@ -168,9 +175,9 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertTrue(second["coupling"]["predicate"])
         self.assertEqual(second["coupling"]["outcome"], "MEETS")
         self.assertEqual(second["coupling"]["wording"],
-            "With only that one link changed in 7.0, 85% and 85% of the difference to 6.0 goes away on the two "
-            "references. That localizes it to this term in this configured model. It doesn't tell us what the "
-            "authors intended, or which version matches hardware.")
+            "With only that one link changed in 7.0, 85% of the difference to 6.0 goes away on Ascend 910 and "
+            "85% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term in this "
+            "configured model. It doesn't tell us what the authors intended, or which version matches hardware.")
         for entry in second["calls"]:
             evaluation = entry["coupling"]
             self.assertEqual(evaluation["fraction"], "0.85")
@@ -192,8 +199,9 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
         self.assertEqual(report["coupling"]["outcome"], "MISSES")
         self.assertEqual(report["coupling"]["wording"],
-            "On Ascend 910, that one change accounts for 90% of the difference, meeting the 85% we fixed. "
-            "On CPU-DRAM, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "On Ascend 910, that one change accounts for 90% of the difference, rounded down, meeting the 85% we fixed. "
+            "On CPU-DRAM, it accounts for 84%, rounded down, below the 85% we fixed, so something else also contributes "
+            "there. It doesn't meet the bar on both references. "
             "It doesn't tell us what the authors intended, or which version matches hardware.")
         self.assertEqual(report["coupling"]["percentage_rounding"],
                          "floor to whole percent from the exact rational; no clipping")
@@ -205,8 +213,9 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.run_pair(0, 83.1504)  # exactly 84% on Ascend
         report = self.run_pair(2, 127.604)  # exactly 90% on CPU-DRAM
         self.assertEqual(report["coupling"]["wording"],
-            "On CPU-DRAM, that one change accounts for 90% of the difference, meeting the 85% we fixed. "
-            "On Ascend 910, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "On CPU-DRAM, that one change accounts for 90% of the difference, rounded down, meeting the 85% we fixed. "
+            "On Ascend 910, it accounts for 84%, rounded down, below the 85% we fixed, so something else also contributes "
+            "there. It doesn't meet the bar on both references. "
             "It doesn't tell us what the authors intended, or which version matches hardware.")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MEETS"])
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
@@ -225,16 +234,17 @@ class CouplingEntryTests(fixtures.EntryCase):
             receipt = json.loads((self.scenario.run_dir(entry["call"]) / "receipt.json").read_text())
             self.assertEqual(receipt["coupling"], evaluation)
         self.assertEqual(report["coupling"]["wording"],
-            "On CPU-DRAM, that one change accounts for 85% of the difference, meeting the 85% we fixed. "
-            "On Ascend 910, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "On CPU-DRAM, that one change accounts for 85% of the difference, rounded down, meeting the 85% we fixed. "
+            "On Ascend 910, it accounts for 84%, rounded down, below the 85% we fixed, so something else also contributes "
+            "there. It doesn't meet the bar on both references. "
             "It doesn't tell us what the authors intended, or which version matches hardware.")
 
     def test_all_miss_keeps_the_frozen_sentence_and_floors_percentages(self):
         self.run_pair(0, 82.9107)  # exactly 84.5% on Ascend
         report = self.run_pair(2, 134.0247)  # exactly 84.5% on CPU-DRAM
         self.assertEqual(report["coupling"]["wording"],
-            "That one change accounts for 84% and 84% of the difference, below the 85% we fixed. "
-            "Something else also contributes.")
+            "That one change accounts for 84% of the difference on Ascend 910 and 84% on CPU-DRAM, rounded down. "
+            "Both are below the 85% we fixed. Something else also contributes.")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MISSES"])
 
     def test_missing_call_takes_precedence_over_a_completed_threshold_miss(self):
@@ -260,6 +270,20 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertEqual(report["coupling"]["wording"],
                          "The run didn't complete, so we make no claim from it.")
         self.assertNotEqual(report["coupling"]["verdict"], "PASS")
+        self.assertEqual(len(self.scenario.api.launch_tags()), 4)
+
+    def test_replay_mismatch_takes_precedence_over_a_completed_threshold_miss(self):
+        self.run_pair(0, 82, replay_peak=81)
+        report = self.run_pair(2, 140)
+        self.assertTrue(all(entry["usable"] for entry in report["calls"]))
+        self.assertEqual(report["not_completed"], [])
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["DOESN'T COMPLETE", "MISSES"])
+        self.assertFalse(report["rows"][0]["replay_byte_identical"])
+        self.assertTrue(report["rows"][1]["replay_byte_identical"])
+        self.assertEqual(report["coupling"]["verdict"], "FAIL")
+        self.assertEqual(report["coupling"]["outcome"], "DOESN'T COMPLETE")
+        self.assertEqual(report["coupling"]["wording"],
+                         "The run didn't complete, so we make no claim from it.")
         self.assertEqual(len(self.scenario.api.launch_tags()), 4)
 
     def check_stream_mismatch(self, stream):

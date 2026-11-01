@@ -26,17 +26,17 @@ PERCENTAGE_ROUNDING = "floor to whole percent from the exact rational; no clippi
 PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
 REFERENCE_LABELS = {"ascend910-tap25d-fig6a-raw": "Ascend 910", "micro150-tap25d-fig5a-raw": "CPU-DRAM"}
 OUTCOME_WORDINGS = {
-    "MEETS": ("With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the "
-              "two references. That localizes it to this term in this configured model. It doesn't tell us "
-              "what the authors intended, or which version matches hardware."),
-    "MISSES": ("That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. "
-               "Something else also contributes."),
+    "MEETS": ("With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on Ascend 910 "
+              "and [y]% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term "
+              "in this configured model. It doesn't tell us what the authors intended, or which version "
+              "matches hardware."),
+    "MISSES": ("That one change accounts for [x]% of the difference on Ascend 910 and [y]% on CPU-DRAM, "
+               "rounded down. Both are below the 85% we fixed. Something else also contributes."),
+    "MIXED": ("On [reference], that one change accounts for [x]% of the difference, rounded down, meeting "
+              "the 85% we fixed. On [reference], it accounts for [y]%, rounded down, below the 85% we fixed, "
+              "so something else also contributes there. It doesn't meet the bar on both references. "
+              "It doesn't tell us what the authors intended, or which version matches hardware."),
     "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
-}
-MIXED_OUTCOME_WORDINGS = {
-    "MEETS": "On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed.",
-    "MISSES": ("On [reference], it accounts for [x]%, below the 85% we fixed, so something else also contributes "
-               "there. It doesn't tell us what the authors intended, or which version matches hardware."),
 }
 
 
@@ -93,7 +93,6 @@ def build_manifest() -> dict:
                     "percentage_rounding": PERCENTAGE_ROUNDING,
                     "percentage_references": dict(PERCENTAGE_REFERENCES),
                     "reference_labels": dict(REFERENCE_LABELS),
-                    "mixed_outcome_wordings": dict(MIXED_OUTCOME_WORDINGS),
                     "outcome_wordings": dict(OUTCOME_WORDINGS)},
         accounting={"calls": len(calls), "max_runs": len(calls), "retries": 0, "concurrency": 1, "gpu": False,
                     "host_architecture": gate["accounting"]["host_architecture"],
@@ -227,10 +226,10 @@ def report(manifest: dict, digest: str, ledger: dict, tags) -> dict:
     wording = OUTCOME_WORDINGS[outcome]
     if {row["outcome"] for row in rows} == {"MEETS", "MISSES"}:
         by_outcome = {row["outcome"]: row for row in rows}
-        wording = " ".join(MIXED_OUTCOME_WORDINGS[row["outcome"]]
-                           .replace("[reference]", REFERENCE_LABELS[row["reference"]])
-                           .replace("[x]", str(row["primary"]["fraction_percent"]))
-                           for row in (by_outcome["MEETS"], by_outcome["MISSES"]))
+        wording = OUTCOME_WORDINGS["MIXED"]
+        for placeholder, row in (("x", by_outcome["MEETS"]), ("y", by_outcome["MISSES"])):
+            wording = wording.replace("[reference]", REFERENCE_LABELS[row["reference"]], 1)
+            wording = wording.replace(f"[{placeholder}]", str(row["primary"]["fraction_percent"]))
     elif outcome != "DOESN'T COMPLETE":
         by_reference = {row["reference"]: row for row in rows}
         for placeholder, reference in PERCENTAGE_REFERENCES.items():
