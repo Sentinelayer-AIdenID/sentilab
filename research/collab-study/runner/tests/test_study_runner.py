@@ -1,0 +1,130 @@
+"""Offline tests exercise the shipped runner, never packet code."""
+import builtins
+import importlib.util
+import json
+from pathlib import Path
+import sys
+
+import pytest
+
+RUNNER = Path(__file__).resolve().parents[1] / "study_runner.py"
+spec = importlib.util.spec_from_file_location("study_runner", RUNNER)
+runner = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = runner
+spec.loader.exec_module(runner)
+
+
+def packet(root, name="case-one", model="raise AssertionError('packet executed')"):
+    case = root / name
+    case.mkdir(parents=True)
+    for filename in runner.PACKET_FILES:
+        (case / filename).write_text(model if filename == "model.py" else filename + "\n", encoding="utf-8")
+    return case
+
+
+def test_packet_is_text_and_never_executed(tmp_path, monkeypatch):
+    case = packet(tmp_path)
+    original_exec = builtins.exec
+    original_import = builtins.__import__
+    seen = []
+
+    def exec_spy(source, *args, **kwargs):
+        seen.append(source)
+        raise AssertionError("runner executed packet code")
+
+    def import_spy(name, *args, **kwargs):
+        assert name != "model", "runner imported packet code"
+        return original_import(name, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(builtins, "exec", exec_spy)
+        patch.setattr(builtins, "__import__", import_spy)
+        message, hashes = runner.read_packet(case)
+    assert seen == []
+    assert "raise AssertionError('packet executed')" in message
+    assert list(hashes) == list(runner.PACKET_FILES)
+    offsets = [message.index("### " + name + "\n") for name in runner.PACKET_FILES]
+    assert offsets == sorted(offsets)
+    assert builtins.exec is original_exec
+
+
+def test_malformed_final_is_retained_without_repair():
+    good = {"file": "model.py", "location": "12", "defect": "wrong axis", "evidence": "axis=0"}
+    malformed = '{"file":"model.py",}'
+    text = "FINAL\n" + json.dumps(good) + "\n" + malformed + "\n" + json.dumps({"file": "x"})
+    result = runner.parse_final(text)
+    assert result["findings"] == [good]
+    assert result["malformed"] == [
+        {"line": 2, "text": malformed},
+        {"line": 3, "text": '{"file": "x"}'},
+    ]
+    assert runner.parse_final("thinking\nFINAL\n" + json.dumps(good)) is None
+    limited = runner.parse_final("FINAL\n" + "\n".join([json.dumps(good)] * 22))
+    assert len(limited["findings"]) == 20
+    assert limited["discarded"] == 2
+
+
+def test_output_directory_must_start_empty(tmp_path):
+    occupied = tmp_path / "out"
+    occupied.mkdir()
+    marker = occupied / "existing"
+    marker.write_text("untouched", encoding="utf-8")
+    with pytest.raises(runner.InputError, match="empty"):
+        runner.claim_output(occupied)
+    assert marker.read_text() == "untouched"
+    fresh = tmp_path / "fresh"
+    runner.claim_output(fresh)
+    with pytest.raises(runner.InputError, match="empty"):
+        runner.claim_output(fresh)
+
+
+def test_packet_rejects_extra_files_and_symlinks(tmp_path):
+    case = packet(tmp_path)
+    extra = case / "unexpected.txt"
+    extra.write_text("extra", encoding="utf-8")
+    with pytest.raises(runner.InputError):
+        runner.read_packet(case)
+    extra.unlink()
+    (case / "model.py").unlink()
+    (case / "model.py").symlink_to(case / "README.md")
+    with pytest.raises(runner.InputError):
+        runner.read_packet(case)
+
+
+def test_freeze_binds_runner_protocol_prompts_order_and_packet_bytes(tmp_path):
+    packets = tmp_path / "packets"
+    case = packet(packets)
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text('{"model":"deepseek-v4-pro","deployment":"fake-deployment"}', encoding="utf-8")
+    order = tmp_path / "order.json"
+    order.write_text('[{"job_id":"one","arm":"A","packet":"case-one","repeat":1}]', encoding="utf-8")
+    prompts = {"system": tmp_path / "system.txt", "continue": tmp_path / "continue.txt"}
+    for name, path in prompts.items():
+        path.write_text(name, encoding="utf-8")
+    frozen = runner.snapshot_inputs(protocol, prompts, order, packets)
+    seal = tmp_path / "freeze.json"
+    seal.write_bytes(runner.canonical(frozen.freeze))
+    runner.verify_freeze(seal, frozen.freeze)
+    assert frozen.freeze["runner_sha256"] == runner.sha256(RUNNER.read_bytes())
+    assert frozen.freeze["protocol"]["deployment"] == "fake-deployment"
+    assert frozen.freeze["order_sha256"] == runner.sha256(order.read_bytes())
+    for path in [protocol, order, *prompts.values(), case / "model.py"]:
+        original = path.read_bytes()
+        path.write_bytes(original + b"\n")
+        changed = runner.snapshot_inputs(protocol, prompts, order, packets)
+        with pytest.raises(runner.InputError, match="freeze"):
+            runner.verify_freeze(seal, changed.freeze)
+        path.write_bytes(original)
+    (case / "model.py").write_text("changed after snapshot", encoding="utf-8")
+    assert "changed after snapshot" not in frozen.packets["case-one"]
+
+
+def test_pilot_refuses_identical_sealed_packet_even_at_another_path(tmp_path):
+    sealed = packet(tmp_path / "sealed")
+    duplicate = packet(tmp_path / "pilot", "copy")
+    _, hashes = runner.read_packet(sealed)
+    with pytest.raises(runner.InputError, match="pilot"):
+        runner.validate_pilot(duplicate, [hashes])
+    (duplicate / "report.md").write_text("independent pilot fixture", encoding="utf-8")
+    message, _ = runner.validate_pilot(duplicate, [hashes])
+    assert "independent pilot fixture" in message
