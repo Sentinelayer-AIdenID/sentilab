@@ -43,12 +43,14 @@ rmSync(out, { recursive: true, force: true });
 
 // 2. The runtime.
 let log = "";
-// A boot-only door key, built here so no literal in this tree looks like a credential.
+// A boot-only door key, built here so no literal in this tree looks like a credential, and a terms version of the
+// contract's shape (the door takes submissions only with one).
 const DOOR_KEY = "boot".repeat(10);
+const DOOR_TERMS = `sentilab-open-terms/1@${"0f".repeat(32)}`;
 // --local-upstream: the Worker sees this address as its own origin (by default wrangler dev shows it the route's host),
 // so the door's absolute links point back here.
 const dev = spawn(npx, ["--yes", `wrangler@${VERSION}`, "dev", "--ip", "127.0.0.1", "--port", String(PORT), "--local-upstream", `127.0.0.1:${PORT}`,
-  "--var", "API_ORIGIN:none", "--var", `DOOR_TOKEN_KEY:${DOOR_KEY}`],
+  "--var", "API_ORIGIN:none", "--var", `DOOR_TOKEN_KEY:${DOOR_KEY}`, "--var", `DOOR_TERMS:${DOOR_TERMS}`],
   { cwd: WEB, env, shell: process.platform === "win32", detached: process.platform !== "win32" });
 dev.stdout.on("data", (d) => { log += d; });
 dev.stderr.on("data", (d) => { log += d; });

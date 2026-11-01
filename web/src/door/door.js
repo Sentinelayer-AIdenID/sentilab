@@ -12,13 +12,19 @@
 // the wall in place of the agent version of the three mapped pages until they hold a valid token. Without a usable
 // DOOR_TOKEN_KEY the door is closed: its routes answer 503 door_closed and the mapped pages keep their agent versions.
 //
-// The scorer intake (sentilab-api, API_ORIGIN) is called only from here, with the origin token and fresh headers; the
-// token's claims travel in the body (submit) or in x-door-claims (status, board), which the public /api proxy strips
-// from visitors' requests. Rate limits: DOOR_NONCE_LIMITER per token and DOOR_IP_LIMITER per client IP prefix on
-// submit, DOOR_READ_LIMITER per prefix on the routes that call the intake; each falls back to an in-memory window per
-// isolate when its binding is absent. The intake's own quotas (CPU-seconds per token, the global grant, the bounded
-// queue) are the hard caps. Arrivals are fire-and-forget and carry only {ts, class, declared_operator, purpose,
-// short_id}, from fixed lists; with AQUARIUM_POST=on a purpose choice is also posted to the AIdenID collector.
+// The scorer intake (sentilab-api at API_ORIGIN; Lane 2, sentilab PR #81) is called only from here, with the origin token
+// and fresh headers, under /api/open/v1/door:
+//   POST submit   {token_claims: {purpose, case, nonce, exp}, layout, terms, request_key, class, operator}
+//   POST arrival  {class, operator, purpose?, nonce?}: the intake stamps the time and derives short_id (4 hex of
+//                 sha256(nonce)); nothing else about a visitor is sent
+//   GET  status/<run_id> with x-door-nonce, and board (the board call from the ENGRAM view also sends x-door-nonce)
+// The public /api proxy strips x-door-* from visitors' requests. The terms version a submission carries is the operator's
+// DOOR_TERMS var, one of the signed manifest's accepted versions; without it the door takes no submissions.
+// Submission refusals use the intake's vocabulary: {schema: "sentilab-door-submit/1", state: "rejected", codes}.
+// Rate limits: DOOR_NONCE_LIMITER per token and DOOR_IP_LIMITER per client IP prefix on submit, DOOR_READ_LIMITER per
+// prefix on the routes that call the intake; each falls back to an in-memory window per isolate when its binding is
+// absent. The intake's own quotas (CPU-seconds per token, the global grant, the bounded queue) are the hard caps. With
+// AQUARIUM_POST=on a purpose choice is also posted to the AIdenID collector.
 // A module of its own because worker.js may export nothing but its default handler.
 import { AGENT_RESPONSE_CACHE } from "../generated/aidenid-intent-gate/agent-resources.js";
 import { agentPathFor } from "../agent-paths.js";
@@ -39,7 +45,7 @@ export const LIMITS = Object.freeze({
 });
 export const API = Object.freeze({
   submit: "/api/open/v1/door/submit", status: "/api/open/v1/door/status/", board: "/api/open/v1/door/board",
-  arrivals: "/api/open/v1/door/arrivals",
+  arrival: "/api/open/v1/door/arrival",
 });
 // The classifier's own enums (src/vendor/aidenid-classifier/src/types.ts): nothing else is ever sent as a class or an
 // operator. "ours" marks SentiLab's own background agents on the board.
@@ -55,6 +61,12 @@ const REASON_CODES = new Set(["oversize", "not_utf8", "malformed_json", "duplica
   "reproduction_mismatch", "fresh_process_required", "reproduction_failed"]);
 const RUN_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/;
 const REQUEST_KEY = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const TERMS_VERSION = /^sentilab-open-terms\/[1-9][0-9]{0,5}@[0-9a-f]{64}$/;
+const SUBMIT_SCHEMA = "sentilab-door-submit/1";
+// The intake's HTTP status for a refusal, from its first code (PR #81): 413 oversize, 422 geometry, layout and terms,
+// 409 a changed request under a used key, 429 policy, 503 not open; any other transport or envelope code is 400.
+const GEOMETRY_CODES = new Set(["die_count", "die_order", "out_of_frame", "rotation_not_allowed", "lattice", "margin", "halo_overlap",
+  "min_spacing", "keepout", "geometry_hash_mismatch", "terms_not_accepted"]);
 const STATUS_PREFIX = "/agents/status/";
 const INGEST_URL = "https://aquarium.internal/api/aquarium/edge";
 const BOARD_TTL_MS = 10000;
@@ -78,6 +90,24 @@ const negotiate = (request) => preferredAgentType(request.headers.get("accept"),
 const retryAfter = () => new Date(Date.now() + 60000).toISOString().replace(/\.\d{3}Z$/, "Z");
 const limited = (request, format) => refuse(request, format, 429, { error: "rate_limited", retry_after: retryAfter() }, { "retry-after": "60" });
 const closed = (request, format) => refuse(request, format, 503, { error: "door_closed" });
+function refusalStatus(codes) {
+  const first = codes[0]?.code;
+  if (first === "oversize") return 413;
+  if (GEOMETRY_CODES.has(first)) return 422;
+  if (first === "idempotency_conflict") return 409;
+  if (first === "rate_limited") return 429;
+  if (first === "not_open_yet" || first === "manifest_closed") return 503;
+  return 400;
+}
+// A refused submission, in the intake's own shape.
+function rejected(request, format, codes, { limits, headers } = {}) {
+  if (format === "html") return html(request, refusalStatus(codes), problemHtml(codes[0]?.code === "rate_limited" ? "rate_limited" : codes[0]?.code === "not_open_yet" ? "door_closed" : "layout", codes), headers);
+  return json(request, refusalStatus(codes), { schema: SUBMIT_SCHEMA, state: "rejected", codes, ...(limits ? { limits } : {}) }, headers);
+}
+const submitLimited = (request, format) => rejected(request, format, [{ code: "rate_limited", retry_after: retryAfter() }],
+  { limits: ["request_rate"], headers: { "retry-after": "60" } });
+// The terms version submissions accept, or null when none is configured.
+const termsOf = (env) => (typeof env?.DOOR_TERMS === "string" && TERMS_VERSION.test(env.DOOR_TERMS) ? env.DOOR_TERMS : null);
 
 // ── rate limits ───────────────────────────────────────────────────────────────────────────────────────────────────
 const windows = new Map();
@@ -124,13 +154,13 @@ function apiOrigin(env) {
 }
 
 // { ok: true, status, json } or { ok: false, reason }. Never throws; the body is read within the same deadline.
-export async function callApi(env, path, { method = "GET", body, claims, host, timeoutMs }) {
+export async function callApi(env, path, { method = "GET", body, nonce, host, timeoutMs }) {
   const origin = apiOrigin(env);
   if (!origin) return { ok: false, reason: "not_configured" };
   const headers = new Headers({ accept: "application/json" });
   if (env.ORIGIN_TOKEN) headers.set("x-origin-token", env.ORIGIN_TOKEN);
   if (host) headers.set("x-forwarded-host", host);
-  if (claims) headers.set("x-door-claims", JSON.stringify(claims));
+  if (nonce) headers.set("x-door-nonce", nonce);
   if (body !== undefined) headers.set("content-type", "application/json");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -152,22 +182,24 @@ export async function callApi(env, path, { method = "GET", body, claims, host, t
 const finite = (v, lo, hi) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 const BOARD_CLASSES = new Set([...CLASSES, "ours"]);
 
-// What the door reads from the intake's board answer, each part checked alone: admission ("open" only when the intake
-// says open is true), at most ten entries holding class, short id, state and numbers only, and a token's CPU left.
+// What the door reads from the intake's board answer (sentilab-door-board/1), each part checked alone: admission ("open"
+// only when door.open is true), at most ten entries of top holding class, short id, state, verdict and numbers only
+// (never the operator, the label or anything else), and a token's CPU-seconds left when the intake reports them.
 export function readBoard(answer) {
   const value = answer?.ok && answer.status === 200 && answer.json && typeof answer.json === "object" ? answer.json : null;
-  const open = value?.admission?.open;
+  const open = value?.door?.open;
   const admission = open === true ? "open" : open === false ? "closed" : "unknown";
-  const rows = Array.isArray(value?.board) ? value.board : null;
+  const rows = Array.isArray(value?.top) ? value.top : null;
   const board = rows && rows.slice(0, 100).flatMap((row) => {
     if (!row || typeof row !== "object" || !BOARD_CLASSES.has(row.class) || typeof row.short_id !== "string" || !/^[0-9a-f]{4}$/.test(row.short_id)) return [];
     const entry = { class: row.class, short_id: row.short_id };
-    if (STATES.has(row.state)) entry.state = row.state;
+    if (STATES.has(row.status)) entry.state = row.status;
     if (finite(row[BOARD_METRIC.metric_id], -273.15, 10000)) entry[BOARD_METRIC.metric_id] = row[BOARD_METRIC.metric_id];
     if (finite(row.wire_proxy_mm, 0, 1000)) entry.wire_proxy_mm = row.wire_proxy_mm;
+    if (row.verdict === "candidate") entry.verdict = "candidate";
     return [entry];
   }).slice(0, 10).map((entry, index) => ({ rank: index + 1, ...entry }));
-  const left = value?.token?.cpu_s_left;
+  const left = value?.token?.cpu_s_remaining;
   return { admission, board, cpuSecondsLeft: finite(left, 0, 100000) ? left : null };
 }
 
@@ -210,33 +242,36 @@ async function bounded(task, ms) {
   }
 }
 
-// The arrival event: only values from fixed lists, the time, and the first 4 hex of sha256(nonce).
-export function arrivalOf(identity, purpose, shortId, now) {
-  return { ts: new Date(now).toISOString(), class: CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown",
-    declared_operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown",
-    purpose: PURPOSE_IDS.includes(purpose) ? purpose : null, short_id: /^[0-9a-f]{4}$/.test(shortId ?? "") ? shortId : null };
+// The arrival the intake records: the class and declared operator from the classifier's enums, the purpose chosen and
+// the token's nonce (the intake keeps only short_id, the first 4 hex of sha256(nonce), and stamps the time). A wall
+// view has no purpose and no nonce yet.
+export function arrivalOf(identity, purpose, nonce) {
+  return { class: CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown",
+    operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown",
+    ...(PURPOSE_IDS.includes(purpose) ? { purpose } : {}), ...(/^[0-9a-f]{16}$/.test(nonce ?? "") ? { nonce } : {}) };
 }
 
 async function postCollector(request, env, identity, event, expiresAt) {
   if (env.AQUARIUM_POST !== "on" || !env.COLLECTOR || !env.INGEST_TOKEN || !identity || !event.purpose) return;
+  const declaredAt = new Date().toISOString();
   const observation = observationFor({ triageClass: identity.triage.class, basis: identity.basis,
     userAgent: request.headers.get("user-agent") ?? "", signer: identity.verification?.signer, cfBotCategory: request.cf?.verifiedBotCategory });
   const body = { schemaVersion: 1, siteId: "sentilab", sessionId: crypto.randomUUID(), source: "edge", eventType: "page_view",
     path: "/agents/intent", method: "GET", identity: { ...identity, observation },
-    intent: { category: event.purpose, source: "declared_preset", classifierVersion: "intent-gate-v1", declaredAt: event.ts, expiresAt } };
+    intent: { category: event.purpose, source: "declared_preset", classifierVersion: "intent-gate-v1", declaredAt, expiresAt } };
   await bounded((signal) => env.COLLECTOR.fetch(INGEST_URL, { method: "POST", redirect: "manual", signal,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.INGEST_TOKEN}` }, body: JSON.stringify(body) }), 1200);
 }
 
 // Fire and forget: nothing here can delay or change a response.
-function emitArrival(request, env, ctx, url, { identity, purpose = null, shortId = null, expiresAt = null }) {
+function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce = null, expiresAt = null }) {
   if (typeof ctx?.waitUntil !== "function") return;
   try {
     ctx.waitUntil((async () => {
       if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return;
       const who = identity === undefined ? await identityFor(request, env) : identity;
-      const event = arrivalOf(who, purpose, shortId, Date.now());
-      await Promise.allSettled([callApi(env, API.arrivals, { method: "POST", body: event, host: url.host, timeoutMs: 1200 }),
+      const event = arrivalOf(who, purpose, nonce);
+      await Promise.allSettled([callApi(env, API.arrival, { method: "POST", body: event, host: url.host, timeoutMs: 1200 }),
         postCollector(request, env, who, event, expiresAt)]);
     })().catch(() => undefined));
   } catch { /* a missing or broken execution context never breaks a page */ }
@@ -276,7 +311,7 @@ async function intent(request, env, ctx, url) {
   const token = await mintToken(key, { purpose, site: url.host, now });
   const { claims } = await verifyToken(key, token, { site: url.host, now });
   const { admission } = await sharedBoard(env, url);
-  emitArrival(request, env, ctx, url, { purpose, shortId: claims.short_id, expiresAt: claims.expires_at });
+  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });
   if (kind === "json") return json(request, 200, tokenJson(url.origin, claims, token, admission));
   if (kind === "md") return markdown(request, 200, tokenMarkdown(url.origin, claims, token, admission));
   return html(request, 200, tokenHtml(url.origin, claims, token, admission));
@@ -288,9 +323,9 @@ async function engram(request, env, ctx, url) {
   if (request.method === "HEAD") return json(request, 200, null);
   const reading = await allow(env, "DOOR_READ_LIMITER", `engram:${prefixOf(request)}`);
   const [live, gate] = await Promise.all([
-    reading ? callApi(env, API.board, { claims: auth.claims, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null },
+    reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null },
     gateZero(request, env, url)]);
-  return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission,
+  return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: termsOf(env),
     gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft }));
 }
 
@@ -323,7 +358,7 @@ async function confirm(request, env, ctx, url) {
   if (request.method === "HEAD") return html(request, 200, null);
   const { admission } = await sharedBoard(env, url);
   return html(request, 200, confirmHtml({ claims: auth.claims, token: auth.token, compact: parsed.compact, dies: parsed.dies,
-    violations: previewViolations(parsed.dies), wireMm: wireProxyMm(parsed.dies), submissions: admission }));
+    violations: previewViolations(parsed.dies), wireMm: wireProxyMm(parsed.dies), submissions: admission, terms: termsOf(env) }));
 }
 
 async function board(request, env, ctx, url) {
@@ -340,11 +375,16 @@ async function status(request, env, ctx, url) {
   if (auth instanceof Response) return auth;
   if (request.method === "HEAD") return json(request, 200, null);
   if (!(await allow(env, "DOOR_READ_LIMITER", `status:${prefixOf(request)}`))) return limited(request, "json");
-  const answer = await callApi(env, API.status + runId, { claims: auth.claims, host: url.host, timeoutMs: 2500 });
-  if (!answer.ok || !answer.json || typeof answer.json !== "object" || answer.status >= 500 || [404, 405].includes(answer.status) && !answer.json.error) {
-    return json(request, 503, { error: "intake_unavailable" });
+  const answer = await callApi(env, API.status + runId, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 });
+  const value = answer.ok && answer.json && typeof answer.json === "object" && !Array.isArray(answer.json) ? answer.json : null;
+  // The intake's own answers only: a run's status, or its 404 for a run this token did not submit. The declared
+  // operator stays with the intake: agents never read a vendor name from the door.
+  if (answer.status === 200 && value?.schema === "sentilab-door-status/1") {
+    const { operator, ...shown } = value;
+    return json(request, 200, shown);
   }
-  return json(request, answer.status, answer.json);
+  if (answer.status === 404 && value?.error === "run_not_found") return json(request, 404, { error: "run_not_found" });
+  return json(request, 503, { error: "intake_unavailable" });
 }
 
 // The submitted body, read against a byte cap and a deadline: { text } or { status, code }.
@@ -424,27 +464,34 @@ async function submit(request, env, ctx, url) {
   const format = form ? "html" : "json";
   if (!form && !/^application\/json(;|$)/.test(type)) return refuse(request, format, 415, { error: "unsupported_media_type", accepted: ["application/json", "application/x-www-form-urlencoded"] });
   if (!usableKey(env)) return closed(request, format);
-  if (!(await allow(env, "DOOR_IP_LIMITER", `submit:${prefixOf(request)}`))) return limited(request, format);
+  if (!(await allow(env, "DOOR_IP_LIMITER", `submit:${prefixOf(request)}`))) return submitLimited(request, format);
   const body = await readBody(request, form ? MAX_FORM_BYTES : MAX_JSON_BYTES);
-  if (!("text" in body)) return refuse(request, format, body.status, { error: "refused", codes: [body.code] });
+  if (!("text" in body)) return rejected(request, format, [body.code]);
   const fields = fieldsOf(body.text, form);
-  if (fields.codes) return refuse(request, format, 400, { error: "refused", codes: fields.codes });
+  if (fields.codes) return rejected(request, format, fields.codes);
   const auth = await authorize(request, env, url, [fields.t], "place-chiplets", format);
   if (auth instanceof Response) return auth;
   const parsed = typeof fields.layout === "string" ? parseCompact(fields.layout) : parseDies(fields.layout);
-  if (!parsed.ok) return refuse(request, format, 400, { error: "refused", codes: parsed.codes });
+  if (!parsed.ok) return rejected(request, format, parsed.codes);
+  const terms = termsOf(env);
+  if (!terms) return rejected(request, format, [{ code: "not_open_yet" }]);
   // Per token, what counts is what would reach the intake: refusals above cost it nothing (the prefix limit bounds them).
-  if (!(await allow(env, "DOOR_NONCE_LIMITER", `submit:${auth.claims.nonce}`))) return limited(request, format);
+  if (!(await allow(env, "DOOR_NONCE_LIMITER", `submit:${auth.claims.nonce}`))) return submitLimited(request, format);
   const requestKey = fields.requestKey ?? `door-${(await sha256Hex(`sentilab-door-request/1|${auth.claims.principal}|${parsed.compact}`)).slice(0, 32)}`;
-  const payload = { schema: "sentilab-door-submit/1", token_claims: auth.claims, request_key: requestKey,
-    layout: { compact: parsed.compact, dies: parsed.dies }, via: form ? "tap_link" : "post" };
+  const who = await identityFor(request, env);
+  const { purpose, case: caseId, nonce, exp } = auth.claims;
+  const payload = { token_claims: { purpose, case: caseId, nonce, exp }, layout: parsed.compact, terms, request_key: requestKey,
+    class: CLASSES.includes(who?.triage?.class) ? who.triage.class : "unknown", operator: OPERATORS.includes(who?.operator) ? who.operator : "unknown" };
   const answer = await callApi(env, API.submit, { method: "POST", body: payload, host: url.host, timeoutMs: 8000 });
   if (!answer.ok && answer.reason === "timeout") return refuse(request, format, 504, { error: "intake_timeout", request_key: requestKey });
-  if (!answer.ok || !answer.json || typeof answer.json !== "object" || Array.isArray(answer.json) || answer.status >= 500 || [404, 405].includes(answer.status) && !answer.json.state) {
-    return refuse(request, format, 503, { error: "intake_unavailable" });
-  }
+  const value = answer.ok && answer.json && typeof answer.json === "object" && !Array.isArray(answer.json) ? answer.json : null;
+  // The intake's own answers only: its submit schema below 500 (or its 503 refusal while closed), or its token
+  // refusal. Anything else (a missing route, a crash, another service) means the intake is not there.
+  const own = (value?.schema === SUBMIT_SCHEMA && (answer.status < 500 || (answer.status === 503 && value.state === "rejected")))
+    || (answer.status === 403 && /^token_[a-z]+$/.test(value?.error ?? ""));
+  if (!own) return refuse(request, format, 503, { error: "intake_unavailable" });
   if (form) return html(request, answer.status < 300 ? 200 : answer.status, resultHtml(url.origin, auth.token, outcomeOf(answer)));
-  return json(request, answer.status, answer.json);
+  return json(request, answer.status, value);
 }
 
 const ROUTES = Object.freeze({

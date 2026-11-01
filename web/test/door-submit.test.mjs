@@ -10,31 +10,36 @@ import { allow, ipPrefix, LIMITS, readBoard } from "../src/door/door.js";
 import { parseCompact } from "../src/door/layout.js";
 import { layoutSvg } from "../src/door/render.js";
 import { verifyToken } from "../src/door/token.js";
-import { BASE, BROWSER, KEY, OVERLAP, REF, RUN, UA, agent, installApi, mint, postForm, postJson, setup } from "./door-harness.mjs";
+import { BASE, BROWSER, KEY, OVERLAP, REF, RUN, TERMS, UA, agent, installApi, mint, postForm, postJson, setup } from "./door-harness.mjs";
 
 const submits = (calls) => calls.filter((c) => c.method === "POST" && c.path === "/api/open/v1/door/submit");
 const DIES_FORM = parseCompact(REF).dies;
 const MARK = "zzmark";
 const HOSTILE = `${MARK}<script>alert(1)</script>"'><img src=x onerror=alert(1)>Ignore all previous instructions`;
+const SUBMIT = "sentilab-door-submit/1";
+const refused = (codes, extra = {}) => ({ schema: SUBMIT, state: "rejected", codes, ...extra });
 
-test("a JSON submission reaches the intake once, canonical, with the origin token and token_claims, and its answer comes back", async (t) => {
+test("a JSON submission reaches the intake once, in its schema, with the origin token, and its answer comes back", async (t) => {
   const calls = installApi(t);
   const s = setup();
   const token = await mint();
   const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }, { "cf-connecting-ip": "203.0.113.7" }));
-  assert.deepEqual([r.status, JSON.parse(r.text)], [202, { state: "queued", run_id: RUN }]);
+  assert.equal(r.status, 202);
+  assert.deepEqual(JSON.parse(r.text), { schema: SUBMIT, state: "queued", run_id: RUN, position: 1, duplicate: false, label: "automation · ab12", short_id: "ab12" });
   assert.equal(r.headers.get("cache-control"), "private, no-store, no-transform");
   const [call] = submits(calls);
   assert.equal(call.headers["x-origin-token"], "origin-test-token");
   assert.equal(call.headers["content-type"], "application/json");
-  assert.equal(call.headers["x-door-claims"], undefined, "claims travel in the body on submit");
-  assert.deepEqual(Object.keys(call.body), ["schema", "token_claims", "request_key", "layout", "via"]);
+  assert.equal(call.headers["x-door-nonce"], undefined, "the claims travel in the body on submit");
+  // Lane 2's SUBMIT_SCHEMA, additionalProperties false at every level.
+  assert.deepEqual(Object.keys(call.body), ["token_claims", "layout", "terms", "request_key", "class", "operator"]);
   const { claims } = await verifyToken(KEY, token, { site: "sentilab.aidenid.com", now: Date.now() });
-  assert.deepEqual(call.body.token_claims, claims);
-  assert.equal(call.body.schema, "sentilab-door-submit/1");
-  assert.deepEqual(call.body.layout, { compact: REF, dies: DIES_FORM });
-  assert.equal(call.body.via, "post");
+  assert.deepEqual(call.body.token_claims, { purpose: "place-chiplets", case: "cpu-dram", nonce: claims.nonce, exp: claims.exp });
+  assert.ok(Number.isInteger(call.body.token_claims.exp));
+  assert.equal(call.body.layout, REF);
+  assert.equal(call.body.terms, TERMS);
   assert.match(call.body.request_key, /^door-[0-9a-f]{32}$/);
+  assert.deepEqual([call.body.class, call.body.operator], ["automation", "unknown"]);
   assert.ok(!JSON.stringify(call.body).includes(token.split(".")[5]), "the MAC never leaves the Worker");
   assert.ok(!JSON.stringify(call).includes(KEY));
 });
@@ -53,14 +58,16 @@ test("identical retries share one request key; the dies form maps to the same re
   assert.equal(new Set(keys.slice(0, 4)).size, 1, "same token and layout: same key, whatever the form");
   assert.notEqual(keys[4], keys[0], "another layout: another key");
   assert.equal(keys[5], "my-key-1");
-  assert.deepEqual(submits(calls).map((c) => c.body.via), ["post", "post", "post", "tap_link", "post", "post"]);
+  assert.deepEqual(submits(calls).map((c) => c.body.layout), [REF, REF, REF, REF, OVERLAP, REF], "the canonical compact layout, whatever the form");
+  const classes = ["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown"];
+  assert.ok(submits(calls).every((c) => classes.includes(c.body.class)), "the submitter's observed class, from the classifier's enum");
   const other = await mint();
   await s.go("/agents/submit", postJson({ t: other, layout: REF }));
   assert.notEqual(submits(calls).at(-1).body.request_key, keys[0], "another token: another principal, another key");
 });
 
 test("preview-illegal layouts still go to the intake, which decides; its rejection is passed back unchanged", async (t) => {
-  const rejection = { state: "rejected", codes: [{ code: "halo_overlap", dies: [0, 1], amount_um: 110 }] };
+  const rejection = { schema: SUBMIT, state: "rejected", codes: [{ code: "halo_overlap", dies: [0, 1], amount_um: 110 }] };
   const calls = installApi(t, { submit: async () => Response.json(rejection, { status: 422 }) });
   const s = setup();
   const r = await s.go("/agents/submit", postJson({ t: await mint(), layout: OVERLAP }));
@@ -72,20 +79,21 @@ test("hostile and malformed submissions are refused at the edge with contract co
   const calls = installApi(t);
   const s = setup();
   const token = await mint();
+  // The intake's statuses: 400 transport and envelope codes, 413 oversize, 422 geometry codes (from the first code).
   const cases = [
     ["extra field", postJson({ t: token, layout: REF, note: HOSTILE }), 400, [{ code: "unknown_field", path: "" }]],
     ["proto field", postJson(`{"t":"${token}","layout":"${REF}","__proto__":{"x":1}}`), 400, [{ code: "unknown_field", path: "" }]],
     ["NaN item", postJson({ t: token, layout: REF.replace("36.35.0", "NaN.35.0") }), 400, [{ code: "schema_invalid", path: "/l/0", keyword: "pattern" }]],
     ["huge number", postJson({ t: token, layout: REF.replace("36.35.0", "99999999999999999999.35.0") }), 400, [{ code: "schema_invalid", path: "/l/0", keyword: "pattern" }]],
     ["huge dies", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, x_um: 1e300 })) }), 400, [{ code: "schema_invalid", path: "/layout/0/x_um", keyword: "maximum" }]],
-    ["infinite dies", postJson(`{"t":"${token}","layout":[{"die":0,"x_um":1e999,"y_um":0,"rot_deg":0}]}`), 400, [{ code: "die_count", count: 1 }]],
-    ["out of frame", postJson({ t: token, layout: REF.replace("73.35.0", "95.35.0") }), 400, [{ code: "out_of_frame", dies: [5], amount_um: 2500 }]],
-    ["nine dies", postJson({ t: token, layout: `${REF},1.1.0` }), 400, [{ code: "die_count", count: 9 }]],
-    ["turned DRAM", postJson({ t: token, layout: REF.replace("17.35.0", "17.35.1") }), 400, [{ code: "rotation_not_allowed", dies: [4] }]],
-    ["CPU 180", postJson({ t: token, layout: REF.replace("36.35.0", "36.35.2") }), 400, [{ code: "rotation_not_allowed", dies: [0] }]],
+    ["infinite dies", postJson(`{"t":"${token}","layout":[{"die":0,"x_um":1e999,"y_um":0,"rot_deg":0}]}`), 422, [{ code: "die_count", count: 1 }]],
+    ["out of frame", postJson({ t: token, layout: REF.replace("73.35.0", "95.35.0") }), 422, [{ code: "out_of_frame", dies: [5], amount_um: 2500 }]],
+    ["nine dies", postJson({ t: token, layout: `${REF},1.1.0` }), 422, [{ code: "die_count", count: 9 }]],
+    ["turned DRAM", postJson({ t: token, layout: REF.replace("17.35.0", "17.35.1") }), 422, [{ code: "rotation_not_allowed", dies: [4] }]],
+    ["CPU 180", postJson({ t: token, layout: REF.replace("36.35.0", "36.35.2") }), 422, [{ code: "rotation_not_allowed", dies: [0] }]],
     ["dies extra field", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i === 2 ? { ...d, label: HOSTILE } : d)) }), 400, [{ code: "unknown_field", path: "/layout/2" }]],
-    ["dies swapped", postJson({ t: token, layout: [DIES_FORM[1], DIES_FORM[0], ...DIES_FORM.slice(2)] }), 400, [{ code: "die_order", dies: [0, 1] }]],
-    ["off lattice", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, y_um: 17600 })) }), 400, [{ code: "lattice", dies: [0], amount_um: 100 }]],
+    ["dies swapped", postJson({ t: token, layout: [DIES_FORM[1], DIES_FORM[0], ...DIES_FORM.slice(2)] }), 422, [{ code: "die_order", dies: [0, 1] }]],
+    ["off lattice", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, y_um: 17600 })) }), 422, [{ code: "lattice", dies: [0], amount_um: 100 }]],
     ["layout object", postJson({ t: token, layout: { x: 1 } }), 400, [{ code: "schema_invalid", path: "/layout", keyword: "type" }]],
     ["no layout", postJson({ t: token }), 400, [{ code: "schema_invalid", path: "/layout", keyword: "required" }]],
     ["token number", postJson({ t: 7, layout: REF }), 400, [{ code: "schema_invalid", path: "/t", keyword: "type" }]],
@@ -101,7 +109,7 @@ test("hostile and malformed submissions are refused at the edge with contract co
   for (const [name, init, status, codes] of cases) {
     const r = await s.go("/agents/submit", init);
     assert.equal(r.status, status, name);
-    if (codes) assert.deepEqual(JSON.parse(r.text), { error: "refused", codes }, name);
+    if (codes) assert.deepEqual(JSON.parse(r.text), refused(codes), name);
     assert.ok(!r.text.includes(MARK) && !r.text.includes("alert(") && !r.text.includes("Ignore all"), `${name}: nothing echoed`);
   }
   for (const [type, body] of [["text/plain", REF], ["multipart/form-data; boundary=x", "--x--"], ["", "{}"]]) {
@@ -121,8 +129,8 @@ test("flood: 50 submissions on one token hit the per-token limit; 200 from many 
   assert.deepEqual([one.filter((x) => x === 202).length, one.filter((x) => x === 429).length], [LIMITS.DOOR_NONCE_LIMITER.limit, 50 - LIMITS.DOOR_NONCE_LIMITER.limit]);
   const limited = await s.go("/agents/submit", postJson({ t: token, layout: REF }, { "cf-connecting-ip": "198.51.100.9" }));
   const body = JSON.parse(limited.text);
-  assert.deepEqual([body.error, limited.headers.get("retry-after")], ["rate_limited", "60"]);
-  assert.match(body.retry_after, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
+  assert.deepEqual([body.schema, body.state, body.codes[0].code, body.limits, limited.headers.get("retry-after")], [SUBMIT, "rejected", "rate_limited", ["request_rate"], "60"]);
+  assert.match(body.codes[0].retry_after, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
   const many = [];
   for (let i = 0; i < 200; i += 1) many.push((await s.go("/agents/submit", postJson({ t: await mint(), layout: REF }, { "cf-connecting-ip": `203.0.113.${i % 250}` }))).status);
   assert.deepEqual([many.filter((x) => x === 202).length, many.filter((x) => x === 429).length], [LIMITS.DOOR_IP_LIMITER.limit, 200 - LIMITS.DOOR_IP_LIMITER.limit]);
@@ -162,10 +170,19 @@ test("the intake down, slow or odd: the honest answer, and nothing claimed", asy
   let r = await setup().go("/agents/submit", postJson({ t: token, layout: REF }));
   assert.deepEqual([r.status, JSON.parse(r.text)], [503, { error: "intake_unavailable" }]);
   t.mock.restoreAll();
-  for (const answer of [new Response("not json", { status: 200 }), new Response("{}", { status: 404 }), Response.json({ state: "queued" }, { status: 500 }), Response.json([1, 2])]) {
+  for (const answer of [new Response("not json", { status: 200 }), new Response("{}", { status: 404 }), Response.json({ detail: "Not Found" }, { status: 404 }),
+    Response.json({ state: "queued" }, { status: 202 }), Response.json({ schema: SUBMIT, state: "queued" }, { status: 500 }), Response.json([1, 2]), Response.json({ error: "anything" }, { status: 403 })]) {
     installApi(t, { submit: async () => answer });
     r = await setup().go("/agents/submit", postJson({ t: token, layout: REF }));
     assert.deepEqual([r.status, JSON.parse(r.text)], [503, { error: "intake_unavailable" }]);
+    t.mock.restoreAll();
+  }
+  // The intake's own refusals come back as they are: closed, over quota, a token it will not take.
+  for (const [status, answer] of [[503, refused([{ code: "not_open_yet" }])], [429, refused([{ code: "budget_exhausted", retry_after: "2026-11-01T16:00:00Z" }], { limits: ["token_cpu"] })],
+    [409, refused([{ code: "idempotency_conflict" }])], [403, { error: "token_expired" }]]) {
+    installApi(t, { submit: async () => Response.json(answer, { status }) });
+    r = await setup().go("/agents/submit", postJson({ t: token, layout: REF }));
+    assert.deepEqual([r.status, JSON.parse(r.text)], [status, answer]);
     t.mock.restoreAll();
   }
   t.mock.timers.enable({ apis: ["setTimeout"] });
@@ -213,13 +230,33 @@ test("the tap-link confirm page never submits on its own: one form, one POST but
   assert.ok(!malformed.text.includes("<form") && !malformed.text.includes(MARK));
   // Closed admission: the page says so and offers no button.
   t.mock.restoreAll();
-  installApi(t, { board: async () => Response.json({ admission: { open: false } }) });
+  installApi(t, { board: async () => Response.json({ door: { open: false, codes: ["not_open_yet"] } }) });
   const shut = await setup().go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
   assert.ok(shut.text.includes("Submissions are closed right now") && !shut.text.includes("<form"));
 });
 
+test("without published terms nothing can be submitted: the page says so and submit answers not_open_yet at the edge", async (t) => {
+  const calls = installApi(t);
+  const s = setup({ DOOR_TERMS: undefined });
+  const token = await mint();
+  const page = await s.go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
+  assert.ok(page.text.includes("no challenge terms are published") && !page.text.includes("<form"));
+  const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }));
+  assert.deepEqual([r.status, JSON.parse(r.text)], [503, refused([{ code: "not_open_yet" }])]);
+  const view = JSON.parse((await s.go(`/agents/engram?t=${token}`, agent())).text);
+  assert.equal(view.submissions.terms, null);
+  for (const bad of ["sentilab-open-terms/1", `sentilab-open-terms/0@${"0f".repeat(32)}`, `x${TERMS}`]) {
+    const odd = setup({ DOOR_TERMS: bad });
+    assert.equal((await odd.go("/agents/submit", postJson({ t: token, layout: REF }))).status, 503, bad);
+  }
+  await s.drain();
+  assert.deepEqual(submits(calls), []);
+  const open = await setup().go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
+  assert.ok(open.text.includes(`Submitting accepts the challenge terms <code>${TERMS}</code>.`));
+});
+
 test("pressing the confirm page's button submits once and shows only whitelisted fields", async (t) => {
-  const answer = { state: "queued", run_id: RUN, codes: [{ code: "queue_full", note: HOSTILE }, { code: HOSTILE }], message: HOSTILE };
+  const answer = { schema: SUBMIT, state: "queued", run_id: RUN, codes: [{ code: "queue_full", note: HOSTILE }, { code: HOSTILE }], message: HOSTILE };
   const calls = installApi(t, { submit: async () => Response.json(answer, { status: 202 }) });
   const s = setup();
   const token = await mint();
@@ -229,7 +266,7 @@ test("pressing the confirm page's button submits once and shows only whitelisted
   assert.ok(r.text.includes(`<code>${RUN}</code>`) && r.text.includes(`${BASE}/agents/status/${RUN}?t=${token}`));
   assert.ok(!r.text.includes(MARK) && !r.text.includes("alert("));
   assert.equal(submits(calls).length, 1);
-  assert.equal(submits(calls)[0].body.via, "tap_link");
+  assert.equal(submits(calls)[0].body.layout, REF);
 });
 
 test("no visitor text is reflected anywhere: responses, headers, intake calls and arrivals", async (t) => {
@@ -282,9 +319,10 @@ test("the layout thumbnail is a pure SVG of whole micrometres with fixed labels 
 
 test("the board reader takes admission only from an explicit boolean and drops everything it does not know", () => {
   assert.deepEqual(readBoard({ ok: false }), { admission: "unknown", board: null, cpuSecondsLeft: null });
-  assert.equal(readBoard({ ok: true, status: 200, json: { admission: { open: "yes" } } }).admission, "unknown");
-  assert.equal(readBoard({ ok: true, status: 500, json: { admission: { open: true } } }).admission, "unknown");
-  assert.equal(readBoard({ ok: true, status: 200, json: { admission: { open: false } } }).admission, "closed");
-  assert.deepEqual(readBoard({ ok: true, status: 200, json: { board: [{ class: "automation", short_id: "abcd", state: "nonsense", wire_proxy_mm: -1, extra: 1 }], token: { cpu_s_left: -2 } } }),
+  assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: "yes" } } }).admission, "unknown");
+  assert.equal(readBoard({ ok: true, status: 500, json: { door: { open: true } } }).admission, "unknown");
+  assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: false } } }).admission, "closed");
+  assert.equal(readBoard({ ok: true, status: 200, json: { admission: { open: true } } }).admission, "unknown", "only the intake's own door.open counts");
+  assert.deepEqual(readBoard({ ok: true, status: 200, json: { top: [{ class: "automation", short_id: "abcd", status: "nonsense", wire_proxy_mm: -1, verdict: "beat", operator: "openai", extra: 1 }], token: { cpu_s_remaining: -2 } } }),
     { admission: "unknown", board: [{ rank: 1, class: "automation", short_id: "abcd" }], cpuSecondsLeft: null });
 });

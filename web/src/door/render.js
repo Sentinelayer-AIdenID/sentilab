@@ -160,7 +160,7 @@ const CODE_TEXT = Object.freeze({
 });
 export const codeText = (found) => `${found.code}${found.dies ? ` (${found.dies.map((d) => DIES[d]?.id ?? d).join(", ")})` : ""}: ${CODE_TEXT[found.code] ?? "refused"}`;
 
-export function confirmHtml({ claims, token, compact, dies, violations, wireMm, submissions }) {
+export function confirmHtml({ claims, token, compact, dies, violations, wireMm, submissions, terms }) {
   const flagged = new Set(violations.flatMap((v) => v.dies ?? []));
   const check = violations.length
     ? `<p class="check illegal">Preview check: ${violations.length} rule${violations.length === 1 ? "" : "s"} broken.</p>
@@ -170,11 +170,14 @@ ${violations.map((v) => `<li>${esc(codeText(v))}</li>`).join("\n")}
     : `<p class="check legal">Preview check: no placement rule broken.</p>`;
   const action = submissions === "closed"
     ? `<p class="check illegal">Submissions are closed right now, so nothing can be sent.</p>`
-    : `<form method="post" action="/agents/submit">
+    : !terms
+      ? `<p class="check illegal">Submissions are not open yet: no challenge terms are published, so nothing can be sent.</p>`
+      : `<form method="post" action="/agents/submit">
 <input type="hidden" name="t" value="${esc(token)}">
 <input type="hidden" name="l" value="${esc(compact)}">
 <button type="submit">Submit this layout</button>
-</form>`;
+</form>
+<p class="fine">Submitting accepts the challenge terms <code>${esc(terms)}</code>.</p>`;
   return page("SentiLab: submit this layout?", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Submit this layout?</h1>
 <p>An assistant made this layout and gave you this link. Nothing has been sent. Press the button only if you want the scorer to simulate it.</p>

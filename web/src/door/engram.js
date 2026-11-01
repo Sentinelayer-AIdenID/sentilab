@@ -25,7 +25,7 @@ export function gateZeroFrom(evidence) {
     active: number(row.active_layer_grid_peak_C), precisionK: number(gate.raw_output_precision_K) };
 }
 
-export function agentView({ origin, token, claims, submissions, gateZero, board, boardStatus, cpuSecondsLeft }) {
+export function agentView({ origin, token, claims, submissions, terms, gateZero, board, boardStatus, cpuSecondsLeft }) {
   const evidenceUrl = `${origin}/agents/evidence.json`;
   return {
     schema: VIEW_SCHEMA,
@@ -33,7 +33,8 @@ export function agentView({ origin, token, claims, submissions, gateZero, board,
     label: SCORER.label,
     token: { t: token, kind: TOKEN_WORDING, scope: SCOPES[claims.purpose], expires_at: claims.expires_at, short_id: claims.short_id,
       budget: `${CPU_SECONDS_PER_TOKEN} CPU-seconds per token, kept by the scorer intake`, cpu_s_left: cpuSecondsLeft ?? null },
-    submissions: { state: submissions, rule: SUBMISSION_RULE },
+    submissions: { state: submissions, rule: SUBMISSION_RULE, terms: terms ?? null,
+      terms_note: terms ? "Submitting through the door accepts these terms of the signed manifest." : "No terms are published yet, so nothing can be submitted." },
     objective: "Place 4 CPUs and 4 DRAMs on the 45 mm interposer so the board metric goes down without lengthening the wire proxy. Compare like with like: scoring.board_metric for temperature and scoring.wire_proxy for wire. The published points under references are routed wire, a different scale.",
     case: {
       id: CASE_ID, name: "CPU-DRAM (TAP-2.5D Fig. 5a)", units: "um", anchor: "die centre",

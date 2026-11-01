@@ -1,6 +1,6 @@
 // Shared fixtures for the agent door's route tests (door-routes.test.mjs, door-submit.test.mjs): the real Worker over
-// the real files in web/public, a stand-in scorer intake on a mocked global fetch that records every call, and the
-// request shapes of agents and of a desktop browser.
+// the real files in web/public, a stand-in scorer intake on a mocked global fetch that records every call, answering in
+// Lane 2's shapes (sentilab PR #81 at c5130696), and the request shapes of agents and of a desktop browser.
 import { readFileSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,8 @@ export const API_ORIGIN = "https://sentilab-api.example.test";
 export const REF = "36.35.0,54.35.0,54.55.0,36.55.0,17.35.0,73.35.0,73.55.0,17.55.0";
 export const OVERLAP = "36.35.0,53.35.0,54.55.0,36.55.0,17.35.0,73.35.0,73.55.0,17.55.0";
 export const RUN = "open-12345678-0123456789abcdef0123456789abcdef";
+// A terms version of the contract's shape, built at run time (one of a signed manifest's accepted versions).
+export const TERMS = `sentilab-open-terms/1@${"0f".repeat(32)}`;
 export const UA = Object.freeze({
   gptbot: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)",
   chatgptUser: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
@@ -45,19 +47,24 @@ function assets() {
   } };
 }
 
-export const BOARD = Object.freeze({ admission: { open: true }, board: [
-  { class: "declared_agent", short_id: "ab12", state: "evaluated", max_chiplet_centre_cell_mean_C: 101.25, wire_proxy_mm: 9.75 },
-  { class: "ours", short_id: "0f0f", state: "reproduced", max_chiplet_centre_cell_mean_C: 99.5, wire_proxy_mm: 10.25 },
-], token: { cpu_s_left: 28.9 } });
+// GET /board in Lane 2's shape, abridged: door.open, and top rows carrying more than the door may show agents.
+export const BOARD = Object.freeze({ schema: "sentilab-door-board/1", label: "simulated, not silicon", door: { open: true, codes: [] }, top: [
+  { id: RUN, label: "declared_agent · ab12", class: "declared_agent", operator: "openai", short_id: "ab12", status: "evaluated",
+    max_chiplet_centre_cell_mean_C: 101.25, native_all_block_max_C: 101.2, active_layer_peak_C: 104.5, wire_proxy_mm: 9.75, verdict: null },
+  { id: "open-12345678-ffffffffffffffffffffffffffffffff", label: "ours · 0f0f", class: "ours", operator: "unknown", short_id: "0f0f",
+    status: "reproduced", max_chiplet_centre_cell_mean_C: 99.5, wire_proxy_mm: 10.25, verdict: "candidate" },
+], token: { cpu_s_remaining: 28.9 } });
 
 // The stand-in intake: route -> async (call) => Response. Records { method, path, headers, body } per call.
 export function installApi(t, routes = {}) {
   const calls = [];
   const handlers = {
     board: async () => Response.json(BOARD),
-    submit: async () => Response.json({ state: "queued", run_id: RUN }, { status: 202 }),
-    arrivals: async () => new Response(null, { status: 202 }),
-    status: async () => Response.json({ state: "queued", run_id: RUN }),
+    submit: async () => Response.json({ schema: "sentilab-door-submit/1", state: "queued", run_id: RUN, position: 1, duplicate: false,
+      label: "automation · ab12", short_id: "ab12" }, { status: 202 }),
+    arrival: async () => new Response(null, { status: 204 }),
+    status: async () => Response.json({ schema: "sentilab-door-status/1", id: RUN, label: "automation · ab12", class: "automation",
+      operator: "openai", short_id: "ab12", status: "queued" }),
     ...routes,
   };
   t.mock.method(globalThis, "fetch", async (input, init = {}) => {
@@ -67,7 +74,7 @@ export function installApi(t, routes = {}) {
     const call = { method: init.method ?? "GET", origin: url.origin, path: url.pathname + url.search, headers, body, signal: init.signal };
     calls.push(call);
     const name = url.pathname === "/api/open/v1/door/board" ? "board" : url.pathname === "/api/open/v1/door/submit" ? "submit"
-      : url.pathname === "/api/open/v1/door/arrivals" ? "arrivals" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status" : null;
+      : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status" : null;
     if (!name) return new Response("not found", { status: 404 });
     return handlers[name](call);
   });
@@ -78,7 +85,7 @@ export function installApi(t, routes = {}) {
 export function setup(extra = {}) {
   resetDoorState();
   const pending = [];
-  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off" };
+  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, DOOR_TERMS: TERMS, AQUARIUM_POST: "off" };
   for (const [k, v] of Object.entries(extra)) { if (v === undefined) delete env[k]; else env[k] = v; }
   const ctx = { waitUntil: (promise) => pending.push(promise) };
   const go = async (path, init = {}, base = BASE) => {
