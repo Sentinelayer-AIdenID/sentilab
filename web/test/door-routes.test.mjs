@@ -138,6 +138,21 @@ test("without DOOR_TOKEN_KEY the door is closed: agents keep #66's pages and the
   assert.deepEqual(intakeCalls(calls).filter((c) => c.method === "POST"), [], "nothing was submitted");
 });
 
+test("the wall sends a person to the live 3D view, with both parameters, in all three formats; the earlier demo stays as a second link", async (t) => {
+  installApi(t);
+  const live = `${BASE}/sentilab/package/?feed=door&src=live`;
+  const s = setup();
+  const html = await s.go("/", agent(UA.gptbot));
+  assert.ok(html.text.includes(`A person? <a href="${live.replace("&", "&#38;")}">Watch it live</a>, or see <a href="${BASE}/?view=human">the earlier demo</a>.`), "html");
+  assert.ok(!html.text.includes("Open the normal site"), "the old label is gone");
+  const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
+  assert.ok(md.text.includes(`A person? [Watch it live](${live}), or see [the earlier demo](${BASE}/?view=human).`), "markdown");
+  const json = JSON.parse((await s.go("/", agent(UA.curl, { accept: "application/json" }))).text);
+  assert.equal(json.live_view, live);
+  assert.equal(json.human_page, `${BASE}/?view=human`);
+  await s.drain();
+});
+
 test("choosing a purpose mints a token on the request's own host and links the next step in full", async (t) => {
   const calls = installApi(t);
   for (const base of [BASE, STAGING]) {
@@ -162,7 +177,7 @@ test("choosing a purpose mints a token on the request's own host and links the n
   }
   const s = setup();
   const review = JSON.parse((await s.go("/agents/intent?purpose=review", agent(UA.curl, { accept: "application/json" }))).text);
-  assert.deepEqual(review.next.map((n) => n.url), [`${BASE}/agents/board`, `${BASE}/agents/`]);
+  assert.deepEqual(review.next.map((n) => n.url), [`${BASE}/sentilab/package/?feed=door&src=live`, `${BASE}/agents/board`, `${BASE}/agents/`]);
   assert.equal(review.kind, "scoped purpose token; not an identity");
   assert.equal(review.scope, "review:cpu-dram");
   const read = await s.go("/agents/intent?purpose=read", agent(UA.curl, { accept: "text/markdown" }));
