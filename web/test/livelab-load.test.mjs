@@ -35,6 +35,8 @@ function anything() {
 
 function installPage(t, requests) {
   const saved = new Map();
+  const listeners = { window: new Map(), document: new Map() };
+  const on = (where) => (type, fn) => { const list = listeners[where].get(type) ?? []; list.push(fn); listeners[where].set(type, list); };
   const define = (name, value) => { saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name)); Object.defineProperty(globalThis, name, { value, configurable: true, writable: true }); };
   const ids = new Map();
   const element = (tag = "") => {
@@ -46,9 +48,9 @@ function installPage(t, requests) {
     hidden: false, visibilityState: "visible", activeElement: null, body: anything(),
     getElementById: (id) => { if (!ids.has(id)) ids.set(id, element(id === "packageCanvas" || id === "packageCanvas2d" ? "canvas" : "")); return ids.get(id); },
     querySelector: () => null, querySelectorAll: () => [], createElement: (tag) => element(tag), createElementNS: () => element(),
-    addEventListener() {}, removeEventListener() {},
+    addEventListener: on("document"), removeEventListener() {},
   });
-  define("window", { addEventListener() {}, removeEventListener() {}, devicePixelRatio: 1 });
+  define("window", { addEventListener: on("window"), removeEventListener() {}, devicePixelRatio: 1 });
   define("location", { hostname: "sentilab.aidenid.com", search: "", pathname: "/sentilab/live/" });
   define("matchMedia", () => ({ matches: true, addEventListener() {} }));     // reduced motion: no entrance, no easing
   define("sessionStorage", { getItem: () => "yes", setItem() {} });
@@ -77,6 +79,7 @@ function installPage(t, requests) {
       else delete globalThis[name];
     }
   });
+  return { fire: (where, type, event = {}) => { for (const fn of listeners[where].get(type) ?? []) fn({ type, ...event }); } };
 }
 const settle = async () => { for (let i = 0; i < 25; i += 1) await new Promise((r) => setImmediate(r)); };
 
@@ -94,4 +97,27 @@ test("loading Live Lab and leaving it open past 30 s never asks /api/view/runs (
   assert.ok(requests.every((r) => r.method === "GET"), "read-only");
   assert.deepEqual([...new Set(paths)].sort(), ["/api/open/v1/door/board", "/api/open/v1/door/events", "/api/open/v1/door/results"],
     "the door's three feeds are the only requests");
+});
+
+// Warden's P1-1: pagehide stops the feed and the timers; a page restored from the back/forward cache (pageshow with
+// persisted true) must start them again, or it shows the door as stopped although nothing is wrong.
+test("P1-1: after pagehide, a back/forward-cache restore (pageshow, persisted) resumes polling", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T16:40:00Z") });
+  const requests = [];
+  const page = installPage(t, requests);
+  await import(`${LIVE}?load=bfcache`);
+  await settle();
+  for (let s = 0; s < 4; s += 1) { t.mock.timers.tick(1000); await settle(); }
+  assert.ok(requests.some((r) => r.path === "/api/open/v1/door/results"), "polling before the page is hidden");
+  page.fire("window", "pagehide", { persisted: true });
+  await settle();
+  const atHide = requests.length;
+  for (let s = 0; s < 20; s += 1) { t.mock.timers.tick(1000); await settle(); }
+  assert.equal(requests.length, atHide, "nothing is requested while the page sits in the back/forward cache");
+  page.fire("window", "pageshow", { persisted: true });
+  await settle();
+  for (let s = 0; s < 16; s += 1) { t.mock.timers.tick(1000); await settle(); }
+  const after = requests.slice(atHide).map((r) => r.path);
+  assert.ok(after.filter((p) => p === "/api/open/v1/door/results").length >= 3, `the door feed resumes: ${after.join(", ")}`);
+  assert.ok(after.includes("/api/open/v1/door/events") && after.includes("/api/open/v1/door/board"), "events and board resume too");
 });

@@ -681,4 +681,8 @@ feed.start();
 pollBoard();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
 setInterval(() => { renderStatus(); }, 1000);
-window.addEventListener("pagehide", () => { feed.stop(); clearTimeout(boardTimer); stopPlay(); });
+// Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
+// page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
+// stopped; a fresh load gets no pageshow with persisted set.
+window.addEventListener("pagehide", () => { feed.stop(); boardEpoch += 1; clearTimeout(boardTimer); stopPlay(); });
+window.addEventListener("pageshow", (e) => { if (e.persisted) { feed.start(); pollBoard(); renderStatus(); } });
