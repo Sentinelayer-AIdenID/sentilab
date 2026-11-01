@@ -1,0 +1,1834 @@
+{
+  "format": "sentilab-deck-final/1",
+  "deck": {
+    "title": "SentiLab",
+    "event": "ScienceClaw hackathon",
+    "talk": "Five-minute slot: talk, then a live demo"
+  },
+  "cutoff": "2026-11-01T02:06:00Z",
+  "talk": {
+    "maxSeconds": 300,
+    "talkCapSeconds": 180,
+    "transitionSeconds": 15,
+    "demoSeconds": 120,
+    "checkWordsPerMinute": 150,
+    "slowWordsPerSecond": 2.2
+  },
+  "problem": {
+    "kicker": "The problem",
+    "title": "Same chips, same power, same input files: 119 or 241 degrees?",
+    "figure": "fig1",
+    "line": "SentiLab: agents propose, challenge each other and keep the evidence behind every result.",
+    "caption": "The CPU-DRAM layout's chip layer on a 64 by 64 grid; the ring marks the hottest cell. 119 and 241 are chip-layer grid maxima (119.07 C and 240.53 C). The frozen gate statistic, the maximum native block output under centre mapping, is 115.93 C and 232.67 C; in 7.0 that maximum is a substrate block, not a chip. Run 23:41 to 23:44 UTC. Simulated, not silicon.",
+    "notes": "AI agents can now propose chiplet layouts in minutes, and a thermal simulator judges every one. We ran one published layout through two releases of the same open simulator, with byte-identical input files. Version 6.0 says 119 degrees; 7.0 says 241. That's 2.6 times the temperature rise. SentiLab is built so agents propose, challenge each other and keep the evidence. All of it is simulated, not silicon.",
+    "records": [
+      {
+        "room": "608657e4",
+        "ref": "seq 57377",
+        "author": "claude-warden",
+        "at": "2026-10-31T23:45:43.792Z",
+        "stated": "2026-10-31T23:44:00Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57394",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T00:05:37.132Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57456",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T01:13:28.575Z"
+      }
+    ]
+  },
+  "how": {
+    "kicker": "How the team works",
+    "title": "One goal, separate investigations, open challenge, one record.",
+    "steps": [
+      {
+        "title": "A person sets the goal",
+        "text": "One question, asked in the shared room.",
+        "today": "Why did our study come out inconclusive?",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56598",
+            "author": "human-mrrcarter",
+            "at": "2026-10-31T12:43:33.374Z"
+          }
+        ]
+      },
+      {
+        "title": "Agents investigate separately",
+        "text": "Each reads the sources and code, then posts what it found.",
+        "today": "Three agents sealed their findings before reading each other's; one had seen a one-line preview.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56630",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T13:08:41.715Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56643",
+            "author": "pocket-forge",
+            "at": "2026-10-31T13:15:06.262Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      },
+      {
+        "title": "Others challenge",
+        "text": "Reviewers attack the findings and the assumptions behind them.",
+        "today": "They challenged each other's reports; an agent run by another person attacked them too.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56648",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:18:09.938Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56649",
+            "author": "pocket-forge",
+            "at": "2026-10-31T13:18:19.101Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56654",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T13:28:00.936Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56816",
+            "author": "aneta-claude",
+            "at": "2026-10-31T15:21:25.335Z"
+          }
+        ]
+      },
+      {
+        "title": "One readable record",
+        "text": "Inputs, method, status and history stay with each finding.",
+        "today": "Missing evidence is marked, not hidden.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      }
+    ],
+    "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see what has to change.",
+    "notes": "A person sets the goal. Agents take separate pieces and post what they find in one shared room. Others challenge it: across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
+    "evidence": {
+      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
+      "attribution": "The review author's tally from the room log; its row file has not been independently retrieved. The approver confirms at least 4 as misses.",
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57388",
+          "author": "aneta-claude",
+          "at": "2026-10-31T23:55:33.112Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 5de985fb-fd2e-4998-b1a8-175f45a24bb1 to seq 57388",
+          "author": "claude-warden",
+          "at": "2026-10-31T23:56:30.405Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 83571ec9-f07a-4854-8f4a-85f949352ecb to seq 57388",
+          "author": "aneta-claude",
+          "at": "2026-11-01T00:00:09.834Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57392",
+          "author": "aneta-claude",
+          "at": "2026-11-01T00:03:42.458Z"
+        }
+      ],
+      "slide": "checks"
+    }
+  },
+  "timeline": {
+    "kicker": "Our own numbers",
+    "title": "Agents found it, checked it, and stopped our own run.",
+    "figure": "fig4",
+    "tiles": [
+      {
+        "value": "32 min",
+        "label": "from a person's question to a named suspect",
+        "from": "2026-10-31T12:43:33.374Z",
+        "to": "2026-10-31T13:15:38.133Z",
+        "rule": "round",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56598",
+            "author": "human-mrrcarter",
+            "at": "2026-10-31T12:43:33.374Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      },
+      {
+        "value": "Under 5 min",
+        "label": "from one agent's proposal to the halt; two others agreed first",
+        "from": "2026-10-31T15:52:12.966Z",
+        "to": "2026-10-31T15:56:58.678Z",
+        "rule": "under",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56865",
+            "author": "claude-warden",
+            "at": "2026-10-31T15:52:12.966Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "reply 67f2695a-a23d-4b5c-8ee3-823bd045cf3a to seq 56865",
+            "author": "pocket-forge",
+            "at": "2026-10-31T15:52:59.507Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56866",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T15:54:53.253Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56870",
+            "author": "claude-warden",
+            "at": "2026-10-31T15:57:47.392Z",
+            "stated": "2026-10-31T15:56:58.678Z"
+          }
+        ]
+      },
+      {
+        "value": "16:40",
+        "label": "the public notice withdrawing those temperatures, read back live",
+        "at": "2026-10-31T16:40:28.000Z",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56927",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T16:43:24.137Z",
+            "stated": "2026-10-31T16:40:28Z"
+          }
+        ]
+      }
+    ],
+    "caption": "Times UTC, from the room and run records; the time scale is linear on each side of the break. Saved-output values are modeled node values at matching positions, not calibrated temperatures.",
+    "notes": "A person asked one question at 12:43. Thirty-two minutes later an agent reading the source named a suspect, and a second confirmed it. A third, run by another person, modeled it from public code. Then one agent proposed stopping our own public run, two agreed, and it halted under five minutes later. We withdrew those temperatures in public."
+  },
+  "gate": {
+    "kicker": "The test fixed in advance",
+    "title": "The link differs between versions. We fixed the test first.",
+    "common": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0. Test fixed in advance: HotSpot 6 must land within 1 K of the published 75.48 C and 115.94 C.",
+    "toleranceK": "1.0",
+    "references": [
+      {
+        "id": "A",
+        "label": "Published layout A",
+        "source": "TAP-2.5D paper, Fig. 6(a)",
+        "publishedC": "75.48"
+      },
+      {
+        "id": "B",
+        "label": "Published layout B",
+        "source": "TAP-2.5D paper, Fig. 5(a)",
+        "publishedC": "115.94"
+      }
+    ],
+    "variants": {
+      "pass": {
+        "label": "PASS",
+        "text": "Both landed within 1 K. That reproduces those published numbers. It doesn't establish physical accuracy, and it doesn't validate any older result.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has now run: [values], against 75.48 and 115.94 published. That reproduces those numbers. It does not prove physical accuracy, and it does not validate any older result."
+      },
+      "fail": {
+        "label": "FAIL",
+        "text": "It missed: [values]. Our explanation is incomplete, and the withdrawal stands.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It missed: [values]. So our explanation is incomplete, and the withdrawal stands. Scientific benefit is not established."
+      },
+      "not-run": {
+        "label": "NOT RUN",
+        "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has not run yet. A pass would reproduce those numbers, not prove physical accuracy, and it would not bring back any old result. A miss would mean our explanation is incomplete. Either way, the old numbers stay withdrawn, and scientific benefit is not established."
+      }
+    },
+    "bottom": "Our old numbers stay withdrawn. Scientific benefit: not established.",
+    "wordingRecords": [
+      {
+        "room": "608657e4",
+        "ref": "seq 57253",
+        "author": "aneta-claude",
+        "at": "2026-10-31T22:21:34.278Z"
+      }
+    ],
+    "result": {
+      "outcome": "pass",
+      "measured": "75.48,115.93",
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57377",
+          "author": "claude-warden",
+          "at": "2026-10-31T23:45:43.792Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57381",
+          "author": "gpt-astra-carter",
+          "at": "2026-10-31T23:50:16.402Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57394",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T00:05:37.132Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57312",
+          "author": "delfie-claude",
+          "at": "2026-10-31T23:01:16.766Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+          "author": "feagent-codex",
+          "at": "2026-11-01T00:03:07.209Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57412",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T00:18:39.976Z"
+        }
+      ],
+      "comparator": {
+        "values": [
+          "123.42",
+          "232.67"
+        ],
+        "text": "Version comparison on the same layouts and readout: version 7.0 gives 123.42 C and 232.67 C, 48 to 117 K above the paper.",
+        "notes": "On the same layouts, the newer version runs 48 to 117 degrees hotter."
+      },
+      "scope": "Scope, in the operator's words: “this binary, at grid 64, on the block-centre metric only. It doesn't cover other grids or the search objective J.” Statistic: the maximum native block output under centre mapping. Chiplet-centre means (75.475 and 115.935 C) and active-grid peaks (75.48 and 119.07 C) are separate.",
+      "verification": {
+        "operator": {
+          "text": "Verified by the operator; independent re-derivation by a second reviewer in progress.",
+          "notes": "A second reviewer is re-deriving it independently now."
+        },
+        "rederived": {
+          "text": "Verified by the operator and independently re-derived from signed raw outputs by a second reviewer.",
+          "notes": "A second reviewer has independently re-derived it from the signed raw outputs."
+        }
+      },
+      "detail": [
+        "Run: 12 calls under a grant opened 23:41 UTC, from the merged build, one at a time, finished by 23:44. Each call was reserved, admitted, launched, receipted, settled and tagged.",
+        "Re-derived at 00:05 UTC from the saved artifacts by a second reviewer: 37 signatures, the 25-entry chain, every cell of all 12 grids. No solver was run for it.",
+        "Replays byte-identical. At a 32 by 32 grid: 75.46 C and 115.28 C. Kept apart from the gate statistic: chiplet-centre means 75.475 C and 115.935 C, active-grid peaks 75.48 C and 119.07 C.",
+        "At each run's hottest cell, spreader-to-sink difference: 1.24 K (6.0) against 55.31 K (7.0) on layout A, 4.04 K against 141.77 K on layout B.",
+        "Compute, for the validation container only: 23.0 CPU-seconds of 562 reserved (cap 600); the solver used 17.86. Not the cost of the build, the models or the project."
+      ],
+      "replay": "Each value was run again in a fresh process, and the outputs match byte for byte.",
+      "notes": "We fixed a test in advance: the older version must reproduce both published numbers within one kelvin. It passed, which reproduces those numbers but does not prove physical accuracy.",
+      "figureCaption": "Outside: as reported by outside teams. Finite element sits 8 to 9 percent above 6.0 in rise; that gap is open.",
+      "teamsNotes": "Two outside teams checked us, as reported by them: {delfie} ran both versions, and {feagent} used its own finite-element code."
+    },
+    "figure": "fig3"
+  },
+  "numbers": {
+    "kicker": "By the numbers",
+    "title": "By the numbers: Saturday, 31 October.",
+    "placeholder": false,
+    "placeholderText": "PLACEHOLDER: the measured and estimated numbers are not filled in yet.",
+    "items": [
+      {
+        "value": "90",
+        "label": "pull requests merged since 31 Oct 00:00 UTC (121 opened); median 44 min 28 s from open to merge",
+        "class": "MEASURED",
+        "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository."
+      },
+      {
+        "value": "5 min 46.2 s",
+        "label": "median from a founder's ask to the first delivered result, across 9 asks",
+        "class": "MEASURED",
+        "caveat": "The first post that delivered what was asked; some asks had later steps. Range 46.6 s to 52 min 57.3 s."
+      },
+      {
+        "value": "$5,112.39",
+        "label": "cloud cost posted for 31 October, all projects",
+        "class": "MEASURED",
+        "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon."
+      },
+      {
+        "value": "360–720 h",
+        "label": "engineer-hours the 90 merged pull requests would have taken ($28,800–$72,000): about 5.6× to 14× the day's measured cloud and build-service spend",
+        "class": "ESTIMATE",
+        "caveat": "Assumes 4 to 8 hours per pull request at $80 to $100 an hour, with no matched human baseline; the spend also pays for other work."
+      }
+    ],
+    "source": {
+      "path": "docs/sentilab/deck/final-5min/quant/DECK-NUMBERS.md",
+      "sha256": "bcafa3f09371811ed974acfdfd49f473f9bb8d050ea0e486e4c5b3f52c9cba52",
+      "readAt": "2026-11-01T00:51:00Z"
+    },
+    "notes": "By the numbers: on Saturday we merged 90 pull requests. The cloud bill so far is 5,112 dollars, for the whole account. By our own estimate, people would need 360 to 720 hours for that work."
+  },
+  "demo": {
+    "kicker": "Live demo",
+    "title": "Live demo: send your agent",
+    "instruction": "Tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout.",
+    "url": "sentilab.aidenid.com",
+    "urlIsPlaceholder": true,
+    "urlNote": "address to be confirmed",
+    "diagram": [
+      {
+        "title": "Wall",
+        "text": "What are you here for?"
+      },
+      {
+        "title": "Scoped token",
+        "text": "One purpose, one hour"
+      },
+      {
+        "title": "ENGRAM view",
+        "text": "The challenge as data"
+      },
+      {
+        "title": "Propose",
+        "text": "A layout, posted or tapped"
+      },
+      {
+        "title": "Simulated score",
+        "text": "The build that passed the test"
+      },
+      {
+        "title": "Live view",
+        "text": "Arrivals, the queue and the package in 3D"
+      }
+    ],
+    "statuses": {
+      "staging": {
+        "text": "Status: staging. The door, queue and 3D view are being built and tested on a staging site; the public address may still change.",
+        "notes": "Right now it is being built on our staging site."
+      },
+      "live": {
+        "text": "Status: live. The agent door is open at this address now. Scores are simulated, not silicon.",
+        "notes": "It is open now."
+      },
+      "replay": {
+        "text": "Status: replay. The results on screen come from a recorded run, labelled as a replay.",
+        "notes": "The results you see come from a recorded run, labelled as a replay."
+      }
+    },
+    "notes": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation.",
+    "records": [
+      {
+        "room": "608657e4",
+        "ref": "seq 57411",
+        "author": "human-mrrcarter",
+        "at": "2026-11-01T00:18:31.053Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "reply dd15a6de-2c75-4310-8df1-44d01d17aded to seq 57411",
+        "author": "human-mrrcarter",
+        "at": "2026-11-01T00:20:01.004Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57414",
+        "author": "aneta-claude",
+        "at": "2026-11-01T00:20:28.793Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57422",
+        "author": "aneta-claude",
+        "at": "2026-11-01T00:32:48.919Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57436",
+        "author": "claude-warden",
+        "at": "2026-11-01T00:48:49.681Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57456",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T01:13:28.575Z"
+      }
+    ]
+  },
+  "backup": {
+    "chronology": {
+      "kicker": "Backup · chronology",
+      "title": "The day in detail: 31 October into 1 November 2026, UTC, from the room record.",
+      "rows": [
+        {
+          "at": "2026-10-31T12:43:33.374Z",
+          "text": "A person asks why the study was inconclusive and how to match a package human engineers built, and asks three agents to research separately, then challenge each other.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56598",
+              "author": "human-mrrcarter",
+              "at": "2026-10-31T12:43:33.374Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:08:41.715Z",
+          "text": "Three agents seal their findings before reading each other's (13:08 to 13:15; one had seen a one-line preview), then attack each other's reports (13:18).",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56630",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:08:41.715Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56643",
+              "author": "pocket-forge",
+              "at": "2026-10-31T13:15:06.262Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56648",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:18:09.938Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56645",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:15:38.133Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:15:38.133Z",
+          "text": "One agent's sealed findings suspect that the simulator puts part of the heat-sink convection term between the spreader and the sink. Marked as a hypothesis.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56645",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:15:38.133Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:28:00.936Z",
+          "text": "A second agent's source reviewer confirms that the link includes half of the sink's resistance, which carries convection.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56654",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:28:00.936Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:26:32.762Z",
+          "text": "A third agent, run by another person under a separate account, posts a simplified model built from public source. It had read the hypothesis: an informed peer, not a blind check. The older link form lands within 0.4 K of the paper on both original layouts; the newer form raises the rise about 2.6 times.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56739",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:26:32.762Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:38:27.716Z",
+          "text": "Two other agents rerun that model; every row reproduces (14:38 and 14:45).",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56754",
+              "author": "pocket-forge",
+              "at": "2026-10-31T14:38:27.716Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56773",
+              "author": "claude-warden",
+              "at": "2026-10-31T14:45:49.665Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:42:11.768Z",
+          "text": "Saved simulator output, no new solve: a 51.10 to 52.40 K difference between matching spreader and heat-sink nodes, across eight retained probes (four floorplans at two grid sizes). A separate parser confirms two of them at 14:53.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56764",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:42:11.768Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56778",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:53:42.106Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:58:33.243Z",
+          "text": "The peer model's version 2 fixes both review findings on version 1: it uses the simulator's own centre rule and refuses to return a result that has not converged.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56786",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:58:33.243Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:21:25.335Z",
+          "text": "In the simplified model the error stretches gaps between layouts 2.3 to 3.7 times and reorders 8 to 9% of pairs, so old comparisons between our own layouts cannot stand either.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56816",
+              "author": "aneta-claude",
+              "at": "2026-10-31T15:21:25.335Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:52:12.966Z",
+          "text": "An agent flags that the public loop still runs on that engine and proposes a notice plus no new runs. A second agent agrees at 15:52, a third at 15:54.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56865",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:52:12.966Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "reply 67f2695a-a23d-4b5c-8ee3-823bd045cf3a to seq 56865",
+              "author": "pocket-forge",
+              "at": "2026-10-31T15:52:59.507Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56866",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T15:54:53.253Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:57:47.392Z",
+          "text": "The stop is written at 15:56:59 and read back: the running job settles, and its ledger, chain and charges are kept. Another agent's public readback confirms it at 16:02.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56870",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:57:47.392Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56878",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:02:28.628Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T16:31:10.645Z",
+          "text": "The notice withdrawing those temperatures is merged, deployed and checked in a real browser.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56906",
+              "author": "claude-warden",
+              "at": "2026-10-31T16:31:10.645Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T16:40:28.000Z",
+          "text": "Four production reads by another agent match the reviewed source.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56927",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:43:24.137Z",
+              "stated": "2026-10-31T16:40:28Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T22:22:08.352Z",
+          "text": "Our public test case for the paper's two layouts goes up, with our own numbers withheld so outside checks stay independent.",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 9de2e042-60f0-425f-adea-efd8bcb3dbc2 to seq 57170",
+              "author": "pocket-forge",
+              "at": "2026-10-31T22:22:08.352Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T23:01:16.766Z",
+          "text": "{Delfie} runs both simulator versions on that case, 39 minutes later: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0, as reported by them.",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "seq 57312",
+              "author": "delfie-claude",
+              "at": "2026-10-31T23:01:16.766Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T23:45:43.792Z",
+          "text": "The fixed test runs from 23:41 to 23:44, and the operator reports PASS: 75.48 C and 115.93 C against the paper's 75.48 C and 115.94 C. A second reviewer re-derives it independently by 00:05 on 1 November.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 57377",
+              "author": "claude-warden",
+              "at": "2026-10-31T23:45:43.792Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 57381",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T23:50:16.402Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-11-01T00:03:07.209Z",
+          "text": "{FEAgent} reports its own finite-element result, 1 h 41 after the case went up: 78.060 C and 122.252 C, as reported by them.",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+              "author": "feagent-codex",
+              "at": "2026-11-01T00:03:07.209Z"
+            }
+          ]
+        }
+      ],
+      "note": "Each line matches at least one room record (room, message, author, time), listed in the repository's TIMELINE-VERIFY.md."
+    },
+    "reviews": {
+      "kicker": "Backup · how reviews work",
+      "title": "How reviews work here: what a later reviewer was first to record.",
+      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
+      "attribution": "The review author's descriptive tally from the room log (version 2, corrected at 00:03 UTC on 1 Nov). Its row file has not been independently retrieved.",
+      "rows": [
+        {
+          "label": "Catalogued findings, in the 34 pull requests with both reviewers visible",
+          "value": "190"
+        },
+        {
+          "label": "First recorded by a later reviewer",
+          "value": "80 (42.1%)"
+        },
+        {
+          "label": "The same, the two highest severities only",
+          "value": "24 of 73 (32.9%)"
+        },
+        {
+          "label": "Of the 80, the first reviewer had also reviewed that version",
+          "value": "56"
+        },
+        {
+          "label": "Of the 80, at the same version after a recorded +1",
+          "value": "17, in 7 pull requests"
+        },
+        {
+          "label": "Of those 17, posted under 10 minutes apart",
+          "value": "13"
+        }
+      ],
+      "caveats": [
+        "Not blind: later reviewers read the earlier reviews. A +1 before a finding fixes the recorded order at that version; it does not show when the later review began, or independence.",
+        "Counted as catalogued findings: 33 of the 190, including 19 of the 80, have no recorded fix status.",
+        "First on record, not a counterfactual: the log cannot show what would have gone unstated.",
+        "The approver confirms at least 4 as misses, in the approver's own words; the other 13 are not classified yet.",
+        "All 17 follow one reviewer's approvals, often scoped real-run checks. This is not a ranking of reviewers."
+      ],
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57388",
+          "author": "aneta-claude",
+          "at": "2026-10-31T23:55:33.112Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 5de985fb-fd2e-4998-b1a8-175f45a24bb1 to seq 57388",
+          "author": "claude-warden",
+          "at": "2026-10-31T23:56:30.405Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 83571ec9-f07a-4854-8f4a-85f949352ecb to seq 57388",
+          "author": "aneta-claude",
+          "at": "2026-11-01T00:00:09.834Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57392",
+          "author": "aneta-claude",
+          "at": "2026-11-01T00:03:42.458Z"
+        }
+      ]
+    },
+    "metrics": {
+      "kicker": "Backup · numbers",
+      "title": "The numbers behind slide 3, each with its evidence class.",
+      "saved": {
+        "eyebrow": "Our simulator's saved output · no new solve",
+        "lines": [
+          "Spreader-to-sink difference between matching modeled nodes: 51.10 to 52.40 K across eight retained probes (four floorplans at two grid sizes).",
+          "Baseline layout: chip peak 118.89 C; at that cell the spreader is 70.11 K above ambient and the sink 18.51 K.",
+          "A separate parser re-read two cases: 51.10 and 51.60 K."
+        ],
+        "limit": "Probes at 50 mm, not the headroom study. Values come from the pre-correction simulator and are withdrawn as temperatures."
+      },
+      "model": {
+        "eyebrow": "Simplified model by an informed peer · not native simulator results",
+        "head": [
+          "Layout",
+          "Paper",
+          "Older link form",
+          "Newer link form"
+        ],
+        "rows": [
+          [
+            "A",
+            "75.48 C",
+            "75.09 C (v2)",
+            "122.32 C (v1)"
+          ],
+          [
+            "B",
+            "115.94 C",
+            "115.83 C (v2)",
+            "229.35 C (v1)"
+          ]
+        ],
+        "spread": "With digitized coordinates, version 3 gives 75.34 C for layout A. Across 60 random legal layouts each, layout gaps stretch 2.32 times (A) and 3.71 times (B), and 8.1% and 9.2% of pairs flip order.",
+        "review": "Review of version 1 found a one-cell centre and no convergence check. Version 2 (14:58 UTC) uses the simulator's 1, 2 or 4 cell centre rule and refuses to return a result that has not converged. It remains the author's simplified model, written after reading the hypothesis."
+      },
+      "history": "The original headroom verdict stays INCONCLUSIVE, as recorded. Every temperature from the pre-correction simulator is labelled withdrawn.",
+      "continuum": {
+        "eyebrow": "Continuum FE solutions: our team's, and an outside team's",
+        "lines": [
+          "Our team: 78.04 C and 122.21 C on the finest meshes (+2.56 K and +6.27 K over the paper); extrapolated, 78.06 C and 122.25 C.",
+          "{FEAgent}, as reported by them: 78.060 C and 122.252 C (+2.58 K and +6.31 K). Their saved values were re-checked by a second reviewer."
+        ],
+        "limit": "They agree within 0.001 K with our extrapolated estimates and differ from our finest meshes by 0.018 and 0.044 K; no certified error bound follows. Model solutions, not silicon."
+      }
+    },
+    "gate": {
+      "kicker": "Backup · the fixed test",
+      "title": "Gate zero: what runs, what passes, and the wording fixed before the result.",
+      "rules": [
+        "The older simulator version (6.0), at the paper's conditions: 45 mm interposer, 64 by 64 grid, 45 C ambient, the paper's block-centre metric.",
+        "Each published layout gets one run plus a replay in a fresh process. Both must land within 1.0 K, and the replay's output must be byte-identical.",
+        "Verdicts, most definitive first: FAIL, ERROR, INCOMPLETE, PASS. Anything missing or unsettled is INCOMPLETE, never PASS.",
+        "Two more published points (75.47 C and 94.89 C) are deferred: no runs here, and they cannot pass or fail this gate."
+      ],
+      "source": "Ma et al., TAP-2.5D, DATE 2021: Fig. 6(a) at 75.48 C and Fig. 5(a) at 115.94 C.",
+      "wordingTitle": "Wording fixed before the result, for all three outcomes"
+    },
+    "drill": {
+      "kicker": "Backup · test fixture",
+      "title": "The correction mechanism, shown on a test fixture.",
+      "flow": [
+        {
+          "title": "Candidate",
+          "text": "A lab proposes a layout."
+        },
+        {
+          "title": "Reproduction",
+          "text": "Re-run in a fresh process."
+        },
+        {
+          "title": "Acceptance",
+          "text": "The gate accepts it."
+        },
+        {
+          "title": "Withdrawal",
+          "text": "A measurement is withdrawn in a seeded-fault drill."
+        },
+        {
+          "title": "Propagation",
+          "text": "Its dependents go stale; independently supported results stand."
+        }
+      ],
+      "labCaption": "Lab view: the measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.",
+      "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
+      "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
+    },
+    "status": {
+      "kicker": "Backup · where it stands",
+      "title": "Where it stands: 0 of 8 deliverables fully accepted.",
+      "deliverables": [
+        {
+          "id": "D00",
+          "text": "Proposed chiplet layout with exact coordinates and constraints"
+        },
+        {
+          "id": "D01",
+          "text": "Power scenarios and package assumptions"
+        },
+        {
+          "id": "D02",
+          "text": "Simulator inputs, versions and raw outputs"
+        },
+        {
+          "id": "D03",
+          "text": "Independent reproduction results"
+        },
+        {
+          "id": "D04",
+          "text": "Complete proposal, review, correction and acceptance history"
+        },
+        {
+          "id": "D05",
+          "text": "Comparison against conventional and agent baselines"
+        },
+        {
+          "id": "D06",
+          "text": "Trained worker checkpoint or adapter, with its evaluation"
+        },
+        {
+          "id": "D07",
+          "text": "Replayable visual demonstration"
+        }
+      ],
+      "cards": [
+        {
+          "title": "Original scope remains open",
+          "text": "41 tickets, 234 requirements, 8 deliverables. Fully accepted deliverables: 0.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        },
+        {
+          "title": "Scientific benefit",
+          "text": "Not established.",
+          "originAt": null,
+          "asOf": "2026-10-31T15:05:00Z"
+        },
+        {
+          "title": "Still open",
+          "text": "Physical validation, the held-out five-arm study, full command-line and agent-interface parity. New scientific runs are not released.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        },
+        {
+          "title": "Old headroom result",
+          "text": "INCONCLUSIVE, kept as recorded; no rerun result is claimed.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        }
+      ]
+    },
+    "gb10": {
+      "kicker": "Backup · the GB10 box",
+      "title": "The GB10 box: what ran on 31 October, and for how long.",
+      "rows": [
+        {
+          "label": "Train a small adapter",
+          "value": "67.271 s"
+        },
+        {
+          "label": "Evaluate it in a fresh container",
+          "value": "61.156 s"
+        },
+        {
+          "label": "Serve it locally",
+          "value": "185.763 s"
+        }
+      ],
+      "lines": [
+        "Runs on 31 October, 07:48 to 11:40 UTC. Wall time in a GPU-enabled container; GPU-busy time, utilization and energy were not recorded.",
+        "The adapter was trained for 20 steps on 200 fixture rows, saved, reloaded in a fresh container and served.",
+        "Exact fixture answers went from 0 of 20 to 20 of 20 on cases already seen in training. That shows the pipeline works, not general learning.",
+        "Wall time of automated runs is not human time saved."
+      ],
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57413",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T00:19:45.881Z"
+        }
+      ]
+    },
+    "prs": {
+      "kicker": "Backup · pull requests",
+      "title": "Pull requests behind this talk, with their state at the check time.",
+      "repo": "Sentinelayer-AIdenID/sentilab",
+      "items": [
+        {
+          "number": 56,
+          "what": "Gate zero: the older simulator version behind the fixed test",
+          "state": "MERGED",
+          "head": "83995e783274c3504a36da4ea170527891a3d903",
+          "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
+          "mergedAt": "2026-10-31T23:04:17Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 73,
+          "what": "Gate zero: pin the operator's public key",
+          "state": "MERGED",
+          "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
+          "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
+          "mergedAt": "2026-10-31T23:40:43Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 57,
+          "what": "Reference layouts from the paper, plus the paper's wire router",
+          "state": "MERGED",
+          "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
+          "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
+          "mergedAt": "2026-10-31T18:04:42Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 58,
+          "what": "Public notice: pre-correction temperatures withdrawn",
+          "state": "MERGED",
+          "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
+          "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
+          "mergedAt": "2026-10-31T16:27:35Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 60,
+          "what": "Notice on the leaderboard and verify pages",
+          "state": "MERGED",
+          "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
+          "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
+          "mergedAt": "2026-10-31T17:59:15Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 64,
+          "what": "Every temperature carries its own qualifier",
+          "state": "MERGED",
+          "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
+          "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
+          "mergedAt": "2026-10-31T19:38:22Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 61,
+          "what": "Test fix: a guard pattern held raw control bytes",
+          "state": "MERGED",
+          "head": "3513ad709165a6afa43e665929a8e5f10908f885",
+          "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
+          "mergedAt": "2026-10-31T16:48:53Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 59,
+          "what": "Design: outside agents propose layouts",
+          "state": "MERGED",
+          "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
+          "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
+          "mergedAt": "2026-10-31T17:53:53Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 55,
+          "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
+          "state": "MERGED",
+          "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
+          "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
+          "mergedAt": "2026-10-31T15:38:53Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 37,
+          "what": "Allocation controller for simulator runs in CI",
+          "state": "MERGED",
+          "head": "113c1347cb154c4f909783dde17f531ad1267235",
+          "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
+          "mergedAt": "2026-10-31T17:09:11Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        },
+        {
+          "number": 25,
+          "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
+          "state": "MERGED",
+          "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
+          "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
+          "mergedAt": "2026-10-31T12:05:13Z",
+          "checkedAt": "2026-11-01T02:04:00Z"
+        }
+      ]
+    },
+    "receipt": {
+      "kicker": "Backup · other teams",
+      "title": "The outside-team receipts, exactly, and what we do not count as evidence.",
+      "facts": [
+        {
+          "label": "Case",
+          "text": "Our public parameter sheet for the paper's two layouts (commit af66bcfc), posted at 22:22 UTC with our own numbers withheld."
+        },
+        {
+          "label": "Reproduction",
+          "text": "{Delfie}: both simulator versions built from source and run on that case: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0; with the detailed 3-D mode off, both give 75.37 C and 115.29 C. As reported by them."
+        },
+        {
+          "label": "Finite element",
+          "text": "{FEAgent} ({repo:feagent}, frozen report at commit c73d642b): second-order elements on the finest mesh, about 1.6 to 1.7 million unknowns: 78.060 C and 122.252 C, +2.58 K and +6.31 K over the paper. As reported by them."
+        },
+        {
+          "label": "Exposure",
+          "text": "The finite-element run is a separate implementation: its author declares no reading of peer values before freezing at 23:45 UTC. Our team's values were posted in the shared help room from 23:04 UTC, and to that team directly at 23:18, which shows they were available, not that they were read. The paper's targets were known."
+        },
+        {
+          "label": "Checked",
+          "text": "A second reviewer verified the finite-element team's 48-file manifest and frozen hashes, and recomputed the values from saved results. Their mesh and field files are omitted, so this is a check of saved values."
+        },
+        {
+          "label": "Limit",
+          "text": "A configured-model comparison, not silicon validation, with no certified 0.1 K error bound. Earlier the same team ran our closed-form slab test (commit 32f3ed1a)."
+        }
+      ],
+      "notYet": "Not yet in the record: the finite-element team's slab run through our own evaluator.",
+      "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent.",
+      "records": [
+        {
+          "room": "32a841e5",
+          "ref": "reply 9de2e042-60f0-425f-adea-efd8bcb3dbc2 to seq 57170",
+          "author": "pocket-forge",
+          "at": "2026-10-31T22:22:08.352Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57312",
+          "author": "delfie-claude",
+          "at": "2026-10-31T23:01:16.766Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+          "author": "feagent-codex",
+          "at": "2026-11-01T00:03:07.209Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57323",
+          "author": "cartercloudagentpc-gpt-6-astra-tap32",
+          "at": "2026-10-31T23:04:27.444Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57329",
+          "author": "cartercloudagentpc-gpt-6-astra-tap32",
+          "at": "2026-10-31T23:08:26.673Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57344",
+          "author": "claude-warden",
+          "at": "2026-10-31T23:18:03.463Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57412",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T00:18:39.976Z"
+        }
+      ]
+    },
+    "profile": {
+      "kicker": "Backup · the layer profile",
+      "title": "The same profile as a line chart, for both layouts.",
+      "figure": "fig2b",
+      "caption": "Each run's hottest chip-layer cell, then the same x/y grid index through the modeled layers. Spreader to sink: layout A 1.24 K in 6.0 and 55.31 K in 7.0; the CPU-DRAM layout 4.04 K and 141.77 K. Modeled nodes, not a copper layer. Simulated, not silicon."
+    },
+    "layers": {
+      "kicker": "Backup · layer maxima",
+      "title": "Layer maxima: two finite-element solves, beside both simulator versions.",
+      "head": [
+        "Layer-maximum difference, K",
+        "HotSpot 6.0",
+        "HotSpot 7.0",
+        "Our FE",
+        "{FEAgent}'s FE"
+      ],
+      "rows": [
+        {
+          "label": "Layout A, spreader minus sink",
+          "values": [
+            "1.24",
+            "55.30",
+            "1.30",
+            "1.30"
+          ],
+          "kind": "spreader"
+        },
+        {
+          "label": "CPU-DRAM, spreader minus sink",
+          "values": [
+            "3.25",
+            "141.84",
+            "4.20",
+            "4.21"
+          ],
+          "kind": "spreader"
+        },
+        {
+          "label": "Layout A, chip minus sink",
+          "values": [
+            "4.86",
+            "59.08",
+            "4.50",
+            "4.50"
+          ],
+          "kind": "chip"
+        },
+        {
+          "label": "CPU-DRAM, chip minus sink",
+          "values": [
+            "15.83",
+            "154.24",
+            "15.39",
+            "15.41"
+          ],
+          "kind": "chip"
+        },
+        {
+          "label": "Layout A, sink maximum above air",
+          "values": [
+            "25.62",
+            "19.36",
+            "28.64",
+            "28.66"
+          ],
+          "kind": "sink"
+        },
+        {
+          "label": "CPU-DRAM, sink maximum above air",
+          "values": [
+            "58.24",
+            "41.29",
+            "65.43",
+            "65.44"
+          ],
+          "kind": "sink"
+        }
+      ],
+      "sentence": "Two separate FE implementations (ours and {feagent}'s) give spreader-minus-sink layer-maximum contrasts of about 1.30 K and 4.20 K, much closer to HotSpot 6 than HotSpot 7. The remaining FE–HotSpot 6 offset is also visible in the sink-layer maxima; its cause remains open.",
+      "chip": "Chip minus sink, both finite-element solves agree with HotSpot 6.0 within 0.44 K.",
+      "note": "These maxima are located independently in each layer, so they are not the same-index column on slide 2 (4.04 K and 141.77 K there). The finite-element team's spreader and sink maxima are 5.46 mm apart.",
+      "caption": "Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated.",
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57483",
+          "author": "aneta-claude",
+          "at": "2026-11-01T01:37:56.223Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57511",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T01:51:42.210Z"
+        }
+      ]
+    }
+  },
+  "teams": {
+    "delfie": {
+      "name": "Delfie",
+      "consent": null
+    },
+    "feagent": {
+      "name": "FEAgent",
+      "repo": "github.com/zucalerega/feagent",
+      "consent": null
+    },
+    "kiln": {
+      "name": "Kiln",
+      "consent": null
+    },
+    "scienceclaw": {
+      "name": "ScienceClaw",
+      "consent": null
+    },
+    "quantumswarms": {
+      "name": "quantumSwarms",
+      "consent": null
+    },
+    "pixlram": {
+      "name": "pixlram",
+      "consent": null
+    },
+    "axis": {
+      "name": "Axis",
+      "consent": null
+    },
+    "inquilinekea": {
+      "name": "InquilineKea",
+      "consent": null
+    }
+  },
+  "figures": {
+    "fig1": {
+      "file": "fig1-same-chips.svg",
+      "sha256": "7072cc764261f0541314202ef0b694f6b06e54f1ef104e3b3cb8fc3a32eb4717",
+      "width": 1664,
+      "height": 640,
+      "scale": 0.94,
+      "alt": "Heat maps of the CPU-DRAM layout's chip layer in HotSpot 6.0 and 7.0 on one colour scale, from byte-identical input files: chip-layer grid maxima of 119 and 241 degrees, 2.6 times the temperature rise. The frozen gate statistic reads 115.93 and 232.67 degrees.",
+      "edits": [
+        {
+          "from": "Ascend 910 reference",
+          "to": "Layout A reference",
+          "why": "public-render rule: no vendor product names"
+        }
+      ],
+      "teamText": []
+    },
+    "fig2": {
+      "file": "fig2-stack.svg",
+      "sha256": "a430ba496eb31207b02543047ff5d9dfd00bd5a02d9787737c55ae0ed1a9d43d",
+      "width": 1664,
+      "height": 640,
+      "scale": 0.94,
+      "alt": "Exploded view of the modeled layers of the CPU-DRAM layout, at the same x/y grid index under each run's hottest chip-layer cell. HotSpot 6.0 goes 119, 116, 106, 102 degrees; 7.0 goes 241, 235, 228, 86: a 4.04 K against a 141.77 K difference between the spreader and sink nodes. A separate panel gives the difference of independently located layer maxima, spreader minus sink: 3.25 K in 6.0, about 4.20 K in two finite-element codes and 141.84 K in 7.0.",
+      "edits": [],
+      "teamText": []
+    },
+    "fig2b": {
+      "file": "fig2b-profile.svg",
+      "sha256": "f052040c15640ca7a9bb39bf2aae361091f701f2eb9bf53686348337e8ac6a31",
+      "width": 1664,
+      "height": 620,
+      "scale": 1,
+      "alt": "Line charts of temperature from chip to air through the modeled layers: in 7.0 the spreader-to-sink step is 55.31 K for layout A and 141.77 K for the CPU-DRAM layout, against 1.24 K and 4.04 K in 6.0.",
+      "edits": [
+        {
+          "from": "Ascend 910",
+          "to": "Layout A",
+          "why": "public-render rule: no vendor product names"
+        }
+      ],
+      "teamText": []
+    },
+    "fig3": {
+      "file": "fig3-agreement.svg",
+      "sha256": "4179ee6dd649d34a66b56762c05eec444539e833b233a996337a733ee69a6236",
+      "width": 1664,
+      "height": 560,
+      "scale": 0.92,
+      "alt": "Dot plot on one temperature scale: the paper, our run and an outside team agree for HotSpot 6.0 at 75.48 and about 115.94 degrees; two finite-element solves sit near 78 and 122; HotSpot 7.0 sits at 123.42 and 232.67, 2.57 and 2.65 times the rise. The pass bar, fixed in advance, is within 1 K of the paper.",
+      "edits": [
+        {
+          "from": "Ascend 910",
+          "to": "Layout A",
+          "why": "public-render rule: no vendor product names"
+        }
+      ],
+      "teamText": [
+        {
+          "team": "delfie",
+          "from": "Delfie  75.48",
+          "anon": "Outside  75.48"
+        },
+        {
+          "team": "delfie",
+          "from": "123.42  Delfie",
+          "anon": "123.42  Outside"
+        },
+        {
+          "team": "delfie",
+          "from": "Delfie  115.94",
+          "anon": "Outside  115.94"
+        },
+        {
+          "team": "delfie",
+          "from": "Delfie  232.67",
+          "anon": "Outside  232.67"
+        },
+        {
+          "team": "feagent",
+          "from": "78.06  FEAgent",
+          "anon": "78.06  Outside"
+        },
+        {
+          "team": "feagent",
+          "from": "122.25  FEAgent",
+          "anon": "122.25  Outside"
+        }
+      ]
+    },
+    "fig4": {
+      "file": "fig4-timeline.svg",
+      "sha256": "8c478904194b50bddf4e46204b40c1aad642bbfce5f35b446169bb4c2cc92bbe",
+      "width": 1664,
+      "height": 548,
+      "scale": 1,
+      "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; an outside team reproduces it at 23:01; the fixed test passes at 23:44; a second outside team's finite-element result at 00:03.",
+      "edits": [],
+      "teamText": [
+        {
+          "team": "delfie",
+          "from": "Delfie reproduces",
+          "anon": "An outside team"
+        },
+        {
+          "team": "delfie",
+          "from": "it: 39 min",
+          "anon": "reproduces it: 39 min"
+        },
+        {
+          "team": "feagent",
+          "from": "FEAgent’s finite",
+          "anon": "A second outside"
+        },
+        {
+          "team": "feagent",
+          "from": "element: 1 h 41",
+          "anon": "team’s FE: 1 h 41"
+        }
+      ],
+      "claims": [
+        {
+          "label": "12:43",
+          "at": "2026-10-31T12:43:33.374Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56598",
+              "author": "human-mrrcarter",
+              "at": "2026-10-31T12:43:33.374Z"
+            }
+          ]
+        },
+        {
+          "label": "13:15",
+          "at": "2026-10-31T13:15:38.133Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56645",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:15:38.133Z"
+            }
+          ]
+        },
+        {
+          "label": "13:28",
+          "at": "2026-10-31T13:28:00.936Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56654",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:28:00.936Z"
+            }
+          ]
+        },
+        {
+          "label": "14:26",
+          "at": "2026-10-31T14:26:32.762Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56739",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:26:32.762Z"
+            }
+          ]
+        },
+        {
+          "label": "14:42",
+          "at": "2026-10-31T14:42:11.768Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56764",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:42:11.768Z"
+            }
+          ]
+        },
+        {
+          "label": "14:53",
+          "at": "2026-10-31T14:53:42.106Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56778",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:53:42.106Z"
+            }
+          ]
+        },
+        {
+          "label": "15:56",
+          "at": "2026-10-31T15:56:58.678Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56870",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:57:47.392Z",
+              "stated": "2026-10-31T15:56:58.678Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56865",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:52:12.966Z"
+            }
+          ]
+        },
+        {
+          "label": "16:40",
+          "at": "2026-10-31T16:40:28.000Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56927",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:43:24.137Z",
+              "stated": "2026-10-31T16:40:28Z"
+            }
+          ]
+        },
+        {
+          "label": "22:22",
+          "at": "2026-10-31T22:22:08.352Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 9de2e042-60f0-425f-adea-efd8bcb3dbc2 to seq 57170",
+              "author": "pocket-forge",
+              "at": "2026-10-31T22:22:08.352Z"
+            }
+          ]
+        },
+        {
+          "label": "23:01",
+          "at": "2026-10-31T23:01:16.766Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "seq 57312",
+              "author": "delfie-claude",
+              "at": "2026-10-31T23:01:16.766Z"
+            }
+          ]
+        },
+        {
+          "label": "23:44",
+          "at": "2026-10-31T23:44:00.000Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 57377",
+              "author": "claude-warden",
+              "at": "2026-10-31T23:45:43.792Z",
+              "stated": "2026-10-31T23:44:00Z"
+            }
+          ]
+        },
+        {
+          "label": "00:03",
+          "at": "2026-11-01T00:03:07.209Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+              "author": "feagent-codex",
+              "at": "2026-11-01T00:03:07.209Z"
+            }
+          ]
+        }
+      ],
+      "durations": [
+        {
+          "text": "39 min",
+          "from": "22:22",
+          "to": "23:01",
+          "rule": "round"
+        },
+        {
+          "text": "1 h 41",
+          "from": "22:22",
+          "to": "00:03",
+          "rule": "round"
+        }
+      ]
+    },
+    "fig5": {
+      "file": "fig5-waffle.svg",
+      "sha256": "2edb9c379221a927505f1e0d1c91e1fdd573cd23d7c65d481728c1843b39f8fa",
+      "width": 678,
+      "height": 472,
+      "scale": 1,
+      "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already given a +1, and 110 others.",
+      "edits": [],
+      "teamText": []
+    },
+    "fig6": {
+      "file": "fig6-teams.svg",
+      "sha256": "e3d202598e95e72c73308939614cfc38c0807b8673f2f0c012c102bde107d48d",
+      "width": 1664,
+      "height": 760,
+      "scale": 0.92,
+      "alt": "Map of what travelled between SentiLab and eight outside teams: two used our work and returned a result, three said it helped in their own words, three have not confirmed use yet, and four links run between other teams.",
+      "edits": [],
+      "teamText": [
+        {
+          "team": "delfie",
+          "from": "Delfie",
+          "anon": "An outside team"
+        },
+        {
+          "team": "inquilinekea",
+          "from": "InquilineKea",
+          "anon": "An outside team"
+        },
+        {
+          "team": "scienceclaw",
+          "from": "ScienceClaw",
+          "anon": "An outside team"
+        },
+        {
+          "team": "scienceclaw",
+          "from": "in ScienceClaw’s executor",
+          "anon": "in the hackathon’s executor"
+        },
+        {
+          "team": "feagent",
+          "from": "FEAgent",
+          "anon": "An outside team"
+        },
+        {
+          "team": "quantumswarms",
+          "from": "quantumSwarms",
+          "anon": "An outside team"
+        },
+        {
+          "team": "pixlram",
+          "from": "pixlram",
+          "anon": "An outside team"
+        },
+        {
+          "team": "axis",
+          "from": "Axis",
+          "anon": "An outside team"
+        },
+        {
+          "team": "kiln",
+          "from": "Kiln",
+          "anon": "An outside team"
+        }
+      ],
+      "records": [
+        {
+          "room": "32a841e5",
+          "ref": "seq 57312",
+          "author": "delfie-claude",
+          "at": "2026-10-31T23:01:16.766Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+          "author": "feagent-codex",
+          "at": "2026-11-01T00:03:07.209Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 9de2e042-60f0-425f-adea-efd8bcb3dbc2 to seq 57170",
+          "author": "pocket-forge",
+          "at": "2026-10-31T22:22:08.352Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57328",
+          "author": "scienceclaw-claude",
+          "at": "2026-10-31T23:08:23.783Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply aae908b2-c8c2-4d22-8d78-ce94a947f6e0 to seq 57188",
+          "author": "quantumswarms-claude",
+          "at": "2026-10-31T21:13:28.506Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 028f09e8-ae57-4c48-98e2-86d580579d8a to seq 57270",
+          "author": "kiln-claude",
+          "at": "2026-11-01T00:08:14.056Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 37eb0808-6790-43a7-886c-a7890f9a4d7e to seq 57270",
+          "author": "kiln-claude",
+          "at": "2026-11-01T00:04:12.570Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 88926f8c-7a78-4248-87ae-71e65af527a8 to seq 57007",
+          "author": "human-pixlram",
+          "at": "2026-10-31T21:54:20.835Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 06911e25-7483-4686-a75d-f28f6033633d to seq 57007",
+          "author": "axis-claude",
+          "at": "2026-10-31T20:23:05.730Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 8dd4609d-dfb6-4eb2-99b2-d262bfbbd34a to seq 57005",
+          "author": "sentilab-host",
+          "at": "2026-10-31T23:53:05.265Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 289bcfef-9e74-4c32-8c45-7fb4e22b3890 to seq 57444",
+          "author": "pocket-forge",
+          "at": "2026-11-01T01:25:26.574Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "reply 9e9e733a-661b-431a-836f-7ebe26c0dd8a to seq 57262",
+          "author": "feagent-codex",
+          "at": "2026-11-01T00:37:12.145Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57470",
+          "author": "aneta-claude",
+          "at": "2026-11-01T01:27:20.312Z"
+        }
+      ]
+    }
+  },
+  "stack": {
+    "kicker": "Where it opens",
+    "title": "The difference opens between two modeled layers.",
+    "figure": "fig2",
+    "text": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0.",
+    "credit": "{Delfie} ran both versions with the detailed 3-D mode off: both give 75.37 C and 115.29 C, as reported by them.",
+    "caption": "The CPU-DRAM layout: each run's hottest chip-layer cell, then the same x/y grid index through the modeled layers, shown exploded. Spreader to sink: 4.04 K in 6.0, 141.77 K in 7.0. Modeled nodes, not a copper layer. This localizes the difference; it does not by itself show a single cause. Panel at right: Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated.",
+    "notes": "Here's where it opens. Follow the hottest cell down through the modeled layers: between the spreader and the sink, the difference is 4 kelvin in 6.0 and 142 in 7.0. The public source computes that link differently. {Delfie} ran both versions with the detailed 3-D mode off and got the same answer, as reported by them.",
+    "records": [
+      {
+        "room": "32a841e5",
+        "ref": "seq 57312",
+        "author": "delfie-claude",
+        "at": "2026-10-31T23:01:16.766Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57377",
+        "author": "claude-warden",
+        "at": "2026-10-31T23:45:43.792Z",
+        "stated": "2026-10-31T23:44:00Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57456",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T01:13:28.575Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57511",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T01:51:42.210Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57516",
+        "author": "aneta-claude",
+        "at": "2026-11-01T01:58:54.191Z"
+      }
+    ]
+  },
+  "checks": {
+    "kicker": "Checking each other",
+    "title": "Agents check each other.",
+    "figure": "fig5",
+    "study": {
+      "status": "not-run",
+      "title": "Controlled test with seeded defects",
+      "texts": {
+        "not-run": "Designed to compare agents with defects planted in advance. It has not run yet; when it does, its result goes here, whatever it shows."
+      },
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 57379",
+          "author": "aneta-claude",
+          "at": "2026-10-31T23:46:45.493Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57427",
+          "author": "claude-warden",
+          "at": "2026-11-01T00:38:39.738Z"
+        }
+      ]
+    },
+    "notes": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
+    "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. The approver confirms 4 of the 17 as misses; the rest are not classified."
+  },
+  "teamsSlide": {
+    "kicker": "Other teams",
+    "title": "Other teams build on it, and with each other.",
+    "figure": "fig6",
+    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 00:37 UTC; a dated snapshot. Teams are not named until they agree. Our own help-room leaderboard is not used as evidence.",
+    "notes": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. Some now work with each other."
+  }
+}

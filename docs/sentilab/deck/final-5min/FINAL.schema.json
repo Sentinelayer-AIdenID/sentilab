@@ -1,0 +1,2932 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sentilab-deck-final/1",
+  "title": "SentiLab three-minute deck source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "deck",
+    "cutoff",
+    "talk",
+    "teams",
+    "figures",
+    "problem",
+    "stack",
+    "how",
+    "timeline",
+    "gate",
+    "checks",
+    "teamsSlide",
+    "numbers",
+    "demo",
+    "backup"
+  ],
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 700
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "room",
+        "ref",
+        "author",
+        "at"
+      ],
+      "properties": {
+        "room": {
+          "enum": [
+            "608657e4",
+            "32a841e5"
+          ]
+        },
+        "ref": {
+          "type": "string",
+          "pattern": "^(seq \\d{5,6}|reply [0-9a-f-]{36} to seq \\d{5,6})$"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "at": {
+          "$ref": "#/$defs/time"
+        },
+        "stated": {
+          "$ref": "#/$defs/time"
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "dated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at",
+        "text",
+        "records"
+      ],
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/time"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "records": {
+          "$ref": "#/$defs/records"
+        }
+      }
+    },
+    "titled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "text"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "text",
+        "notes"
+      ],
+      "properties": {
+        "label": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT RUN"
+          ]
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "labelled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "text"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "labelled2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "value": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "figureRef": {
+      "enum": [
+        "fig1",
+        "fig2",
+        "fig2b",
+        "fig3",
+        "fig4",
+        "fig5",
+        "fig6"
+      ]
+    },
+    "teamId": {
+      "enum": [
+        "delfie",
+        "feagent",
+        "kiln",
+        "scienceclaw",
+        "quantumswarms",
+        "pixlram",
+        "axis",
+        "inquilinekea"
+      ]
+    },
+    "clock": {
+      "type": "string",
+      "pattern": "^\\d{2}:\\d{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "properties": {
+    "format": {
+      "const": "sentilab-deck-final/1"
+    },
+    "deck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "event",
+        "talk"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "event": {
+          "$ref": "#/$defs/text"
+        },
+        "talk": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "cutoff": {
+      "$ref": "#/$defs/time"
+    },
+    "talk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxSeconds",
+        "talkCapSeconds",
+        "transitionSeconds",
+        "demoSeconds",
+        "checkWordsPerMinute",
+        "slowWordsPerSecond"
+      ],
+      "properties": {
+        "maxSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 600
+        },
+        "talkCapSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 600
+        },
+        "transitionSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "demoSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "checkWordsPerMinute": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 300
+        },
+        "slowWordsPerSecond": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "problem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "figure",
+        "line",
+        "caption",
+        "notes",
+        "records"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        },
+        "line": {
+          "$ref": "#/$defs/text"
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "records": {
+          "$ref": "#/$defs/records"
+        }
+      }
+    },
+    "how": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "steps",
+        "evidence",
+        "footnote",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "footnote": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "text",
+              "today",
+              "records"
+            ],
+            "properties": {
+              "title": {
+                "$ref": "#/$defs/text"
+              },
+              "text": {
+                "$ref": "#/$defs/text"
+              },
+              "today": {
+                "$ref": "#/$defs/text"
+              },
+              "records": {
+                "$ref": "#/$defs/records"
+              }
+            }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "line",
+            "attribution",
+            "records"
+          ],
+          "properties": {
+            "line": {
+              "$ref": "#/$defs/text"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "attribution": {
+              "$ref": "#/$defs/text"
+            },
+            "slide": {
+              "enum": [
+                "checks"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "figure",
+        "tiles",
+        "caption",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        },
+        "tiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "label",
+              "records"
+            ],
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16
+              },
+              "label": {
+                "$ref": "#/$defs/text"
+              },
+              "at": {
+                "$ref": "#/$defs/time"
+              },
+              "from": {
+                "$ref": "#/$defs/time"
+              },
+              "to": {
+                "$ref": "#/$defs/time"
+              },
+              "rule": {
+                "enum": [
+                  "round",
+                  "under"
+                ]
+              },
+              "records": {
+                "$ref": "#/$defs/records"
+              }
+            }
+          }
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "common",
+        "toleranceK",
+        "references",
+        "variants",
+        "bottom",
+        "wordingRecords",
+        "figure"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "common": {
+          "$ref": "#/$defs/text"
+        },
+        "toleranceK": {
+          "type": "string",
+          "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+        },
+        "references": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "source",
+              "publishedC"
+            ],
+            "properties": {
+              "id": {
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              "label": {
+                "$ref": "#/$defs/text"
+              },
+              "source": {
+                "$ref": "#/$defs/text"
+              },
+              "publishedC": {
+                "type": "string",
+                "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+              }
+            }
+          }
+        },
+        "variants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pass",
+            "fail",
+            "not-run"
+          ],
+          "properties": {
+            "pass": {
+              "$ref": "#/$defs/variant"
+            },
+            "fail": {
+              "$ref": "#/$defs/variant"
+            },
+            "not-run": {
+              "$ref": "#/$defs/variant"
+            }
+          }
+        },
+        "bottom": {
+          "$ref": "#/$defs/text"
+        },
+        "wordingRecords": {
+          "$ref": "#/$defs/records"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "measured",
+            "records",
+            "comparator",
+            "scope",
+            "verification",
+            "detail",
+            "replay",
+            "notes",
+            "figureCaption",
+            "teamsNotes"
+          ],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "pass",
+                "fail"
+              ]
+            },
+            "measured": {
+              "type": "string",
+              "pattern": "^\\d{1,3}\\.\\d{1,3},\\d{1,3}\\.\\d{1,3}$"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "comparator": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "values",
+                "text",
+                "notes"
+              ],
+              "properties": {
+                "values": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+                  }
+                },
+                "text": {
+                  "$ref": "#/$defs/text"
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            },
+            "scope": {
+              "$ref": "#/$defs/text"
+            },
+            "verification": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operator",
+                "rederived"
+              ],
+              "properties": {
+                "operator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "text",
+                    "notes"
+                  ],
+                  "properties": {
+                    "text": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    }
+                  }
+                },
+                "rederived": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "text",
+                    "notes"
+                  ],
+                  "properties": {
+                    "text": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    }
+                  }
+                }
+              }
+            },
+            "detail": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "replay": {
+              "$ref": "#/$defs/text"
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200
+            },
+            "figureCaption": {
+              "$ref": "#/$defs/text"
+            },
+            "teamsNotes": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1200
+            }
+          }
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        }
+      }
+    },
+    "numbers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "placeholder",
+        "placeholderText",
+        "items",
+        "source",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "placeholder": {
+          "type": "boolean"
+        },
+        "placeholderText": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "label",
+              "class",
+              "caveat"
+            ],
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              },
+              "label": {
+                "$ref": "#/$defs/text"
+              },
+              "class": {
+                "enum": [
+                  "MEASURED",
+                  "ESTIMATE"
+                ]
+              },
+              "caveat": {
+                "$ref": "#/$defs/text"
+              }
+            }
+          }
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256",
+                "readAt"
+              ],
+              "properties": {
+                "path": {
+                  "$ref": "#/$defs/text"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "readAt": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "demo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "instruction",
+        "url",
+        "urlIsPlaceholder",
+        "urlNote",
+        "diagram",
+        "statuses",
+        "notes",
+        "records"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "instruction": {
+          "$ref": "#/$defs/text"
+        },
+        "url": {
+          "$ref": "#/$defs/text"
+        },
+        "urlIsPlaceholder": {
+          "type": "boolean"
+        },
+        "urlNote": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "diagram": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/titled"
+          }
+        },
+        "statuses": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "staging",
+            "live",
+            "replay"
+          ],
+          "properties": {
+            "staging": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "text",
+                "notes"
+              ],
+              "properties": {
+                "text": {
+                  "$ref": "#/$defs/text"
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                }
+              }
+            },
+            "live": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "text",
+                "notes"
+              ],
+              "properties": {
+                "text": {
+                  "$ref": "#/$defs/text"
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                }
+              }
+            },
+            "replay": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "text",
+                "notes"
+              ],
+              "properties": {
+                "text": {
+                  "$ref": "#/$defs/text"
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                }
+              }
+            }
+          }
+        },
+        "records": {
+          "$ref": "#/$defs/records"
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chronology",
+        "reviews",
+        "metrics",
+        "gate",
+        "drill",
+        "status",
+        "gb10",
+        "prs",
+        "receipt",
+        "profile",
+        "layers"
+      ],
+      "properties": {
+        "chronology": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "rows",
+            "note"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "note": {
+              "$ref": "#/$defs/text"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/dated"
+              }
+            }
+          }
+        },
+        "reviews": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "line",
+            "rows",
+            "caveats",
+            "records",
+            "attribution"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "line": {
+              "$ref": "#/$defs/text"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/labelled2"
+              }
+            },
+            "caveats": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "attribution": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "saved",
+            "model",
+            "continuum",
+            "history"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "history": {
+              "$ref": "#/$defs/text"
+            },
+            "saved": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "lines",
+                "limit"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "limit": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "model": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "head",
+                "rows",
+                "spread",
+                "review"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "head": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "rows": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "$ref": "#/$defs/text"
+                    }
+                  }
+                },
+                "spread": {
+                  "$ref": "#/$defs/text"
+                },
+                "review": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "continuum": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "lines",
+                "limit"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "limit": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            }
+          }
+        },
+        "gate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "rules",
+            "source",
+            "wordingTitle"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "source": {
+              "$ref": "#/$defs/text"
+            },
+            "wordingTitle": {
+              "$ref": "#/$defs/text"
+            },
+            "rules": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            }
+          }
+        },
+        "drill": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "flow",
+            "labCaption",
+            "packageCaption",
+            "fixture"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "flow": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/titled"
+              }
+            },
+            "labCaption": {
+              "$ref": "#/$defs/text"
+            },
+            "packageCaption": {
+              "$ref": "#/$defs/text"
+            },
+            "fixture": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "deliverables",
+            "cards"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "deliverables": {
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "text"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^D0[0-7]$"
+                  },
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "cards": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "text",
+                  "originAt",
+                  "asOf"
+                ],
+                "properties": {
+                  "title": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "originAt": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "asOf": {
+                    "$ref": "#/$defs/time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "gb10": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "rows",
+            "lines",
+            "records"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/labelled2"
+              }
+            },
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "prs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "repo",
+            "items"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "repo": {
+              "$ref": "#/$defs/text"
+            },
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "number",
+                  "what",
+                  "state",
+                  "head",
+                  "merge",
+                  "mergedAt",
+                  "checkedAt"
+                ],
+                "properties": {
+                  "number": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "what": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "state": {
+                    "enum": [
+                      "OPEN",
+                      "MERGED",
+                      "CLOSED"
+                    ]
+                  },
+                  "head": {
+                    "$ref": "#/$defs/sha"
+                  },
+                  "merge": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/sha"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mergedAt": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "checkedAt": {
+                    "$ref": "#/$defs/time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "facts",
+            "notYet",
+            "notEvidence",
+            "records"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "facts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/labelled"
+              }
+            },
+            "notYet": {
+              "$ref": "#/$defs/text"
+            },
+            "notEvidence": {
+              "$ref": "#/$defs/text"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "figure",
+            "caption"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "figure": {
+              "$ref": "#/$defs/figureRef"
+            },
+            "caption": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "layers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "head",
+            "rows",
+            "sentence",
+            "chip",
+            "note",
+            "caption",
+            "records"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "head": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "values",
+                  "kind"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "values": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^\\d{1,3}\\.\\d{2}$"
+                    }
+                  },
+                  "kind": {
+                    "enum": [
+                      "spreader",
+                      "chip",
+                      "sink"
+                    ]
+                  }
+                }
+              }
+            },
+            "sentence": {
+              "$ref": "#/$defs/text"
+            },
+            "chip": {
+              "$ref": "#/$defs/text"
+            },
+            "note": {
+              "$ref": "#/$defs/text"
+            },
+            "caption": {
+              "$ref": "#/$defs/text"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        }
+      }
+    },
+    "teams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "delfie",
+        "feagent",
+        "kiln",
+        "scienceclaw",
+        "quantumswarms",
+        "pixlram",
+        "axis",
+        "inquilinekea"
+      ],
+      "properties": {
+        "delfie": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "feagent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "kiln": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "scienceclaw": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "quantumswarms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "pixlram": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "axis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        },
+        "inquilinekea": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "consent"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "consent": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{8} seq \\d{5,6} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "figures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fig1",
+        "fig2",
+        "fig2b",
+        "fig3",
+        "fig4",
+        "fig5",
+        "fig6"
+      ],
+      "properties": {
+        "fig1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig2": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig2b": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig3": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig4": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig5": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "fig6": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        }
+      }
+    },
+    "stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "figure",
+        "text",
+        "credit",
+        "caption",
+        "notes",
+        "records"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "credit": {
+          "$ref": "#/$defs/text"
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "records": {
+          "$ref": "#/$defs/records"
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "figure",
+        "notes",
+        "study",
+        "caption"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "study": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "title",
+            "texts",
+            "records"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "not-run",
+                "result"
+              ]
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "texts": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/text"
+              },
+              "minProperties": 1
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "teamsSlide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "figure",
+        "caption",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "figure": {
+          "$ref": "#/$defs/figureRef"
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    }
+  }
+}

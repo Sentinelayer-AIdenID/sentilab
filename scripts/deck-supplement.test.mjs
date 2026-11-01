@@ -513,6 +513,6 @@ test("the supplement exports to its own dated PDF, and no export can overwrite a
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, rendered.length, "one PDF page per slide");
   assert.deepEqual(readdirSync(PDF_DIR).sort(), [
-    "SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", "SentiLab-deck-supplement-2026-10-31-1754-v2.pdf", "final-3min", SUPPLEMENT.id,
+    "SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", "SentiLab-deck-supplement-2026-10-31-1754-v2.pdf", "final-3min", "final-5min", SUPPLEMENT.id,
   ]);
 });

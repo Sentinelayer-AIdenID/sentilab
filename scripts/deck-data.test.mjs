@@ -27,7 +27,8 @@ import { validateSchema, UnsupportedSchemaError } from "./json-schema-lite.mjs";
 import { FROZEN_DAYTIME, SUPPLEMENT, suppPdfName } from "./build-deck-supplement.mjs";
 // The dated supplement deck (deck/supplement/) has its own tests; importing them here runs them in the same CI step.
 import "./deck-supplement.test.mjs";
-// The three-minute deck (deck/final/) has its own tests too, run in the same CI step.
+// The five-minute talk deck (deck/final-5min/) and the preserved three-minute deck (deck/final/) have their own tests
+// too, run in the same CI step.
 import "./deck-final.test.mjs";
 
 const require = createRequire(import.meta.url);
@@ -716,7 +717,7 @@ test("deck v1 and its PDF stay byte-identical; the daytime PDF has its own packe
   assert.ok(existsSync(pdf), `${pdfName(PACKET)} is exported`);
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, rendered.length, "one PDF page per slide");
-  // Beside them only the dated supplement (its source files and its own PDF) and the three-minute deck's folder
-  // (final-3min/: its source, its renders and its one PDF; deck-final.test.mjs pins what is inside).
-  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", suppPdfName(), "final-3min", SUPPLEMENT.id]);
+  // Beside them only the dated supplement (its source files and its own PDF) and the two talk-deck folders (final-3min/,
+  // preserved byte for byte, and final-5min/: each a source, its renders and one PDF; deck-final.test.mjs pins both).
+  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", suppPdfName(), "final-3min", "final-5min", SUPPLEMENT.id]);
 });

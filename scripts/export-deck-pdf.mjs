@@ -5,13 +5,15 @@
 //     [--shots <dir>] [--no-pdf]
 //
 // --deck daytime (the default) is the daytime deck, deck/daytime/; --deck supplement is the dated supplement,
-// deck/supplement/; --deck final is the three-minute deck, deck/final/ (build-deck-final.mjs). Run its build script first (build-deck-data.mjs or build-deck-supplement.mjs). deck/ (DECK_ROOT) is
+// deck/supplement/; --deck final is the five-minute talk deck, deck/final-5min/ (build-deck-final.mjs); --deck final3min
+// is the preserved three-minute deck, deck/final/, which can be screenshot and checked but never re-exported. Run its
+// build script first (build-deck-data.mjs, build-deck-supplement.mjs or build-deck-final.mjs). deck/ (DECK_ROOT) is
 // served by a throwaway local server and the deck opens at /<deck>/, so it reads deck-data.json exactly as a browser
 // would and loads the shared images, engine and stylesheet from their committed paths. Output, one page per slide and
 // nothing else (the speaker notes are in deck-data.json and the N panel, never printed):
 //   daytime     docs/sentilab/deck/SentiLab-deck-<packet date>-daytime-<HHMM>.pdf, named from the packet (pdfName)
 //   supplement  docs/sentilab/deck/SentiLab-deck-supplement-<date>-<HHMM>-v<n>.pdf (suppPdfName)
-//   final       docs/sentilab/deck/final-3min/SentiLab-3min-<cutoff date>-<HHMM>-<gate outcome>.pdf (finalPdfName); a
+//   final       docs/sentilab/deck/final-5min/SentiLab-5min-<cutoff date>-<HHMM>-<gate outcome>.pdf (finalPdfName); a
 //               preview build (PASS or FAIL without values) is refused: it screenshots, it never prints
 // The final deck also holds its main slides to a 28px type floor (the footer line keeps 22px) and every deck's text to a
 // 4.5:1 contrast ratio against the background it sits on.
@@ -22,13 +24,13 @@
 // empty generated blocks. Exit 1 when a check fails, the deck shows its error banner, the browser logs an error or a
 // request fails, or the PDF page count differs from the slide count.
 import { createServer } from "node:http";
-import { mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
+import { extname, join, normalize, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DECK_DIR, DECK_ROOT, FROZEN_V1, PDF_DIR, REPO_ROOT, pdfName } from "./build-deck-data.mjs";
 import { FROZEN_DAYTIME, SUPP_DECK_DIR, suppPdfName } from "./build-deck-supplement.mjs";
-import { FINAL_DECK_DIR, finalPdfName } from "./build-deck-final.mjs";
+import { FINAL3_DECK_DIR, FINAL_DECK_DIR, FROZEN_FINAL_3MIN, finalPdfName } from "./build-deck-final.mjs";
 
 const args = process.argv.slice(2);
 const deckAt = args.indexOf("--deck");
@@ -36,9 +38,10 @@ const DECKS = {
   daytime: { dir: DECK_DIR, pdf: (data) => pdfName(data.source.packetId) },
   supplement: { dir: SUPP_DECK_DIR, pdf: () => suppPdfName() },
   final: { dir: FINAL_DECK_DIR, pdf: (data) => finalPdfName(data), mainMinFont: 28 },
+  final3min: { dir: FINAL3_DECK_DIR, pdf: () => { throw new Error("the three-minute deck is preserved as exported at 00:12 UTC; it is never re-exported"); }, mainMinFont: 28 },
 };
 const DECK_NAME = deckAt >= 0 ? args[deckAt + 1] : "daytime";
-if (!Object.hasOwn(DECKS, DECK_NAME)) { console.error(`unknown deck ${JSON.stringify(DECK_NAME)}: use --deck daytime, supplement or final`); process.exit(2); }
+if (!Object.hasOwn(DECKS, DECK_NAME)) { console.error(`unknown deck ${JSON.stringify(DECK_NAME)}: use --deck daytime, supplement, final or final3min`); process.exit(2); }
 const DECK = DECKS[DECK_NAME];
 const FROZEN = { ...FROZEN_V1, ...FROZEN_DAYTIME };
 const OUT_DIR = PDF_DIR;
@@ -147,6 +150,16 @@ function checkSlide(k) {
     const fs = parseFloat(getComputedStyle(t).fontSize) * (t.closest("svg").getBoundingClientRect().width / scale) / t.closest("svg").viewBox.baseVal.width;
     if (fs < out.minFont) { out.minFont = fs; out.minFontAt = `svg text "${t.textContent}"`; }
   }
+  // A figure is a picture with text in it: it must load, and its smallest text, scaled to the width it is drawn at, is
+  // held to the same floor as the slide's own text.
+  out.figures = [];
+  for (const img of slide.querySelectorAll("img[data-fig]")) {
+    if (!img.complete || !img.naturalWidth) { out.issues.push(`figure ${img.dataset.fig} did not load`); continue; }
+    const shown = img.getBoundingClientRect().width / scale;
+    const fs = (Number(img.dataset.minFont) * shown) / Number(img.dataset.naturalWidth);
+    out.figures.push({ id: img.dataset.fig, width: Math.round(shown), minFont: Math.round(fs * 10) / 10 });
+    if (fs < out.minFont) { out.minFont = fs; out.minFontAt = `figure ${img.dataset.fig}`; }
+  }
   return out;
 }
 
@@ -191,7 +204,7 @@ try {
           if (c.pending.length) fail(`${c.id}: missing values ${c.pending.join(", ")}`);
           if (c.minFont < MIN_FONT - 0.01) fail(`${c.id}: smallest text ${c.minFont.toFixed(1)}px < ${MIN_FONT}px at ${c.minFontAt}`);
           if (c.main && c.bodyMinFont < MAIN_MIN_FONT - 0.01) fail(`${c.id}: main-slide text ${c.bodyMinFont.toFixed(1)}px < ${MAIN_MIN_FONT}px at ${c.bodyMinFontAt}`);
-          if (DECK_NAME === "final" && c.minContrast < MIN_CONTRAST) fail(`${c.id}: contrast ${c.minContrast.toFixed(2)} < ${MIN_CONTRAST} at ${c.minContrastAt}`);
+          if (DECK_NAME.startsWith("final") && c.minContrast < MIN_CONTRAST) fail(`${c.id}: contrast ${c.minContrast.toFixed(2)} < ${MIN_CONTRAST} at ${c.minContrastAt}`);
         }
       }
       await ctx.close();
@@ -210,14 +223,11 @@ try {
     const path = join(OUT_DIR, DECK.pdf(JSON.parse(readFileSync(join(DECK.dir, "deck-data.json"), "utf8")))); // a final preview throws here
     const rel = relative(REPO_ROOT, path).split(sep).join("/");
     if (Object.hasOwn(FROZEN, rel)) throw new Error(`refusing to overwrite the frozen export ${rel}`);
+    if (Object.hasOwn(FROZEN_FINAL_3MIN, rel)) throw new Error(`refusing to overwrite the preserved three-minute export ${rel}`);
     await page.pdf({ path, width: "1920px", height: "1080px", printBackground: true, preferCSSPageSize: true });
     const pages = (readFileSync(path, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
     report.pdf = { path, pages, slides: count };
     if (pages !== count) fail(`PDF has ${pages} pages for ${count} slides`);
-    // The three-minute deck keeps one PDF with one cutoff: a clean new export replaces the previous one in its folder.
-    if (DECK_NAME === "final" && !report.failures.length && !report.console.length) {
-      for (const f of readdirSync(dirname(path))) if (f.endsWith(".pdf") && join(dirname(path), f) !== path) { unlinkSync(join(dirname(path), f)); report.replaced = f; }
-    }
     await ctx.close();
   }
 } finally {
@@ -227,6 +237,6 @@ try {
 if (report.console.length) fail(`browser console or requests: ${report.console.join(" | ")}`);
 if (SHOTS) writeFileSync(join(SHOTS, "report.json"), JSON.stringify(report, null, 2) + "\n");
 for (const s of report.slides) console.log(`${s.id.padEnd(14)} min font ${s.minFont.toFixed(1)}px${s.main && Number.isFinite(s.bodyMinFont) ? ` · body ${s.bodyMinFont.toFixed(1)}px` : ""} · contrast ${s.minContrast.toFixed(2)}${s.pending.length ? ` · pending: ${s.pending.join(", ")}` : ""}${s.issues.length ? ` · ${s.issues.length} issue(s)` : ""}`);
-if (report.pdf) console.log(`PDF ${report.pdf.path} · ${report.pdf.pages} pages${report.replaced ? ` (replaces ${report.replaced})` : ""}`);
+if (report.pdf) console.log(`PDF ${report.pdf.path} · ${report.pdf.pages} pages`);
 if (report.failures.length) { console.error(`FAIL\n- ${report.failures.join("\n- ")}`); process.exit(1); }
 console.log("OK");
