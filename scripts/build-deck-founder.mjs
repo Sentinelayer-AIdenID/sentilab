@@ -503,6 +503,11 @@ export function handoffFiles(v4) {
   }
   return files;
 }
+// The metrics files the deck publishes beside its outputs, as received: they face the same name scan.
+export function inputFiles() {
+  const paths = [FOUNDER_METRICS, join(FOUNDER_DIR, "METRICS.md"), FOUNDER_METRICS_FREEZE].filter((p) => existsSync(p));
+  return new Map(paths.map((p) => [p, readFileSync(p)]));
+}
 // XML's five predefined entities and numeric character references: all an SVG without a DTD can hold, and what a markdown
 // renderer decodes too. One pass, as a renderer makes ("&amp;#116;" shows as the text "&#116;"); nothing else is expanded.
 const XML_NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
@@ -581,7 +586,7 @@ function main(args) {
   const final = args.includes("--final") || loaded.v4.build === "final";
   const data = buildFounderData(loaded, { slot, final });
   const outputs = publicOutputs(data, loaded.v4, loaded);
-  checkUnnamed([...outputs, ...handoffFiles(loaded.v4)], loaded.v4);
+  checkUnnamed([...outputs, ...handoffFiles(loaded.v4), ...inputFiles()], loaded.v4);
   if (args.includes("--check")) {
     if (slot !== "3min") throw new FounderError("--check reads the committed build, which is the 3min slot");
     if (!outputsMatch(data, loaded.v4, loaded)) { console.error("deck/founder-v4 or its SCRIPT/FILL-IN/SOURCES differ from a fresh build of V4.json"); process.exit(1); }

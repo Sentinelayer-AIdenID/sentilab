@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import {
   FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, checkUnnamed, countWords, fillInTable,
-  founderPdfName, handoffFiles, loadFounder, loadMetrics, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList,
+  founderPdfName, handoffFiles, inputFiles, loadFounder, loadMetrics, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList,
   speakerScript, windowShown,
 } from "./build-deck-founder.mjs";
 import { PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
@@ -460,7 +460,8 @@ test("a team that has not consented to be named appears in nothing the deck publ
   assert.ok(loaded.v4.teams.unnamed.includes("Vortex"));
   // Everything the build writes (deck data, both scripts, FILL-IN, SOURCES, every figure as served, text and alt) and
   // Carter's handoff files: none names an unnamed team, and none holds "vortex" in any letter case, even inside a word.
-  const files = [...publicOutputs(data, loaded.v4, loaded), ...handoffFiles(loaded.v4)];
+  const files = [...publicOutputs(data, loaded.v4, loaded), ...handoffFiles(loaded.v4), ...inputFiles()];
+  assert.ok(files.some(([p]) => p.endsWith("METRICS.json")) && files.some(([p]) => p.endsWith("METRICS.md")), "the metrics files are scanned too");
   for (const f of [scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources, join(FOUNDER_DIR, "CARTER-QA.md"), join(FOUNDER_DIR, "DEMO-RUN-SHEET.md")]) assert.ok(files.some(([p]) => p === f), f);
   checkUnnamed(files, loaded.v4);
   for (const [p, b] of files) if (/\.(json|js|md|svg)$/.test(p)) assert.doesNotMatch(String(b).replace(/data:[^"')\s]+/g, ""), /vortex/i, p);
