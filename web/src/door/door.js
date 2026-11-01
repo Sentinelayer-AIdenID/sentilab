@@ -311,9 +311,10 @@ async function bounded(task, ms) {
   }
 }
 
-// The arrival the intake records: the class and declared operator from the classifier's enums, the purpose chosen and
-// the token's nonce (the intake keeps only short_id, the first 4 hex of sha256(nonce), and stamps the time). A wall
-// view has no purpose and no nonce yet.
+// The arrival the door sends: the class and declared operator from the classifier's enums, the purpose chosen and the
+// token's nonce. A wall view has no purpose and no nonce yet. The intake keeps the class and the time, and with a pick
+// the purpose and short_id (the first 4 hex of sha256(nonce)); never the operator or the nonce. It publishes them on
+// its events feed. The wall says exactly this (render.js RECORDED).
 export function arrivalOf(identity, purpose, nonce) {
   return { class: CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown",
     operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown",

@@ -70,6 +70,30 @@ test("the wall negotiates: markdown and JSON for agents that prefer them; unclas
   assert.ok(same(plain.bytes, file("agents/index.md")));
 });
 
+// Warden's P2 at df831a71: the wall said "Only the purpose you pick is recorded", which was not true. Measured against
+// main's Door.arrival (0888f099), a wall view stores the class and the time, and a pick also the purpose and a short id
+// derived from the token's nonce (never the operator or the nonce); every arrival is published on the intake's
+// /api/open/v1/door/events. The wall now says exactly that, in each of its three forms.
+test("the wall says exactly what a visit records and that it is public, in HTML, markdown and JSON", async (t) => {
+  const calls = installApi(t);
+  const s = setup();
+  const RECORDED = "What we record: your assistant's type and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+  const html = await s.go("/", agent(UA.gptbot));
+  assert.ok(html.text.includes(`<p class="fine">${RECORDED}</p>`), html.text);
+  const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
+  assert.ok(md.text.includes(`\n${RECORDED}\n`), md.text);
+  const js = JSON.parse((await s.go("/", agent(UA.curl, { accept: "application/json" }))).text);
+  assert.equal(js.recorded, "class and time; plus purpose and a short visit id if you pick one; published on the public activity feed");
+  for (const text of [html.text, md.text, JSON.stringify(js)]) assert.ok(!/purpose you pick is recorded|purpose id only/.test(text), "the old claim is gone");
+  // What those words describe: a wall view sends the class (and the operator, which the intake never keeps); a pick
+  // adds the purpose and the token's nonce, of which the intake keeps only a 4-hex short id.
+  await s.drain();
+  assert.deepEqual(arrivalsOf(calls).map((a) => Object.keys(a)), [["class", "operator"], ["class", "operator"], ["class", "operator"]]);
+  await s.go("/agents/intent?purpose=read", agent(UA.gptbot));
+  await s.drain();
+  assert.deepEqual(Object.keys(arrivalsOf(calls).at(-1)), ["class", "operator", "purpose", "nonce"]);
+});
+
 test("the wall says honestly whether submissions are open, closed or unknown, as the intake reports", async (t) => {
   for (const [board, state, words] of [[{ door: { open: false, codes: ["not_open_yet"] } }, "closed", "closed right now. Reading still works."],
     [{ door: { open: true, codes: [] } }, "open", "open."], [{}, "unknown", "status unavailable right now"]]) {

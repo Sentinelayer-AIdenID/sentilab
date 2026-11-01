@@ -95,7 +95,8 @@ export const PUBLISHED = Object.freeze({
   ]),
 });
 
-// SentiLab's purposes on the wall, in the shape of the gate's intent list (id, label). Only an id is ever recorded.
+// SentiLab's purposes on the wall, in the shape of the gate's intent list (id, label). Of a purpose, only its id is
+// ever recorded.
 export const PURPOSES = Object.freeze([
   Object.freeze({ id: "place-chiplets", label: "place chiplets: propose a CPU-DRAM layout for the scorer" }),
   Object.freeze({ id: "review", label: "review the board and the results" }),

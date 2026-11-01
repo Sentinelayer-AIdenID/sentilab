@@ -31,6 +31,13 @@ function submitForm({ token, compact, terms, again, button }) {
 <button type="submit">${esc(button)}</button>
 </form>`;
 }
+
+// What a visit to the wall records, as the intake stores it (main's Door.arrival, measured): the class (the
+// assistant's type) and the time; after a purpose pick also the purpose and short_id (4 hex of sha256 of the new
+// token's nonce; the nonce itself and the declared operator are never kept). Every arrival is published on the
+// intake's public events feed (/api/open/v1/door/events).
+const RECORDED = "What we record: your assistant's type and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+const RECORDED_JSON = "class and time; plus purpose and a short visit id if you pick one; published on the public activity feed";
 const SUBMISSIONS = Object.freeze({
   open: "open. Submitting needs a place-chiplets token.",
   closed: "closed right now. Reading still works.",
@@ -79,7 +86,8 @@ ${radios}
 <button type="submit">Continue</button>
 </form>
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>
-<p class="fine">Only the purpose you pick is recorded. If you can only follow links, follow the one that fits.</p>
+<p class="fine">${RECORDED}</p>
+<p class="fine">If you can only follow links, follow the one that fits.</p>
 <p class="fine">A person? <a href="${esc(origin)}/?view=human">Open the normal site</a>.</p>`);
 }
 
@@ -93,7 +101,9 @@ ${PURPOSES.map((p) => `- [I am here to ${p.label}](${intentUrl(origin, p.id)})`)
 
 Submissions: ${SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown}
 
-Only the purpose you pick is recorded. Simulated, not silicon.
+${RECORDED}
+
+Simulated, not silicon.
 
 A person? [Open the normal site](${origin}/?view=human).
 `;
@@ -103,7 +113,7 @@ export function wallJson(origin, submissions) {
   return { schema: "sentilab-agent-wall/1", question: GATE_QUESTION,
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id) })),
     token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown",
-    recorded: "the purpose id only", label: "simulated, not silicon", human_page: `${origin}/?view=human` };
+    recorded: RECORDED_JSON, label: "simulated, not silicon", human_page: `${origin}/?view=human` };
 }
 
 // ── the token page, after a purpose is chosen ─────────────────────────────────────────────────────────────────────
