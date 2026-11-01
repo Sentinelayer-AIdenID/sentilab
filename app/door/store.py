@@ -25,6 +25,7 @@ share.
 from __future__ import annotations
 
 import json
+import math
 import os
 import sqlite3
 import threading
@@ -36,6 +37,8 @@ from open_proposals.contract.codes import canonical_list, violation
 from open_proposals.contract.states import Entry, transition
 
 from .policy import utc
+
+HIDE_REASONS = ("privacy", "abuse", "spam", "other")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -92,6 +95,17 @@ CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, at REA
                                    run_id TEXT, body TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS events_by_kind ON events (kind, at);
 CREATE INDEX IF NOT EXISTS events_by_kind_seq ON events (kind, seq);
+CREATE TABLE IF NOT EXISTS hidden_declarations (
+  seq INTEGER PRIMARY KEY REFERENCES events (seq),
+  reason TEXT NOT NULL CHECK (reason IN ('privacy', 'abuse', 'spam', 'other')),
+  at REAL NOT NULL CHECK (at >= 0 AND at <= 253402300799)
+);
+CREATE TRIGGER IF NOT EXISTS hidden_declaration_target BEFORE INSERT ON hidden_declarations
+WHEN NOT EXISTS (SELECT 1 FROM events WHERE seq = NEW.seq AND kind = 'arrival'
+                 AND json_type(body, '$.declaration') = 'object')
+BEGIN
+  SELECT RAISE(ABORT, 'not_declaration');
+END;
 CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
 """
 VISITOR_TABLES = (
@@ -160,9 +174,11 @@ def label(klass: str, short: str) -> str:
 
 
 class Store:
-    def __init__(self, path):
+    def __init__(self, path, *, existing_only: bool = False):
         self.path = str(path)
-        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        self._existing_only = existing_only
+        if not existing_only:
+            Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self.pause_hook = None       # tests only: called inside admit's transaction, between decision and write
         self.owner_id = None
@@ -239,8 +255,22 @@ class Store:
             self._owner_handle, self.owner_id = None, None
 
     def _connect(self) -> sqlite3.Connection:
-        db = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
+        target = Path(self.path).resolve().as_uri() + "?mode=rw" if self._existing_only else self.path
+        db = sqlite3.connect(target, uri=self._existing_only, timeout=30, isolation_level=None,
+                             check_same_thread=False)
         db.row_factory = sqlite3.Row
+        if self._existing_only:
+            # The operator must name an existing Door store. A typo or unrelated database must not be initialized,
+            # and mode=rw also prevents a new database if the file disappears after the operator selected it.
+            try:
+                tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+                columns = {row[1] for row in db.execute("PRAGMA table_info(events)")}
+                if not {"events", "runs", "reservations", "counters"} <= tables or columns != {
+                        "seq", "at", "kind", "run_id", "body"}:
+                    raise ValueError("invalid_store")
+            except BaseException:
+                db.close()
+                raise
         db.execute("PRAGMA journal_mode=DELETE")
         db.execute("PRAGMA synchronous=FULL")
         db.execute("PRAGMA foreign_keys=ON")
@@ -648,15 +678,18 @@ class Store:
     def events(self, after: int, limit: int) -> list:
         with self.read() as db:
             return [dict(row) for row in db.execute(
-                "SELECT seq, at, kind, run_id, body FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
+                "SELECT events.seq, events.at, kind, run_id, body, hidden_declarations.reason AS hidden_reason "
+                "FROM events LEFT JOIN hidden_declarations ON hidden_declarations.seq = events.seq "
+                "WHERE events.seq > ? ORDER BY events.seq LIMIT ?",
                 (after, limit)).fetchall()]
 
     def visitors(self, after: int, limit: int) -> tuple:
         """An indexed arrival page and exact materialized counts from the same read snapshot."""
         with self.read() as db:
             rows = [dict(row) for row in db.execute(
-                "SELECT seq, at, body FROM events WHERE kind = 'arrival' AND seq > ? "
-                "ORDER BY seq LIMIT ?", (after, limit)).fetchall()]
+                "SELECT events.seq, events.at, body, hidden_declarations.reason AS hidden_reason "
+                "FROM events LEFT JOIN hidden_declarations ON hidden_declarations.seq = events.seq "
+                "WHERE kind = 'arrival' AND events.seq > ? ORDER BY events.seq LIMIT ?", (after, limit)).fetchall()]
             classes = {row[0]: row[1] for row in db.execute(
                 "SELECT class, arrivals FROM visitor_classes")}
             counts = dict(db.execute("SELECT recorded_arrivals, unique_observed_handles, arrivals_without_handle, "
@@ -665,6 +698,30 @@ class Store:
                                            "unclassified_arrival_events FROM visitor_event_totals "
                                            "WHERE singleton = 1").fetchone())
             return rows, {**counts, **event_counts, "arrivals_by_class": classes}
+
+    def hide_declaration(self, seq: int, reason: str, *, now: float) -> dict:
+        """Local operator action: retain the first hide record and never modify the arrival or its counts.
+
+        The HTTP service has no route to this method. Authorization is the operator's filesystem write access to
+        the explicitly selected store, as with the other local maintenance operations.
+        """
+        if type(seq) is not int or not 0 < seq <= 2 ** 53 - 1:
+            raise ValueError("invalid_seq")
+        if not isinstance(reason, str) or reason not in HIDE_REASONS:
+            raise ValueError("invalid_reason")
+        if isinstance(now, bool) or not isinstance(now, (int, float)) or not math.isfinite(now) or not 0 <= now <= 253402300799:
+            raise ValueError("invalid_time")
+        with self.tx() as db:
+            target = db.execute("SELECT 1 FROM events WHERE seq = ? AND kind = 'arrival' "
+                                "AND json_type(body, '$.declaration') = 'object'", (seq,)).fetchone()
+            if target is None:
+                raise ValueError("not_declaration")
+            changed = db.execute("INSERT OR IGNORE INTO hidden_declarations (seq, reason, at) VALUES (?, ?, ?)",
+                                 (seq, reason, now)).rowcount
+            row = dict(db.execute("SELECT seq, reason, at FROM hidden_declarations WHERE seq = ?", (seq,)).fetchone())
+            if row["reason"] not in HIDE_REASONS:
+                raise ValueError("invalid_hide_record")
+            return {"status": "hidden" if changed else "already_hidden", **row}
 
     def last_seq(self) -> int:
         with self.read() as db:

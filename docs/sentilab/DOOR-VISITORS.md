@@ -152,6 +152,102 @@ in the same transaction as the existing counters, including for older writers.
 Historical event bytes and existing totals are preserved. Reads use materialized
 counts and an indexed page from one snapshot; they do not scan the full history.
 
+## Operator hiding
+
+An operator with filesystem write access to the API's existing store can hide one
+declaration event without deleting or rewriting its arrival:
+
+```sh
+python -m app.door.moderation hide --store /data/door.sqlite3 --seq 42 --reason privacy
+```
+
+Run this locally on the API host as its authorized operator account. The command
+requires an explicit existing Door database; a missing path or unrelated database
+is refused. It does not start the service, scorer or dispatcher, acquire the scorer
+owner lock, or offer a public HTTP write route. Existing filesystem permissions
+control who can run it against the store; no new shared secret is used.
+
+The reason must be `privacy`, `abuse`, `spam` or `other`; it is a public fixed code,
+not free text. `hidden_declarations` records the declaration's exact event seq,
+reason and operator-command timestamp. Only an arrival with a declaration object
+can be hidden. Repeating the command returns `already_hidden` with the first
+reason/time, even if a different allowed reason was supplied. It never replaces
+that first record. Receipts contain only status, seq, reason and timestamp.
+
+On subsequent `/events` and `/visitors` reads, that event keeps its sequence/time
+and has `declaration: null`, `event_kind: "declaration"`, and `hidden: "privacy"`
+(or the selected reason). Class and purpose use the fixed detector/purpose enums;
+the short ID must be four lowercase hex characters. The label is rebuilt from
+those fields. No arbitrary stored declaration, nested extra field or derived name
+is projected for the hidden row. Other unhidden rows stay visible, including a
+different declaration with the same text or internal handle.
+
+The original text and handle remain in the store, and all event, visitor, pass and
+arrival-partition counts retain their meanings. Hiding is not deletion or erasure.
+Paging cursors and `through_seq` do not advance because no arrival is added or
+rewritten. Both HTTP responses remain `no-store`; there is no separate API cache
+of latest visitor names or declarations. A client that already holds an earlier
+page must refetch and replace it to see the tombstone; continuing only from its
+old cursor does not revisit that row. The renderer/proxy rollout must account for
+that refresh behavior. Previously downloaded copies are not erased. All API
+processes serving these feeds must run the repaired projection before declarations
+are enabled; an older process cannot apply the side table to its responses.
+
+### Verify the public result before enabling declarations
+
+Keep declarations OFF while checking this procedure in staging. A successful
+local command is not evidence that public responses and refreshed supported
+clients have stopped displaying the declaration.
+
+1. Use authenticated operator access to the API host and the authorized local
+   account that can write the serving Door store. Confirm the database path and
+   exact target event seq before running the command above. Retain the target's
+   seq/time, the command receipt and a pre-hide count snapshot in operator records;
+   do not copy private declaration text into public verification receipts.
+2. Check the command result: `hidden` or `already_hidden` must name that exact
+   seq. Use the recorded first reason/time when the result is `already_hidden`.
+   Exit status 0 confirms the local operation only; continue with both feed checks.
+3. Refetch the deployed public `/events` and `/visitors` surfaces from a cursor
+   **before the target seq**, using the deployment's existing authorized feed
+   access and public proxy routes. For the seq 42 example, the API requests are
+   `GET /api/open/v1/door/events?after=41&limit=200` and
+   `GET /api/open/v1/door/visitors?after=41&limit=500`. If paging is needed, follow
+   each response's `next_after` and `has_more` until the exact target is observed
+   in `events` and `items`, respectively. Do not reuse an incremental cursor at or
+   beyond 42: hiding does not advance it. An empty page or successful HTTP status
+   without the target is not proof that the declaration is hidden.
+4. In both responses, verify the target keeps its seq/time and has
+   `declaration: null`, `event_kind: "declaration"`, and `hidden` equal to the
+   recorded reason. Inspect the entire target object, including nested fields and
+   the rebuilt label, for the staging canary or original declaration marker;
+   neither it nor a derived name may remain. Check the public proxy and renderer
+   too: replace their previously loaded pages with these refetched rows and confirm
+   the target no longer displays the text. Continuing only from their old cursor
+   or leaving an old page in client state does not complete this check.
+5. Use the operator's deployment inventory to record the serving API revisions
+   and verify **every** instance serving either feed has the repaired projection
+   and uses the intended store. One successful request through a load balancer does
+   not establish that older instances are gone. Confirm every serving public proxy
+   and supported renderer has the refetch/replace behavior above; do not infer this from the
+   API response alone.
+6. Confirm the original arrival body and internal handle remain in the protected
+   store, with only the separate hide record added. Preserve all counters and
+   cursor meanings. Compare count snapshots while accounting for genuine concurrent
+   arrivals; hiding must not decrement, reset or reclassify historical counts.
+   Retain the seq, reason, checked revisions, feed/page evidence and client refresh
+   result as the verification receipt, without republishing hidden text.
+
+If either feed cannot expose the exact target for inspection, any serving API
+revision still returns its declaration text, or a refreshed supported proxy/client retains that text,
+keep declarations OFF and report the failed surface and revision. Do not report
+public hiding as successful on the strength of the local command alone.
+
+This is a per-event display control. It does not revoke the purpose pass or stop
+the same pass, prefix or another pass from posting a new declaration. The operator
+must separately verify targeted pass/prefix abuse controls and default-OFF
+deployment behavior before turning declarations ON, alongside the projection and
+refetch checks above. The hide command does not implement those other controls.
+
 Without heartbeat presence enabled, `current_presence` is
 `{ "status": "not_measured", "count": null }`. With `DOOR_PRESENCE=on` it is
 `{ "status": "measured", "window_s": 120, "active_tabs": { "total", "by_page", "by_class" }, "tabs_seen_today" }`
