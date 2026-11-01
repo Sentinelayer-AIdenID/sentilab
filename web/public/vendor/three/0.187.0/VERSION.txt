@@ -1,0 +1,18 @@
+three.js 0.187.0 (git tag r187, commit 7e89746a687bb88271253698fa108b1dd59825d0), MIT License (see LICENSE here).
+
+Source: the npm registry tarball https://registry.npmjs.org/three/-/three-0.187.0.tgz, retrieved 2026-11-01.
+  tarball sha256  ff540832ded0cfe919764d24a3d88f3e2a05f23303f876423e4f893841e90728
+  tarball sha512  Qiu7R+Cmh8CstZsY1uJOSWnVlfo7ZtNLV7mF8Jltk3LB3AtDu9cRZlcnRKkAk8Y4z6KKw35z7Y7Urd7jWY8etA== (matches the registry's dist.integrity)
+  tarball sha1    face29ee2de9bcc31a1b573a76f224e35e0b2894 (matches dist.shasum)
+
+Files served from this directory, byte-identical to the tarball's package/ paths (no edits, no minification; this
+release ships no minified builds):
+  three.module.js  package/build/three.module.js  658900 bytes   sha256 104f56145899722094556490d787aae0617cc2fc3382f31df02d724ea1aee341
+  three.core.js    package/build/three.core.js    1474799 bytes  sha256 613e370f76638fdef83926642bf256dc9615684922de1ce1f63a8583e5d78578
+  LICENSE          package/LICENSE                1081 bytes     sha256 8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc
+
+three.module.js imports only ./three.core.js (a relative path), so no import map is needed. No add-ons are vendored.
+The page imports three.module.js lazily, only when the 3D view is shown (web/public/sentilab/package/render3d.mjs).
+web/test/package3d-vendor.test.mjs checks every hash above. One comment line in three.core.js (line 45192, a URL to
+a vendor's issue tracker) is a named, pinned exception in web/test/public-names.test.mjs.
+Upgrading: a new directory per version, re-pinned and re-reviewed; never edit these files.

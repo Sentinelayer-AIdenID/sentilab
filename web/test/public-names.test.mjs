@@ -10,6 +10,9 @@
 //   - app.js plain(): the sanitizer that replaces the signal model's name in record text before it reaches the page.
 //   - tfl08/leaderboard.json signal_pricing: imported, pinned evidence (PROVENANCE.json) whose pricing note names the
 //     provider; leaderboard.js never reads that field, and the test fails if it starts to.
+//   - vendor/three/0.187.0/three.core.js: the vendored three.js build (byte-identical to its release, pinned by sha256
+//     in package3d-vendor.test.mjs) holds one source comment that links to a vendor's issue tracker. Exactly that
+//     line, exactly once, in exactly that file; any other hit in it, or the line anywhere else, still fails.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
@@ -28,6 +31,8 @@ const ROOT_HANDLE = /(?<![\w-])root(?![\w])/i;          // HTML copy only
 const ROOM = /\broot ?0\d\d\b/i;                        // everywhere
 const BLOB = /^[A-Za-z0-9+/=_-]{32,}$/;                 // base64 / base64url / hex: signatures, keys, hashes
 const SANITIZER = "/\\bjev\\b[-\\w.]*/gi";                // app.js plain(), allowed exactly once, in app.js only
+export const THREE_CORE = "vendor/three/0.187.0/three.core.js";
+export const THREE_CORE_COMMENT = "\n\t// https://github.com/cloudflare/workerd/issues/3657\n";   // line 45192, allowed exactly once
 
 export function scanText(text, { html = false } = {}) {
   return [...NAMES, ROOM, ...(html ? [ROOT_HANDLE] : [])].filter((re) => re.test(text)).map((re) => re.source);
@@ -52,6 +57,10 @@ export function scanFile(rel, text) {
       assert.equal(body.split(SANITIZER).length - 1, 1, "app.js holds the sanitizer exactly once");
       assert.match(body, /const plain = \(t\) => String\(t == null \? "" : t\)\.replace\(\/\\bjev\\b\[-\\w\.\]\*\/gi, "signal layer"\);/, "the sanitizer only replaces the name");
       body = body.replace(SANITIZER, "/SANITIZER/gi");
+    }
+    if (rel === THREE_CORE) {
+      assert.equal(body.split(THREE_CORE_COMMENT).length - 1, 1, "three.core.js holds the pinned comment exactly once");
+      body = body.replace(THREE_CORE_COMMENT, "\n\t// (pinned vendor comment)\n");
     }
     return scanText(body, { html: ext === ".html" }).map((h) => `${rel}: ${h}`);
   }
@@ -111,4 +120,9 @@ test("negative control: seeded names are caught in every file kind; blobs and pl
   assert.deepEqual(scanFile("verify-core.js", "const root = pins[id]; // the public root key\nfunction forgery() {}\n"), []);
   assert.deepEqual(scanFile("index.html", "<p>SUNDAI · TRACK 02 · HotSpot 7 · Ascend910</p>"), []);
   assert.deepEqual(scanFile("tfl08/leaderboard.json", JSON.stringify({ benchmarks: { x: { signal_pricing: { source: "https://typesafe.ai/" } } } })), [], "the named exception");
+  // The vendored three.js exception covers one line in one file, once.
+  assert.deepEqual(scanFile(THREE_CORE, `a${THREE_CORE_COMMENT}b`), [], "the pinned three.core.js comment");
+  assert.ok(scanFile(THREE_CORE, `a${THREE_CORE_COMMENT}b // made by Claude\n`).length > 0, "another name in three.core.js still fails");
+  assert.ok(scanFile("vendor/three/0.187.0/three.module.js", `a${THREE_CORE_COMMENT}b`).length > 0, "the line in another file still fails");
+  assert.throws(() => scanFile(THREE_CORE, `a${THREE_CORE_COMMENT}${THREE_CORE_COMMENT}b`), /exactly once/, "a second copy fails");
 });
