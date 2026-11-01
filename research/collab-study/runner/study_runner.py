@@ -8,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import os
+import re
 import socket
 import ssl
 import threading
@@ -456,3 +457,102 @@ class RequestEngine:
                 agent.stop_reason = "token_cap"
             return reply
         return None
+
+
+def write_json_exclusive(path: Path, value) -> None:
+    data = canonical(value) + b"\n"
+    with path.open("xb") as stream:
+        stream.write(data)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+class JobOutputs:
+    """Append attempt receipts immediately; publish a job's result only once."""
+
+    _creation_lock = threading.Lock()
+
+    def __init__(self, output: Path, job: dict, *, clock=time.monotonic):
+        job_id = job.get("job_id")
+        if not isinstance(job_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", job_id):
+            raise InputError("job_id must be a nonempty safe directory name")
+        if job.get("arm") not in {"A", "B", "C"} or not isinstance(job.get("packet"), str) or type(job.get("repeat")) is not int:
+            raise InputError("invalid job metadata")
+        self.job = {name: job[name] for name in ("job_id", "arm", "packet", "repeat")}
+        self.clock = clock
+        self.start_utc = utc_now()
+        self.start_time = clock()
+        self.directory = output / job_id
+        with self._creation_lock:
+            if output.is_symlink() or not (output / ".running").is_file():
+                raise InputError("output directory must be claimed first")
+            if any(path.name.casefold() == job_id.casefold() for path in output.iterdir()):
+                raise InputError("duplicate job directory")
+            self.directory.mkdir()
+        self._stream = (self.directory / "transcript.jsonl").open("x", encoding="utf-8")
+        self.closed = False
+
+    def record(self, value: dict) -> None:
+        if self.closed:
+            raise InputError("job output is already closed")
+        self._stream.write(canonical(value).decode("utf-8") + "\n")
+        self._stream.flush()
+
+    def abort(self) -> None:
+        """Close a partial transcript without pretending the job completed."""
+        self._stream.close()
+        self.closed = True
+
+    def finish(self, agents: list[AgentState], findings, ledger: Ledger) -> None:
+        if self.closed:
+            raise InputError("job output is already closed")
+        attempts = [row for row in ledger.report()["attempts"] if row["job_id"] == self.job["job_id"]]
+        if any(row["state"] == "pending" for row in attempts):
+            raise InputError("cannot finish job with unfinished requests")
+        per_agent = {}
+        for agent in agents:
+            rows = [row for row in attempts if row["agent"] == agent.number]
+            per_agent[str(agent.number)] = {
+                "cap": agent.cap, "charged_tokens": agent.charged_tokens,
+                "unknown_usage_attempts": agent.unknown_usage_attempts,
+                "overspend_tokens": max(0, agent.charged_tokens - agent.cap),
+                "stop_reason": agent.stop_reason,
+                "usage": [row["usage"] for row in rows],
+            }
+        job = {**self.job, "start_utc": self.start_utc, "end_utc": utc_now(),
+               "wall_seconds": max(0, self.clock() - self.start_time), "agents": per_agent,
+               "provider_request_ids": [row["request_id"] for row in attempts if row["request_id"] is not None],
+               "failures": [row for row in attempts if row["state"] == "failed"],
+               "unknown_usage": any(row["unknown_usage"] for row in attempts),
+               "overspend_tokens": sum(agent["overspend_tokens"] for agent in per_agent.values()),
+               "overspend_limit_exceeded": any(row["overspend_limit_exceeded"] for row in attempts)}
+        self._stream.flush()
+        os.fsync(self._stream.fileno())
+        self.abort()
+        write_json_exclusive(self.directory / "findings.json", findings)
+        write_json_exclusive(self.directory / "job.json", job)
+
+
+def finish_run(output: Path, ledger: Ledger) -> dict:
+    """Hash all completed outputs. The manifest cannot include its own hash."""
+    if output.is_symlink() or not (output / ".running").is_file() or (output / "RUN-MANIFEST.json").exists():
+        raise InputError("run is not active or already sealed")
+    accounting = ledger.report()
+    if any(row["state"] == "pending" for row in accounting["attempts"]):
+        raise InputError("cannot seal unfinished requests")
+    for directory in output.iterdir():
+        if directory.is_symlink():
+            raise InputError("output must not contain symlinks")
+        if directory.is_dir() and {path.name for path in directory.iterdir()} != {"job.json", "findings.json", "transcript.jsonl"}:
+            raise InputError("cannot seal unfinished job")
+    write_json_exclusive(output / "ACCOUNTING.json", accounting)
+    hashes = {}
+    for path in sorted(output.rglob("*")):
+        if path.is_symlink():
+            raise InputError("output must not contain symlinks")
+        if path.is_file() and path.name != ".running":
+            hashes[path.relative_to(output).as_posix()] = sha256(path.read_bytes())
+    manifest = {"schema": "collab-study-run-manifest-v2", "files": hashes}
+    write_json_exclusive(output / "RUN-MANIFEST.json", manifest)
+    (output / ".running").unlink()
+    return manifest

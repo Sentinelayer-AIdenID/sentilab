@@ -501,3 +501,126 @@ def test_run_accounting_contains_agent_cap_overspend():
     attempt = ledger.report()['attempts'][0]
     assert attempt['overspend_tokens'] == 220
     assert attempt['overspend_limit_exceeded'] is True
+
+
+def job_metadata(arm='A'):
+    return {'job_id': 'job-one', 'arm': arm, 'packet': 'case-one', 'repeat': 1}
+
+
+def test_outputs_persist_transcript_usage_failures_and_hashes(tmp_path):
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    model = ScriptedModel(response('verbatim\r\nanswer', prompt=400, completion=20))
+    engine, agent, ledger, clock, records = lifecycle(model, cap=200)
+    writer = runner.JobOutputs(output, job_metadata(), clock=clock)
+    engine.request('job-one', agent, [], deadline=900, scope='study', record=writer.record)
+    clock.now = 3
+    findings = {'findings': [], 'malformed': [], 'discarded': 0}
+    writer.finish([agent], findings, ledger)
+    runner.finish_run(output, ledger)
+    job = json.loads((output / 'job-one/job.json').read_text())
+    assert {k: job[k] for k in job_metadata()} == job_metadata()
+    assert job['wall_seconds'] == 3
+    assert job['start_utc'].endswith('Z')
+    assert job['end_utc'].endswith('Z')
+    assert job['agents']['1']['charged_tokens'] == 420
+    assert job['agents']['1']['overspend_tokens'] == 220
+    assert job['agents']['1']['unknown_usage_attempts'] == 0
+    assert job['agents']['1']['usage'] == [{'prompt_tokens': 400, 'completion_tokens': 20}]
+    assert job['provider_request_ids'] == ['request-one']
+    assert job['overspend_tokens'] == 220
+    assert job['overspend_limit_exceeded'] is True
+    assert job['unknown_usage'] is False
+    assert json.loads((output / 'job-one/findings.json').read_text()) == findings
+    transcript = [json.loads(line) for line in (output / 'job-one/transcript.jsonl').read_text().splitlines()]
+    assert transcript[0]['messages_sha256'] == runner.sha256(runner.canonical([]))
+    assert transcript[1]['reply'] == 'verbatim\r\nanswer'
+    manifest = json.loads((output / 'RUN-MANIFEST.json').read_text())
+    assert set(manifest['files']) == {'job-one/job.json', 'job-one/findings.json', 'job-one/transcript.jsonl', 'ACCOUNTING.json'}
+    for path, digest in manifest['files'].items():
+        assert runner.sha256((output / path).read_bytes()) == digest
+    before = (output / 'RUN-MANIFEST.json').read_bytes()
+    with pytest.raises((runner.InputError, FileExistsError)):
+        runner.finish_run(output, ledger)
+    assert (output / 'RUN-MANIFEST.json').read_bytes() == before
+    with pytest.raises(runner.InputError):
+        writer.record({'event': 'late'})
+
+
+@pytest.mark.parametrize('job_id', ['../escape', '/tmp/escape', 'a/b', 'a\\b', '.', '..', ''])
+def test_job_output_path_cannot_escape_root(tmp_path, job_id):
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    job = {**job_metadata(), 'job_id': job_id}
+    with pytest.raises(runner.InputError):
+        runner.JobOutputs(output, job)
+    assert sorted(path.name for path in output.iterdir()) == ['.running']
+
+
+def test_unknown_cost_failure_is_explicit_in_job_and_run_outputs(tmp_path):
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    model = ScriptedModel(runner.CallFailure('transport_unknown', request_id='failed-attempt'))
+    engine, agent, ledger, clock, records = lifecycle(model)
+    writer = runner.JobOutputs(output, job_metadata(), clock=clock)
+    engine.request('job-one', agent, [], deadline=900, scope='study', record=writer.record)
+    writer.finish([agent], {'findings': [], 'malformed': [], 'discarded': 0}, ledger)
+    runner.finish_run(output, ledger)
+    job = json.loads((output / 'job-one/job.json').read_text())
+    accounting = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert job['unknown_usage'] is True
+    assert job['agents']['1']['unknown_usage_attempts'] == 1
+    assert job['failures'][0]['failure'] == 'transport_unknown'
+    assert job['failures'][0]['request_id'] == 'failed-attempt'
+    assert job['failures'][0]['charged_tokens'] == 200
+    assert accounting['attempts'][0]['unknown_usage'] is True
+    assert accounting['grand_total_usd'] == '0.0003'
+
+
+def test_manifest_refuses_unfinished_requests_and_jobs(tmp_path):
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    ledger = runner.Ledger('1', {'input': '1', 'cached_input': '1', 'output': '1'})
+    attempt = ledger.reserve('job-one', 1, 'study', prompt_bound=100, max_tokens=100)
+    with pytest.raises(runner.InputError, match='unfinished'):
+        runner.finish_run(output, ledger)
+    ledger.settle(attempt, failure=runner.CallFailure('transport_unknown'))
+    writer = runner.JobOutputs(output, job_metadata())
+    with pytest.raises(runner.InputError, match='unfinished'):
+        runner.finish_run(output, ledger)
+    assert not (output / 'RUN-MANIFEST.json').exists()
+    writer.abort()
+
+
+def test_credential_never_reaches_output_files(tmp_path, monkeypatch):
+    secret = 'obviously-fake-credential'
+
+    def post(*args, **kwargs):
+        raise runner.requests.Timeout(secret)
+
+    monkeypatch.setattr(runner.requests.Session, 'post', post)
+    model = runner.HTTPModel('https://provider.invalid/chat/completions', secret)
+    engine, agent, ledger, clock, records = lifecycle(model)
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    writer = runner.JobOutputs(output, job_metadata(), clock=clock)
+    engine.request('job-one', agent, [], deadline=900, scope='study', record=writer.record)
+    writer.finish([agent], {'findings': [], 'malformed': [], 'discarded': 0}, ledger)
+    runner.finish_run(output, ledger)
+    for path in output.rglob('*'):
+        if path.is_file():
+            assert secret not in path.read_text()
+
+
+def test_output_files_and_case_variants_cannot_replace_existing_job(tmp_path):
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    writer = runner.JobOutputs(output, job_metadata())
+    with pytest.raises(runner.InputError, match='duplicate'):
+        runner.JobOutputs(output, {**job_metadata(), 'job_id': 'JOB-ONE'})
+    writer.abort()
+    path = output / 'receipt.json'
+    runner.write_json_exclusive(path, {'original': True})
+    with pytest.raises(FileExistsError):
+        runner.write_json_exclusive(path, {'replacement': True})
+    assert json.loads(path.read_text()) == {'original': True}
