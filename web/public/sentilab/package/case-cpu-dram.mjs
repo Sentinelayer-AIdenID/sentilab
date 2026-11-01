@@ -111,10 +111,14 @@ export const ACTIVE_LAYER_GUARD_C = 119.07;
 export const GATE_ZERO_EVALUATOR = "hotspot6:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:grid:64x64";
 
 // The admitted field associations: the only fields this page draws. Each binds a bundled layout's exact geometry to the
-// exact bytes of its field and to the evaluator that produced it, reviewed here in page code (never in the data).
-// The page recomputes both digests with WebCrypto before drawing; without WebCrypto it draws no field (D14).
+// exact bytes of its field, to the rest of its result record and to the evaluator that produced it, reviewed here in page
+// code (never in the data). The page recomputes all three digests with WebCrypto before drawing anything under a pin;
+// without WebCrypto it draws no field (D14).
 //   geometry_sha256  sha256 of canonical({ dies: [{ die, x_um, y_um, rot_deg } in the order C0..D3] }) (canonical.mjs)
 //   field_sha256     sha256 of the UTF-8 text JSON.stringify(result.grid64), exactly as the fixture holds it (row0 top)
+//   result_sha256    sha256 of source3d.mjs resultText(result): the rest of the result record in canonical form, so the
+//                    field's orientation (row0) and every statistic shown with it (value_C, precision_K,
+//                    native_all_block_max_C, active_layer_peak_C, the claim label) are bound to the pin, not just its cells
 // The raw reference's field is layer 4 of the gate-zero output sample.grid.steady (sha256 499690b8...) for that layout,
 // kelvin minus 273.15 at the file's 0.01 K; every cell was matched independently in review.
 export const FIELD_PINS = Object.freeze([
@@ -122,6 +126,7 @@ export const FIELD_PINS = Object.freeze([
     layout_id: "ref-raw",
     geometry_sha256: "3d0f10d20d6876bff1dc46522261b544f893b75c19af2e6e90017eced6270399",
     field_sha256: "554ba34a2a2dce2de0c8f16d6d41c82cc297a26664d812ab5a617195649fee3e",
+    result_sha256: "25331e9f0b093f96fe1ad617d7fdaf971c89736880901cb47a4c41bc066accb9",
     evaluator_identity: GATE_ZERO_EVALUATOR,
   }),
 ]);

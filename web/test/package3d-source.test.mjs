@@ -124,7 +124,8 @@ test("unknown fields are dropped unread; visitor text never reaches a layout", (
   const { layout } = door.normalizeLayout(raw);
   assert.deepEqual(Object.keys(layout).sort(), ["cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
   for (const d of layout.dies) assert.deepEqual(Object.keys(d).sort(), ["die", "rot_deg", "x_um", "y_um"]);
-  assert.deepEqual(Object.keys(layout.result).sort(), ["claim", "diagnostic", "distinct", "field_key", "field_state", "grid", "grid_text", "label", "metric"]);
+  assert.deepEqual(Object.keys(layout.result).sort(), ["claim", "diagnostic", "distinct", "field_key", "field_state", "grid", "grid_text", "label", "metric", "result_text"]);
+  assert.deepEqual([layout.result.grid_text, layout.result.result_text], [null, null], "an API result keeps no text of its record");
   const text = JSON.stringify({ ...layout, result: { ...layout.result, grid: null } });
   for (const bad of ["IGNORE", "script", "evil", "deep", "hello-there", "crimson-x", "free text", "999"]) assert.ok(!text.includes(bad), bad);
   assert.equal(layout.label, "declared_agent · 3fa2", "rebuilt from class and short id");

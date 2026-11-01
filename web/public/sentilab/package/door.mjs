@@ -59,7 +59,7 @@ const FIELD_NOTE = Object.freeze({
   verified: `Map: active-layer temperature field · ${ENGINE}, block-centre map mode · pinned field, checked in this page`,
   unassociated: "Field unassociated: no admitted association to this layout (the door feed is unsigned), so no map is drawn",
   file_check_unavailable: "File check unavailable here (needs a secure connection): no map is drawn",
-  mismatch: "The field does not match its pinned identity: not drawn",
+  mismatch: "The result does not match its pinned identity (field, orientation or statistics): no map is drawn",
 });
 const fmtMm = (v) => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v));
 
@@ -118,6 +118,7 @@ export async function startDoor({ params, REDUCED }) {
     const old = D.v3;
     D.v3 = null;
     D.lost = true;
+    cancelAnimationFrame(D.explodeAnim); D.explodeAnim = null;   // a queued explode step never reaches the released view
     old?.dispose();
     $("main3d").addEventListener("webglcontextrestored", () => { D.lost = false; if (D.want === "3d") setRenderer("3d", "", { user: false }); }, { once: true });
     setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view until it is restored", { user: false });
@@ -535,6 +536,7 @@ export async function startDoor({ params, REDUCED }) {
     const from = D.explode, to = on ? 1 : 0, start = performance.now();
     cancelAnimationFrame(D.explodeAnim);
     const tick = (now) => {
+      if (!D.v3) { D.explodeAnim = null; return; }   // the view was released while this step was queued
       const t = REDUCED ? 1 : Math.min(1, (now - start) / EXPLODE_MS);
       const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       D.explode = from + (to - from) * e;

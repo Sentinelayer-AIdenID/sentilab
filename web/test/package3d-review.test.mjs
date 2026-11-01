@@ -5,6 +5,8 @@
 //   C6          R3  a field is identified by its content, never by its score
 //   R4              a field shows only with its own geometry: hard cuts, hidden while dies move, never blended
 //   R5              a lost renderer is released (frames, listeners) and rebuilt on restore
+// And root's focused review at 35323889: P2 (the R1 remainder: the pin covers the orientation and every statistic shown,
+// root's two metadata-only controls) and P3 (an explode step queued before a context loss).
 // Each module is imported inside its test, so on a tree without a fix only that test fails, with its own message.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -101,7 +103,7 @@ test("C3 (R1, D14): the pinned field is drawn only after both digests check out;
   assert.equal(noCrypto[0].result.grid, null);
   const { c, subtle } = counted();
   const ok = await door.verifyPinnedFields(fixture, { subtle });
-  assert.equal(c.digests, 2, "geometry and field, recomputed here");
+  assert.equal(c.digests, 3, "geometry, field and the rest of the result record, recomputed here");
   const raw = ok[0].result;
   assert.equal(raw.field_state, "verified");
   assert.equal(raw.field_key, FIELD_PINS[0].field_sha256);
@@ -123,6 +125,48 @@ test("C3 (R1, D14): the pinned field is drawn only after both digests check out;
   assert.match(d, /r\.field_state === "verified" && r\.grid && r\.field_key && !D\.noCrypto \? fieldTexels\(r\.grid, r\.field_key\) : null/);
   assert.match(d, /const resultShown = \(L\) => Boolean\(L\?\.result\) && !D\.noCrypto;/);
   assert.match(d, /verifyPinnedFields\(fixture\.layouts, \{ subtle: globalThis\.crypto\?\.subtle \?\? null \}\)/);
+});
+
+// ── R1 remainder (root's focused review at 35323889, P2) ─────────────────────────────────────────────────────────
+// A passed pin check lent the pinned identity to metadata it never checked: the field's orientation (row0) and the
+// statistics shown with it. Root's two metadata-only controls, against the unchanged production pin and fixture. At
+// 35323889 both came back "verified" and not diagnostic; the pin must refuse both (no map, the values diagnostic,
+// labelFor(undefined)).
+async function pinnedRaw(edit) {
+  const door = await mod("source3d.mjs");
+  const doc = structuredClone(FIXTURE);
+  edit(doc.layouts[0].result);
+  const layouts = door.normalizeFeed(doc, { source: "fixture" }).layouts;
+  return { pending: layouts[0].result, checked: (await door.verifyPinnedFields(layouts, { subtle: webcrypto.subtle }))[0].result };
+}
+const f32sha = (g) => createHash("sha256").update(Buffer.from(g.buffer, g.byteOffset, g.byteLength)).digest("hex");
+test("P2 control 1 (R1): flipping only row0, top to bottom, is not admitted by the same pin", async () => {
+  const { LABELS } = await labels();
+  const top = await pinnedRaw(() => {});
+  const flip = await pinnedRaw((r) => { r.row0 = "bottom"; });
+  // The control can fail: the flip reflects the normalized field (root's numbers: 452 cells, these byte digests) while
+  // the field's text, and so field_sha256, stays the same.
+  assert.equal(top.pending.grid.filter((v, i) => v !== flip.pending.grid[i]).length, 452);
+  assert.deepEqual([f32sha(top.pending.grid), f32sha(flip.pending.grid)],
+    ["a14dad70de1a7f0101ee9d6d64a8d11bf9a01d78db659982ddf10a4f5bfb2efc", "512b2f62f9e09589a3f4ec19860c0234eee3aad73028615097294b906f9691aa"]);
+  assert.equal(top.checked.field_state, "verified", "the unchanged fixture still verifies");
+  assert.notEqual(flip.checked.field_state, "verified", "an orientation the pin did not check is not admitted");
+  assert.equal(flip.checked.field_state, "mismatch");
+  assert.deepEqual([flip.checked.grid, flip.checked.field_key, flip.checked.diagnostic], [null, null, true], "no map; the value is diagnostic");
+  assert.equal(flip.checked.label, LABELS.unvalidated, "and labelled without the pinned evaluator");
+});
+test("P2 control 2 (R1): changing only value_C and active_layer_peak_C is not admitted by the same pin", async () => {
+  const { LABELS } = await labels();
+  const edited = await pinnedRaw((r) => { r.value_C = 100; r.active_layer_peak_C = 101; });
+  assert.deepEqual([edited.pending.metric.value, edited.pending.distinct.find((d) => d.key === "active_layer_peak_C").value], [100, 101], "the control reaches the shown values");
+  assert.notEqual(edited.checked.field_state, "verified", "statistics the pin did not check are not admitted");
+  assert.equal(edited.checked.field_state, "mismatch");
+  assert.deepEqual([edited.checked.grid, edited.checked.field_key, edited.checked.diagnostic], [null, null, true], "no map; the values are diagnostic");
+  assert.equal(edited.checked.label, LABELS.unvalidated);
+  // Every other number shown with a pinned result is bound too: the native maximum and the precision.
+  for (const edit of [(r) => { r.native_all_block_max_C = 99; }, (r) => { r.precision_K = 0.1; }, (r) => { delete r.native_all_block_max_C; }]) {
+    assert.equal((await pinnedRaw(edit)).checked.field_state, "mismatch", String(edit));
+  }
 });
 
 // ── R2 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -198,7 +242,8 @@ test("R3: the door keys every field cache by the verified content identity, neve
     doc.layouts[0].result.grid64[100] += bump;
     return door.normalizeFeed(doc, { source: "fixture" }).layouts;
   };
-  const pin = (layouts) => [{ layout_id: "ref-raw", geometry_sha256: sha256(door.geometryText(layouts[0])), field_sha256: sha256(layouts[0].result.grid_text), evaluator_identity: "x" }];
+  const pin = (layouts) => [{ layout_id: "ref-raw", geometry_sha256: sha256(door.geometryText(layouts[0])), field_sha256: sha256(layouts[0].result.grid_text),
+    result_sha256: sha256(layouts[0].result.result_text), evaluator_identity: "x" }];
   const one = mk(0), two = mk(0.01);
   const k1 = (await door.verifyPinnedFields(one, { subtle: webcrypto.subtle, pins: pin(one) }))[0].result.field_key;
   const k2 = (await door.verifyPinnedFields(two, { subtle: webcrypto.subtle, pins: pin(two) }))[0].result.field_key;
@@ -250,4 +295,47 @@ test("R5: on context loss the owner disposes the view, falls back to 2D, and reb
     assert.ok(lost.includes(`setRenderer("2d"`), `${file}: falls back to 2D`);
   }
   assert.doesNotMatch(src("door.mjs"), /onContextLost: \(\) => \{ D\.v3Failed = true/, "a lost context no longer disables 3D for good");
+});
+
+// P3 (root's focused review at 35323889, R5 follow-up): an explode step queued before a context loss ran after the view
+// was released and threw reading setDoor of null. The exact onContextLost and setExplode of door.mjs, in an isolated VM
+// with a scripted frame queue.
+function doorFn(name) {
+  const s = src("door.mjs");
+  const start = s.indexOf(`  function ${name}(`);
+  assert.ok(start > 0, `door.mjs defines ${name}`);
+  return s.slice(start, s.indexOf("\n  }\n", start) + 4);
+}
+function explodeRig({ cancelWorks = true } = {}) {
+  const frames = new Map();
+  let nextId = 1;
+  const calls = { setDoor: 0, fit: 0, dispose: 0 };
+  const view = { setDoor: () => { calls.setDoor += 1; }, fit: () => { calls.fit += 1; }, dispose: () => { calls.dispose += 1; } };
+  const D = { v3: view, current: { model: {}, field: null, L: {} }, explode: 0, explodeAnim: null, lost: false, want: "3d" };
+  const ctx = {
+    D, REDUCED: false, EXPLODE_MS: 800, Math, performance: { now: () => 0 },
+    requestAnimationFrame: (fn) => { const id = nextId; nextId += 1; frames.set(id, fn); return id; },
+    cancelAnimationFrame: (id) => { if (cancelWorks) frames.delete(id); },
+    displayFor: () => [], notScoredText: () => "", renderDom: () => {}, setRenderer: () => {},
+    $: () => ({ addEventListener: () => {} }),
+  };
+  const fns = vm.runInNewContext(`(() => { ${doorFn("onContextLost")}\n${doorFn("setExplode")}\n return { onContextLost, setExplode }; })()`, ctx);
+  const runFrames = (now) => { const queued = [...frames.values()]; frames.clear(); for (const fn of queued) fn(now); };
+  return { D, calls, frames, runFrames, ...fns };
+}
+test("P3 (R5): an explode step queued before a context loss never reaches the released view", () => {
+  const a = explodeRig();
+  a.setExplode(true);
+  a.runFrames(100);
+  assert.deepEqual([a.calls.setDoor, a.frames.size], [1, 1], "one step drawn, the next one queued");
+  a.onContextLost();
+  assert.equal(a.calls.dispose, 1);
+  assert.deepEqual([a.frames.size, a.D.explodeAnim], [0, null], "the context loss cancels the queued step");
+  assert.doesNotThrow(() => a.runFrames(200));
+  // A step the browser already dispatched (too late to cancel) stops before it dereferences the view.
+  const b = explodeRig({ cancelWorks: false });
+  b.setExplode(true);
+  b.onContextLost();
+  assert.doesNotThrow(() => b.runFrames(100), "the queued step finds no view");
+  assert.deepEqual([b.calls.setDoor, b.frames.size], [0, 0], "nothing reached the released view and no step follows");
 });

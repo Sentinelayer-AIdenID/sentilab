@@ -28,11 +28,12 @@
 // the page; any other field (a definition, a note, a name) is dropped unread.
 //
 // Payload shape is not provenance (CAD/3D freeze section 5.7, PL-2, PL-6, D14). A result's FIELD is drawn only when an
-// admitted association binds it: a pin in reviewed page code (case-cpu-dram.mjs FIELD_PINS) whose geometry and field
-// digests the page recomputes with WebCrypto (verifyPinnedFields). The door feed is unsigned, so an API result's field
-// is always "unassociated": never drawn, never kept; its scalar value stays as a qualified diagnostic. Every
-// temperature carries a shared label (temperature-label.mjs LABELS), resolved by labelFor() from a VERIFIED evaluator
-// identity, never from the payload's claim: with none, labelFor(undefined) is "unvalidated".
+// admitted association binds it: a pin in reviewed page code (case-cpu-dram.mjs FIELD_PINS) whose geometry, field and
+// result-record digests the page recomputes with WebCrypto (verifyPinnedFields): the record digest covers the field's
+// orientation and every statistic shown with it, so a pin admits nothing it did not check. The door feed is unsigned,
+// so an API result's field is always "unassociated": never drawn, never kept; its scalar value stays as a qualified
+// diagnostic. Every temperature carries a shared label (temperature-label.mjs LABELS), resolved by labelFor() from a
+// VERIFIED evaluator identity, never from the payload's claim: with none, labelFor(undefined) is "unvalidated".
 import { DIE_IDS, dieById, RULES, FIELD_PINS } from "./case-cpu-dram.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson } from "../runs-list.mjs";
@@ -125,6 +126,7 @@ export function normalizeLayout(raw, { source = "api" } = {}) {
 //   field_state  "unassociated" (API: unsigned feed; or no pin), "pending" (bundled, awaiting the pin check), and after
 //                verifyPinnedFields(): "verified", "mismatch" or "file_check_unavailable"
 //   grid         the field (Float32Array, row 0 at y = 0) ONLY while pending or verified; otherwise null, not kept
+//   grid_text, result_text  while pending only: the texts a pin's field_sha256 and result_sha256 cover (resultText)
 //   field_key    the verified field's sha256 (its content identity), else null
 //   diagnostic   true while no association is admitted: the value is shown qualified, as a diagnostic
 //   distinct     [{ key, name, value }] statistics shown apart, by name
@@ -163,8 +165,13 @@ export function normalizeResult(raw, status, { source = "api" } = {}) {
   const pending = source === "fixture" && grid !== null;
   return { result: { metric: { id: BOARD_METRIC.id, value: raw.value_C, precision_K: raw.precision_K }, claim: RESULT_LABEL,
     label: labelFor(undefined), field_state: pending ? "pending" : "unassociated", grid: pending ? grid : null,
-    grid_text: pending ? gridText : null, field_key: null, diagnostic: true, distinct } };
+    grid_text: pending ? gridText : null, result_text: pending ? resultText(raw) : null, field_key: null, diagnostic: true, distinct } };
 }
+
+// The rest of a result record, exactly as bundled: every field but grid64 (its orientation row0, the value, precision
+// and claim label, the distinct statistics, and anything else in it), in canonical form. A pin's result_sha256 covers
+// this text, so a pinned result's orientation and every number shown with it are checked, not just its field.
+export const resultText = (raw) => canonical(Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "grid64")));
 
 // ── the admitted associations: pinned fields, rechecked with WebCrypto before anything is drawn ─────────────────────
 // layouts: normalized layouts. subtle: globalThis.crypto.subtle, or null where WebCrypto is unavailable (D14: then no
@@ -181,12 +188,12 @@ export async function verifyPinnedFields(layouts, { subtle = globalThis.crypto?.
     let state = "unassociated", key = null, label = labelFor(undefined);
     if (pin && !subtle) state = "file_check_unavailable";
     else if (pin) {
-      const [geometry, field] = await Promise.all([sha256(geometryText(L)), sha256(r.grid_text)]);
-      if (geometry === pin.geometry_sha256 && field === pin.field_sha256) { state = "verified"; key = field; label = labelFor(pin.evaluator_identity); }
+      const [geometry, field, record] = await Promise.all([sha256(geometryText(L)), sha256(r.grid_text), sha256(r.result_text)]);
+      if (geometry === pin.geometry_sha256 && field === pin.field_sha256 && record === pin.result_sha256) { state = "verified"; key = field; label = labelFor(pin.evaluator_identity); }
       else state = "mismatch";
     }
     const verified = state === "verified";
-    out.push({ ...L, result: { ...r, field_state: state, grid: verified ? r.grid : null, grid_text: null, field_key: key, label,
+    out.push({ ...L, result: { ...r, field_state: state, grid: verified ? r.grid : null, grid_text: null, result_text: null, field_key: key, label,
       diagnostic: !verified } });
   }
   return out;
