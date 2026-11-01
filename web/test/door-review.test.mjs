@@ -170,7 +170,10 @@ test("3. a timeout after the POST is 'not confirmed' too (504), with the key to 
   for (const form of [false, true]) {
     const before = submits(calls).length;
     const pending = setup().go("/agents/submit", form ? postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`) : postJson({ t: token, layout: REF }));
-    for (let i = 0; i < 400 && submits(calls).length === before; i += 1) await new Promise((resolve) => setImmediate(resolve));
+    // Wait for the POST by the wall clock (only setTimeout is mocked): the token check and hashing before it run on
+    // the crypto thread pool, which a slow runner can take many event-loop turns to finish.
+    for (const until = Date.now() + 10000; submits(calls).length === before && Date.now() < until;) await new Promise((resolve) => setImmediate(resolve));
+    assert.ok(submits(calls).length > before, "the POST was attempted before the clock moved");
     t.mock.timers.tick(8000);
     const r = await pending;
     assert.equal(r.status, 504);

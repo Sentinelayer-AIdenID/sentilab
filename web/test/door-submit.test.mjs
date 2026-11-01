@@ -194,7 +194,9 @@ test("the intake down, slow or odd: the honest answer, and nothing claimed", asy
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const calls = installApi(t, { submit: (call) => new Promise((_, reject) => call.signal.addEventListener("abort", () => reject(new Error("aborted")))) });
   const pending = setup().go("/agents/submit", postJson({ t: token, layout: REF }));
-  for (let i = 0; i < 200 && !submits(calls).length; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  // Wait for the POST by the wall clock (only setTimeout is mocked); the crypto before it can take many loop turns.
+  for (const until = Date.now() + 10000; !submits(calls).length && Date.now() < until;) await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(submits(calls).length, "the POST was attempted before the clock moved");
   t.mock.timers.tick(8000);
   r = await pending;
   const slow = JSON.parse(r.text);
