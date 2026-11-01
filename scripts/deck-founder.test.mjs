@@ -374,6 +374,13 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
   assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
   // At the freeze, a number with no receipt is listed as dropped, not as still measuring.
   assert.match(fillInTable(fin), /votes on our Moltbook invitation \(dropped at the freeze: no receipt\)/);
+  // With the coordinator's receipt for what slide 9 does not show, FILL-IN carries it and points each row to it.
+  const noted = structuredClone(frozen);
+  noted.metrics.freezeNote = "Counted to 14:30:00Z: none from outside (test).";
+  const withNote = fillInTable(buildFounderData({ ...pre, v4: noted }));
+  assert.match(withNote, /votes on our Moltbook invitation \(not shown at the freeze: see "At the freeze"\)/);
+  assert.ok(withNote.includes("## At the freeze\n\nCounted to 14:30:00Z: none from outside (test).\n"));
+  assert.ok(!fillInTable(buildFounderData({ ...pre, v4: noted }, { final: false })).includes("## At the freeze"), "a draft carries no freeze note");
   assert.doesNotMatch(fillInTable(draft), /dropped at the freeze/);
   const odd = structuredClone(loaded.v4);
   odd.build = "rehearsal";

@@ -69,6 +69,7 @@
     }
   ],
   "clockNote": "demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.",
+  "freezeNote": null,
   "refresh": [
     {
       "slide": "room",

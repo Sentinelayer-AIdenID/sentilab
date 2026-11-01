@@ -330,6 +330,8 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     options: v4.options ?? [],
     // The clock's caveat for Carter (the coordinator, 13:40Z): FILL-IN carries it, the slides do not.
     clockNote: v4.clock.demoNote ?? null,
+    // At the freeze, the coordinator's receipt for what slide 9 does not show (V4.json metrics.freezeNote), if given.
+    freezeNote: final ? v4.metrics.freezeNote ?? null : null,
     refresh: v4.refresh ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
@@ -375,7 +377,8 @@ export function speakerScript(data, v4) {
 }
 
 export function fillInTable(data) {
-  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? " (dropped at the freeze: no receipt)" : ""} | \`${p.id}\` | ${p.need} |`);
+  const dropped = data.freezeNote ? " (not shown at the freeze: see \"At the freeze\")" : " (dropped at the freeze: no receipt)";
+  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? dropped : ""} | \`${p.id}\` | ${p.need} |`);
   const head = data.deck.draft
     ? `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`
     : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
@@ -384,6 +387,7 @@ export function fillInTable(data) {
     ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
       ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : []),
+    ...(data.freezeNote ? ["## At the freeze", "", data.freezeNote, ""] : []),
     ...(data.clockNote ? ["## Clock", "", data.clockNote, ""] : [])].join("\n");
 }
 
