@@ -135,7 +135,8 @@ const groups = {
     ["r of 2 or more as rotation_not_allowed", LAYOUT, '    if (!ROT_DEG.includes(rot)) { shape.push(code("schema_invalid", { path: `/l/${index}`, keyword: "enum" })); return null; }\n', ""],
   ],
   "deploy, staging of its own": [
-    ["staging reaches the production API", WRANGLER, '      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off" },', '      "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },'],
+    ["staging reaches the production API", WRANGLER, '      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },',
+      '      "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },'],
   ],
   "terms and copy (door-copy-p1)": [
     ["terms served without the hash check", DOOR, '    return hexOf(await crypto.subtle.digest("SHA-256", bytes)) === pin ? bytes : null;', "    return bytes;"],
