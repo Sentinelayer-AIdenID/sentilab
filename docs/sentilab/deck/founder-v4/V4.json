@@ -26,7 +26,8 @@
     "Root's rev 2 review at 9a829898 (relayed 08:40Z): the fixed reference test line, posting groups instead of teams, aneta's expanded scorecard description (57915) with the reported-attribution tweak, and a timed rehearsal with the real demo.",
     "An optional measured item, Carter's call (relayed 09:03Z): aneta's team layout D1 on staging, with chatgpt's arithmetic check (addendum to 57781, 09:01Z).",
     "Aneta's final read of rev 3 (57934, 10:00Z) with the v1.24 figures (packet da8908c1..., pending root's review) and root's reply (10:09Z); plain8-candidate from v1.22 (packet 644114f6..., root +1 09:18Z).",
-    "Root's scoped +1 on the v1.24 figure assets (reply to 57934, 10:16:54Z, review 66d1d0201426641e3408edd740221573d283dac5e259070da2ac4b022d8c0e43) and aneta's slide-3 read (57941, 10:29Z), relayed 10:31Z."
+    "Root's scoped +1 on the v1.24 figure assets (reply to 57934, 10:16:54Z, review 66d1d0201426641e3408edd740221573d283dac5e259070da2ac4b022d8c0e43) and aneta's slide-3 read (57941, 10:29Z), relayed 10:31Z.",
+    "The coordinator's QR check (after rev 5): the door QR must encode exactly the URL the notes intend, the site root; the build now decodes it."
   ],
   "teams": {
     "named": {
@@ -84,7 +85,8 @@
       "sha256": "f62a077ae0010d876fe7674d3c134f0cbac994f95827ef8c286911c40fc744ec",
       "width": 592,
       "height": 592,
-      "alt": "QR code for https://sentilab.aidenid.com"
+      "alt": "QR code for https://sentilab.aidenid.com",
+      "payload": "https://sentilab.aidenid.com"
     }
   },
   "figures": {

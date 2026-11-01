@@ -280,3 +280,29 @@ test("a figure still pending review is marked on its draft slide", () => {
   assert.match(section("point"), /DRAFT · figure pending review/);
   assert.doesNotMatch(section("chips"), /figure pending review/);
 });
+
+test("slide 9's QR code is read from its pixels: exactly https://sentilab.aidenid.com, the door the slide prints", async () => {
+  const { readQr, readQrPixels, decodePng } = await import("./qr-read.mjs");
+  const Q = loaded.v4.stills.qr;
+  assert.equal(Q.payload, "https://sentilab.aidenid.com");
+  for (const p of [join(FOUNDER_DIR, "figures", Q.file), join(FOUNDER_DECK_DIR, "figures", Q.file)]) {
+    const r = readQr(readFileSync(p));
+    assert.deepEqual([r.text, r.version, r.ec], ["https://sentilab.aidenid.com", 3, "M"], p);
+  }
+  // The slide prints the same door, and the image is the one the build checks.
+  assert.ok(slide(data, "invite").content.points.includes("The agent door: sentilab.aidenid.com"));
+  assert.equal(slide(data, "invite").content.still.id, "qr");
+  // A damaged module fails the read instead of returning other text, and a QR that reads otherwise stops the build.
+  const img = decodePng(readFileSync(join(FOUNDER_DIR, "figures", Q.file)));
+  const flip = { ...img, px: Buffer.from(img.px) };
+  const at = (r, c) => [64 + (c + 0.5) * 16, 64 + (r + 0.5) * 16].map(Math.floor);
+  const [x, y] = at(10, 12); // a data module: clear of the finders, the timing lines, the alignment pattern and the format bits
+  for (let dy = -8; dy < 8; dy++) for (let dx = -8; dx < 8; dx++) {
+    const i = ((y + dy) * img.w + (x + dx)) * img.bpp;
+    for (let k = 0; k < Math.min(3, img.bpp); k++) flip.px[i + k] = 255 - flip.px[i + k];
+  }
+  assert.throws(() => readQrPixels(flip), /syndrome|format information/);
+  const wrong = structuredClone(loaded.v4);
+  wrong.stills.qr.payload = "https://sentilab.aidenid.com/sentilab/package/?feed=door&src=live";
+  assert.throws(() => buildFounderData({ ...loaded, v4: wrong }), (e) => e instanceof FounderError && /encodes "https:\/\/sentilab\.aidenid\.com", not/.test(e.message));
+});

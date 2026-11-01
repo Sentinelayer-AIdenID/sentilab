@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DECK_ROOT, NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
+import { readQr } from "./qr-read.mjs";
 
 export const FOUNDER_DIR = join(PDF_DIR, "founder-v4");
 export const FOUNDER_SOURCE = join(FOUNDER_DIR, "V4.json");
@@ -180,6 +181,12 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     if (s.picture?.still) {
       const st = v4.stills[s.picture.still];
       if (!st) throw new FounderError(`${where}: no still ${s.picture.still}`);
+      // A QR code is checked by what it encodes: the build decodes the image and refuses one that reads as anything else.
+      if (st.payload !== undefined) {
+        let read;
+        try { read = readQr(readFileSync(join(FOUNDER_DIR, "figures", st.file))).text; } catch (e) { throw new FounderError(`${where}: ${st.file} does not read as a QR code: ${e.message}`); }
+        if (read !== st.payload) throw new FounderError(`${where}: ${st.file} encodes ${JSON.stringify(read)}, not ${JSON.stringify(st.payload)}`);
+      }
       content.still = { id: s.picture.still, src: `figures/${st.file}`, width: st.width, height: st.height, alt: st.alt, label: s.picture.label ?? null };
     }
     // A figure: served with only its declared edits; its own words follow the public-render and consent rules too; one still
