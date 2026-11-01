@@ -10,10 +10,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 
 from app import runs
+from app.door import routes as door
 from app.view import router as view_router
 
 app = FastAPI(title="Thermal Flight Lab API")
 app.include_router(view_router)
+app.include_router(door.router)
 ORIGIN_TOKEN = os.environ.get("ORIGIN_SHARED_TOKEN", "")
 
 
@@ -33,6 +35,16 @@ def health() -> dict:
 @app.on_event("startup")
 def mark_interrupted_runs() -> None:
     runs.recover()
+
+
+@app.on_event("startup")
+def start_door() -> None:
+    door.startup()
+
+
+@app.on_event("shutdown")
+def stop_door() -> None:
+    door.shutdown()
 
 
 @app.post("/api/runs")
