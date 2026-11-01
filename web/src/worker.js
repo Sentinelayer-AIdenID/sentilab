@@ -6,7 +6,7 @@ import { withEdge } from "./edge.js";
 import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
-import { doorRoute, handleDoor, serveWallOrAgentVersion } from "./door/door.js";
+import { carriesToken, DOOR_FEEDS, doorRoute, handleDoor, protectToken, serveWallOrAgentVersion, tokenBearing, withoutOperators } from "./door/door.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -38,6 +38,8 @@ async function proxy(request, env) {
   for (const h of HOP) headers.delete(h);
   // The agent door's token claims reach the API only from the door's own calls (door/door.js), never from a visitor.
   for (const name of [...headers.keys()]) if (name.startsWith("x-door-")) headers.delete(name);
+  // A page at a token-bearing URL must not hand its token upstream in a Referer.
+  if (tokenBearing(headers.get("referer"))) headers.delete("referer");
   headers.set("x-forwarded-host", url.host);
   // Only this Worker holds the origin token; the Container App refuses requests without it.
   if (env.ORIGIN_TOKEN) headers.set("x-origin-token", env.ORIGIN_TOKEN);
@@ -47,7 +49,21 @@ async function proxy(request, env) {
   const upstream = await fetch(origin + url.pathname + url.search, init);
   const out = new Headers(upstream.headers);
   if (!out.has("cache-control")) out.set("cache-control", "no-store");
+  if (request.method === "GET" && DOOR_FEEDS.test(url.pathname)) return doorFeed(upstream, out);
   return new Response(upstream.body, { status: upstream.status, headers: out });
+}
+
+// The intake's open feeds (board, results, events) name each visitor's declared operator. The door never shows it, so
+// neither does the proxy: the answer is passed on without any "operator" field. A feed answer that is not JSON is not
+// passed on at all.
+async function doorFeed(upstream, headers) {
+  let value;
+  try { value = JSON.parse(await upstream.text()); } catch {
+    return new Response(JSON.stringify({ error: "unreadable_feed" }), { status: 502, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  }
+  for (const name of ["content-length", "content-encoding", "etag"]) headers.delete(name);
+  headers.set("content-type", "application/json");
+  return new Response(JSON.stringify(withoutOperators(value)), { status: upstream.status, headers });
 }
 
 // Starting a run spends simulator time, so POST /api/runs is limited per client IP at the edge (the API also
@@ -76,7 +92,9 @@ export default {
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
     // The agent door (door/door.js): its own routes, and the wall in place of the mapped pages' agent version.
     const door = doorRoute(pathname);
-    if (door) return handleDoor(door, request, env, ctx);
-    return withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset, serveAgent: serveWallOrAgentVersion });
+    const response = door ? await handleDoor(door, request, env, ctx)
+      : await withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset, serveAgent: serveWallOrAgentVersion });
+    // Whatever page answers a URL that can carry a token (mapped, human override, fallback, any asset) never hands it on.
+    return carriesToken(new URL(request.url)) ? protectToken(response) : response;
   },
 };

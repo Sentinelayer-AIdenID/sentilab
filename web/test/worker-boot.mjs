@@ -40,17 +40,23 @@ const out = mkdtempSync(join(tmpdir(), "worker-dry-"));
 const dry = spawnSync(npx, ["--yes", `wrangler@${VERSION}`, "deploy", "--dry-run", "--outdir", out], { cwd: WEB, env, encoding: "utf8", shell: process.platform === "win32" });
 check(`wrangler ${VERSION} deploy --dry-run bundles the Worker`, dry.status === 0, dry.status === 0 ? "" : strip(`${dry.stdout}\n${dry.stderr}`).slice(-1500));
 rmSync(out, { recursive: true, force: true });
+// The staging environment (wrangler.jsonc env.staging) bundles too, with no API to reach and its own limiters.
+const stagingOut = mkdtempSync(join(tmpdir(), "worker-dry-staging-"));
+const staging = spawnSync(npx, ["--yes", `wrangler@${VERSION}`, "deploy", "--dry-run", "--env", "staging", "--outdir", stagingOut], { cwd: WEB, env, encoding: "utf8", shell: process.platform === "win32" });
+const stagingLog = strip(`${staging.stdout}\n${staging.stderr}`);
+check(`wrangler ${VERSION} deploy --dry-run --env staging: API_ORIGIN "none" and the door's four limiters`, staging.status === 0
+  && /env\.API_ORIGIN \("none"\)/.test(stagingLog) && ["DOOR_NONCE_LIMITER", "DOOR_IP_LIMITER", "DOOR_READ_LIMITER", "DOOR_MINT_LIMITER"].every((name) => stagingLog.includes(`env.${name}`)),
+  staging.status === 0 ? "" : stagingLog.slice(-1500));
+rmSync(stagingOut, { recursive: true, force: true });
 
 // 2. The runtime.
 let log = "";
-// A boot-only door key, built here so no literal in this tree looks like a credential, and a terms version of the
-// contract's shape (the door takes submissions only with one).
+// A boot-only door key, built here so no literal in this tree looks like a credential.
 const DOOR_KEY = "boot".repeat(10);
-const DOOR_TERMS = `sentilab-open-terms/1@${"0f".repeat(32)}`;
 // --local-upstream: the Worker sees this address as its own origin (by default wrangler dev shows it the route's host),
 // so the door's absolute links point back here.
 const dev = spawn(npx, ["--yes", `wrangler@${VERSION}`, "dev", "--ip", "127.0.0.1", "--port", String(PORT), "--local-upstream", `127.0.0.1:${PORT}`,
-  "--var", "API_ORIGIN:none", "--var", `DOOR_TOKEN_KEY:${DOOR_KEY}`, "--var", `DOOR_TERMS:${DOOR_TERMS}`],
+  "--var", "API_ORIGIN:none", "--var", `DOOR_TOKEN_KEY:${DOOR_KEY}`],
   { cwd: WEB, env, shell: process.platform === "win32", detached: process.platform !== "win32" });
 dev.stdout.on("data", (d) => { log += d; });
 dev.stderr.on("data", (d) => { log += d; });
@@ -129,9 +135,11 @@ if (ready) {
   check("GET /agents/check: legal_preview and the 9.5 mm proxy for the snapped reference", checked.outcome === "legal_preview" && checked.wire_proxy_mm === 9.5, checked.outcome);
   const confirm = await fetch(`${BASE}/s?t=${token}&l=${REF}`);
   const confirmText = await confirm.text();
-  check("GET /s: the confirm page, one POST form to /agents/submit, no script, the exact CSP", confirm.status === 200 && /<h1>Submit this layout\?<\/h1>/.test(confirmText)
-    && (confirmText.match(/<form\b/g) ?? []).length === 1 && confirmText.includes('<form method="post" action="/agents/submit">') && !/<script/i.test(confirmText)
-    && confirm.headers.get("content-security-policy") === CSP, `${confirm.status}`);
+  // With the API off the intake cannot be reached, so the page shows the layout and its preview but offers no button.
+  check("GET /s with the API off: the confirm page and its preview, no button, no script, the exact CSP", confirm.status === 200 && /<h1>Submit this layout\?<\/h1>/.test(confirmText)
+    && confirmText.includes("Preview check: no placement rule broken.") && confirmText.includes("cannot be reached right now")
+    && !/<form\b/.test(confirmText) && !/<script/i.test(confirmText) && confirm.headers.get("content-security-policy") === CSP
+    && confirm.headers.get("referrer-policy") === "no-referrer", `${confirm.status}`);
   const submitted = await fetch(`${BASE}/agents/submit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, layout: REF }) });
   check("POST /agents/submit with the API off: 503 intake_unavailable, nothing claimed", submitted.status === 503 && (await submitted.json().catch(() => ({}))).error === "intake_unavailable", `${submitted.status}`);
   for (const [method, path] of [["PUT", "/agents/submit"], ["POST", `/s?t=${token}&l=${REF}`], ["POST", `/agents/check?t=${token}&l=${REF}`], ["DELETE", "/agents/board"]]) {

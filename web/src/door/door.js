@@ -18,15 +18,19 @@
 //   POST arrival  {class, operator, purpose?, nonce?}: the intake stamps the time and derives short_id (4 hex of
 //                 sha256(nonce)); nothing else about a visitor is sent
 //   GET  status/<run_id> with x-door-nonce, and board (the board call from the ENGRAM view also sends x-door-nonce)
-// The public /api proxy strips x-door-* from visitors' requests. The terms version a submission carries is the operator's
-// DOOR_TERMS var, one of the signed manifest's accepted versions; without it the door takes no submissions.
-// Submission refusals use the intake's vocabulary: {schema: "sentilab-door-submit/1", state: "rejected", codes}.
+// The public /api proxy strips x-door-* from visitors' requests and drops a Referer that carries a token; every response
+// to a request whose URL can carry a token is no-referrer and private, no-store, no-transform (carriesToken,
+// protectToken). The terms version a submission carries is the highest of the intake's board terms.accepted_versions
+// (the signed manifest's); without one the door takes no submissions. The submit body is read by the contract's strict
+// JSON reader (strict-json.js). Refusals before the POST say nothing was sent and use the intake's vocabulary:
+// {schema: "sentilab-door-submit/1", state: "rejected", codes}. Once the POST has been attempted, only the intake's own
+// answer counts: anything else is delivery_unknown, with the same request key and the same idempotent retry.
 // Rate limits: DOOR_NONCE_LIMITER per token and DOOR_IP_LIMITER per client IP prefix on submit, DOOR_READ_LIMITER per
 // prefix on the routes that call the intake; each falls back to an in-memory window per isolate when its binding is
 // absent. The intake's own quotas (CPU-seconds per token, the global grant, the bounded queue) are the hard caps. With
 // AQUARIUM_POST=on a purpose choice is also posted to the AIdenID collector.
 // A module of its own because worker.js may export nothing but its default handler.
-import { AGENT_RESPONSE_CACHE } from "../generated/aidenid-intent-gate/agent-resources.js";
+import { AGENT_RESPONSE_CACHE, indexOrPreviewCrawler } from "../generated/aidenid-intent-gate/agent-resources.js";
 import { agentPathFor } from "../agent-paths.js";
 import { preferredAgentType, serveAgentVersion } from "../agent-view.js";
 import { CSP } from "../csp.js";
@@ -35,13 +39,15 @@ import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
 import { agentView, gateZeroFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
-import { confirmHtml, problemHtml, resultHtml, tokenHtml, tokenJson, tokenMarkdown, wallHtml, wallJson, wallMarkdown } from "./render.js";
+import { confirmHtml, notConfirmedHtml, problemHtml, resultHtml, tokenHtml, tokenJson, tokenMarkdown, wallHtml, wallJson, wallMarkdown } from "./render.js";
+import { strictJson } from "./strict-json.js";
 import { scopeError, sha256Hex, TOKEN_PATTERN, usableKey, verifyToken, mintToken } from "./token.js";
 
 export const LIMITS = Object.freeze({
   DOOR_NONCE_LIMITER: { limit: 10, periodMs: 60000 },
   DOOR_IP_LIMITER: { limit: 60, periodMs: 60000 },
   DOOR_READ_LIMITER: { limit: 300, periodMs: 60000 },
+  DOOR_MINT_LIMITER: { limit: 120, periodMs: 60000 },
 });
 export const API = Object.freeze({
   submit: "/api/open/v1/door/submit", status: "/api/open/v1/door/status/", board: "/api/open/v1/door/board",
@@ -106,8 +112,48 @@ function rejected(request, format, codes, { limits, headers } = {}) {
 }
 const submitLimited = (request, format) => rejected(request, format, [{ code: "rate_limited", retry_after: retryAfter() }],
   { limits: ["request_rate"], headers: { "retry-after": "60" } });
-// The terms version submissions accept, or null when none is configured.
-const termsOf = (env) => (typeof env?.DOOR_TERMS === "string" && TERMS_VERSION.test(env.DOOR_TERMS) ? env.DOOR_TERMS : null);
+// ── token-bearing URLs ────────────────────────────────────────────────────────────────────────────────────────────
+// A URL can carry a scoped purpose token when it has a t parameter, or a token-shaped value anywhere in its query (plain
+// or percent-encoded). Valid or not, it is treated as token material.
+const TOKEN_SHAPE = /spt1(?:\.|%2e)/i;
+export function carriesToken(url) {
+  return url.searchParams.has("t") || TOKEN_SHAPE.test(url.search);
+}
+
+// The response to such a request never hands its URL on: no Referer from the page, no stored copy, no edge rewriting.
+// The status, body and every other header are left as they are.
+export function protectToken(response) {
+  const headers = new Headers(response.headers);
+  headers.set("referrer-policy", "no-referrer");
+  headers.set("cache-control", AGENT_RESPONSE_CACHE);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+// The intake's open feeds that the public /api proxy passes on (the board, results and events the human view reads).
+export const DOOR_FEEDS = /^\/api\/open\/v1\/door\/(board|results|events)$/;
+
+// A copy of a feed answer without any "operator" field, at any depth: the declared operator stays with the intake, as
+// the door's own routes already keep it.
+export function withoutOperators(value) {
+  if (Array.isArray(value)) return value.map(withoutOperators);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "operator").map(([key, item]) => [key, withoutOperators(item)]));
+}
+
+// A Referer the /api proxy must drop because it carries a token.
+export function tokenBearing(referer) {
+  if (!referer) return false;
+  if (TOKEN_SHAPE.test(referer)) return true;
+  try { return new URL(referer).searchParams.has("t"); } catch { return /[?&]t=/.test(referer); }
+}
+
+// The highest of the board's accepted terms versions (the signed manifest's), or null.
+function termsFrom(value) {
+  const versions = Array.isArray(value?.terms?.accepted_versions) ? value.terms.accepted_versions : [];
+  const valid = versions.filter((v) => typeof v === "string" && TERMS_VERSION.test(v));
+  const number = (v) => Number(/^sentilab-open-terms\/([0-9]+)@/.exec(v)[1]);
+  return valid.reduce((best, v) => (best === null || number(v) > number(best) ? v : best), null);
+}
 
 // ── rate limits ───────────────────────────────────────────────────────────────────────────────────────────────────
 const windows = new Map();
@@ -156,7 +202,7 @@ function apiOrigin(env) {
 // { ok: true, status, json } or { ok: false, reason }. Never throws; the body is read within the same deadline.
 export async function callApi(env, path, { method = "GET", body, nonce, host, timeoutMs }) {
   const origin = apiOrigin(env);
-  if (!origin) return { ok: false, reason: "not_configured" };
+  if (!origin) return { ok: false, attempted: false, reason: "not_configured" };
   const headers = new Headers({ accept: "application/json" });
   if (env.ORIGIN_TOKEN) headers.set("x-origin-token", env.ORIGIN_TOKEN);
   if (host) headers.set("x-forwarded-host", host);
@@ -168,12 +214,13 @@ export async function callApi(env, path, { method = "GET", body, nonce, host, ti
     const res = await fetch(origin + path, { method, headers, redirect: "manual", signal: controller.signal,
       body: body === undefined ? undefined : JSON.stringify(body) });
     const text = await res.text();
-    if (text.length > MAX_API_BYTES) return { ok: true, status: res.status, json: null };
+    if (text.length > MAX_API_BYTES) return { ok: true, attempted: true, status: res.status, json: null };
     let value = null;
     try { value = JSON.parse(text); } catch { /* not JSON: treated as no answer */ }
-    return { ok: true, status: res.status, json: value };
+    return { ok: true, attempted: true, status: res.status, json: value };
   } catch {
-    return { ok: false, reason: controller.signal.aborted ? "timeout" : "unreachable" };
+    // Once fetch has been called, the request may have reached the intake: never "nothing was sent".
+    return { ok: false, attempted: true, reason: controller.signal.aborted ? "timeout" : "unreachable" };
   } finally {
     clearTimeout(timer);
   }
@@ -200,7 +247,7 @@ export function readBoard(answer) {
     return [entry];
   }).slice(0, 10).map((entry, index) => ({ rank: index + 1, ...entry }));
   const left = value?.token?.cpu_s_remaining;
-  return { admission, board, cpuSecondsLeft: finite(left, 0, 100000) ? left : null };
+  return { reachable: value !== null, admission, board, cpuSecondsLeft: finite(left, 0, 100000) ? left : null, terms: termsFrom(value) };
 }
 
 let boardCache = null;
@@ -307,6 +354,8 @@ async function intent(request, env, ctx, url) {
   if (!purpose) return wall(request, env, url);
   const kind = negotiate(request);
   if (request.method === "HEAD") return respond(request, 200, null, kind === "json" ? "application/json; charset=utf-8" : kind === "md" ? "text/markdown; charset=utf-8" : "text/html; charset=utf-8");
+  // Tokens are free but not unlimited: a per-prefix allowance, so one client cannot farm them in a burst.
+  if (!(await allow(env, "DOOR_MINT_LIMITER", `mint:${prefixOf(request)}`))) return limited(request, kind === "json" ? "json" : "html");
   const now = Date.now();
   const token = await mintToken(key, { purpose, site: url.host, now });
   const { claims } = await verifyToken(key, token, { site: url.host, now });
@@ -323,9 +372,9 @@ async function engram(request, env, ctx, url) {
   if (request.method === "HEAD") return json(request, 200, null);
   const reading = await allow(env, "DOOR_READ_LIMITER", `engram:${prefixOf(request)}`);
   const [live, gate] = await Promise.all([
-    reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null },
+    reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null, terms: null },
     gateZero(request, env, url)]);
-  return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: termsOf(env),
+  return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: live.terms,
     gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft }));
 }
 
@@ -356,9 +405,9 @@ async function confirm(request, env, ctx, url) {
   const parsed = layoutFrom(url.searchParams.getAll("l"));
   if (!parsed.ok) return html(request, 400, problemHtml("layout", parsed.codes));
   if (request.method === "HEAD") return html(request, 200, null);
-  const { admission } = await sharedBoard(env, url);
+  const { reachable, admission, terms } = await sharedBoard(env, url);
   return html(request, 200, confirmHtml({ claims: auth.claims, token: auth.token, compact: parsed.compact, dies: parsed.dies,
-    violations: previewViolations(parsed.dies), wireMm: wireProxyMm(parsed.dies), submissions: admission, terms: termsOf(env) }));
+    violations: previewViolations(parsed.dies), wireMm: wireProxyMm(parsed.dies), reachable, submissions: admission, terms }));
 }
 
 async function board(request, env, ctx, url) {
@@ -419,7 +468,8 @@ async function readBody(request, max) {
   const bytes = new Uint8Array(total);
   let at = 0;
   for (const chunk of chunks) { bytes.set(chunk, at); at += chunk.byteLength; }
-  try { return { text: new TextDecoder("utf-8", { fatal: true }).decode(bytes) }; } catch { return { status: 400, code: { code: "not_utf8" } }; }
+  // ignoreBOM keeps a leading byte-order mark in the text, as Python's strict UTF-8 decode does (it is then malformed).
+  try { return { text: new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes) }; } catch { return { status: 400, code: { code: "not_utf8" } }; }
 }
 
 const fieldError = (path, keyword) => ({ code: "schema_invalid", path, keyword });
@@ -434,9 +484,11 @@ function fieldsOf(text, form) {
     if (params.getAll("l").length !== 1) return { codes: [fieldError("/l", "required")] };
     return { t: params.get("t"), layout: params.get("l"), requestKey: null };
   }
-  let value;
-  try { value = JSON.parse(text); } catch { return { codes: [{ code: "malformed_json" }] }; }
-  if (!value || typeof value !== "object" || Array.isArray(value)) return { codes: [fieldError("", "type")] };
+  // The contract's strict reader, before any field is chosen: duplicate keys at any depth, too-deep bodies and
+  // non-finite numbers are refused with its codes, never resolved by keeping the last value.
+  const read = strictJson(text);
+  if (read.codes) return { codes: read.codes };
+  const value = read.value;
   if (Object.keys(value).some((k) => !["t", "layout", "request_key"].includes(k))) return { codes: [{ code: "unknown_field", path: "" }] };
   if (typeof value.t !== "string") return { codes: [fieldError("/t", Object.hasOwn(value, "t") ? "type" : "required")] };
   if (!Object.hasOwn(value, "layout")) return { codes: [fieldError("/layout", "required")] };
@@ -458,11 +510,34 @@ function outcomeOf(answer) {
   return { state, runId, codes };
 }
 
+// A form post must come from this site's own confirm page: the browser says so with Sec-Fetch-Site (same-origin, or
+// none for a navigation the person made), or, where it sends no Sec-Fetch-Site, with an Origin equal to this site's.
+// A cross-site form would make a visitor spend their own allowance submitting someone else's layout.
+function sameSiteForm(request, url) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null) return site === "same-origin" || site === "none";
+  return request.headers.get("origin") === url.origin;
+}
+
+// The POST reached for the intake but no answer says what happened: the layout may or may not be queued. The
+// response keeps the same token, layout and request key, and offers the same idempotent retry (an identical retry
+// returns the same run and is charged once). It never says nothing was sent and never asks for a new link: a new
+// token is a new principal, and the same layout under it would be a second, separately charged submission.
+function deliveryUnknown(request, format, url, { token, compact, requestKey, cause }) {
+  const status = cause === "timeout" ? 504 : 502;
+  if (format === "html") return html(request, status, notConfirmedHtml({ token, compact, cause }));
+  return json(request, status, { error: "delivery_unknown", cause,
+    detail: "The layout may or may not have reached the scorer intake. Send the same request again (same token, layout and request_key): an identical retry returns the same run and is charged once.",
+    request_key: requestKey,
+    retry: { method: "POST", url: `${url.origin}/agents/submit`, content_type: "application/json", body: { t: token, layout: compact, request_key: requestKey } } });
+}
+
 async function submit(request, env, ctx, url) {
   const type = (request.headers.get("content-type") ?? "").toLowerCase();
   const form = /^application\/x-www-form-urlencoded(;|$)/.test(type);
   const format = form ? "html" : "json";
   if (!form && !/^application\/json(;|$)/.test(type)) return refuse(request, format, 415, { error: "unsupported_media_type", accepted: ["application/json", "application/x-www-form-urlencoded"] });
+  if (form && !sameSiteForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });
   if (!usableKey(env)) return closed(request, format);
   if (!(await allow(env, "DOOR_IP_LIMITER", `submit:${prefixOf(request)}`))) return submitLimited(request, format);
   const body = await readBody(request, form ? MAX_FORM_BYTES : MAX_JSON_BYTES);
@@ -473,7 +548,10 @@ async function submit(request, env, ctx, url) {
   if (auth instanceof Response) return auth;
   const parsed = typeof fields.layout === "string" ? parseCompact(fields.layout) : parseDies(fields.layout);
   if (!parsed.ok) return rejected(request, format, parsed.codes);
-  const terms = termsOf(env);
+  // The terms the intake's board names (the signed manifest's). Unreachable: nothing is sent, and the door says so.
+  const live = await sharedBoard(env, url);
+  if (!live.reachable) return refuse(request, format, 503, { error: "intake_unavailable" });
+  const terms = live.terms;
   if (!terms) return rejected(request, format, [{ code: "not_open_yet" }]);
   // Per token, what counts is what would reach the intake: refusals above cost it nothing (the prefix limit bounds them).
   if (!(await allow(env, "DOOR_NONCE_LIMITER", `submit:${auth.claims.nonce}`))) return submitLimited(request, format);
@@ -483,13 +561,18 @@ async function submit(request, env, ctx, url) {
   const payload = { token_claims: { purpose, case: caseId, nonce, exp }, layout: parsed.compact, terms, request_key: requestKey,
     class: CLASSES.includes(who?.triage?.class) ? who.triage.class : "unknown", operator: OPERATORS.includes(who?.operator) ? who.operator : "unknown" };
   const answer = await callApi(env, API.submit, { method: "POST", body: payload, host: url.host, timeoutMs: 8000 });
-  if (!answer.ok && answer.reason === "timeout") return refuse(request, format, 504, { error: "intake_timeout", request_key: requestKey });
+  // Not attempted (no intake configured): nothing was sent.
+  if (!answer.attempted) return refuse(request, format, 503, { error: "intake_unavailable" });
   const value = answer.ok && answer.json && typeof answer.json === "object" && !Array.isArray(answer.json) ? answer.json : null;
   // The intake's own answers only: its submit schema below 500 (or its 503 refusal while closed), or its token
-  // refusal. Anything else (a missing route, a crash, another service) means the intake is not there.
+  // refusal. Anything else after the POST (no answer, a timeout, a crash, another service) cannot say whether the
+  // layout was queued: delivery is unknown, and the same request is the safe retry.
   const own = (value?.schema === SUBMIT_SCHEMA && (answer.status < 500 || (answer.status === 503 && value.state === "rejected")))
     || (answer.status === 403 && /^token_[a-z]+$/.test(value?.error ?? ""));
-  if (!own) return refuse(request, format, 503, { error: "intake_unavailable" });
+  if (!own) {
+    const cause = !answer.ok ? (answer.reason === "timeout" ? "timeout" : "no_answer") : "unrecognized_answer";
+    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, requestKey, cause });
+  }
   if (form) return html(request, answer.status < 300 ? 200 : answer.status, resultHtml(url.origin, auth.token, outcomeOf(answer)));
   return json(request, answer.status, value);
 }
@@ -523,6 +606,9 @@ export async function serveWallOrAgentVersion(request, env, seam = {}) {
   const url = new URL(request.url);
   const key = usableKey(env);
   if (!key || !["GET", "HEAD"].includes(request.method) || agentPathFor(url.pathname) === null) return serveAgentVersion(request, env);
+  // Search and link-preview crawlers keep exactly what they got before the door (the vendored gate's own exemption):
+  // the wall is noindex, and would drop these pages from search and turn every link preview into the wall.
+  if (indexOrPreviewCrawler(request.headers.get("user-agent") ?? "")) return serveAgentVersion(request, env);
   const held = url.searchParams.getAll("t");
   if (held.length === 1 && TOKEN_PATTERN.test(held[0]) && (await verifyToken(key, held[0], { site: url.host, now: Date.now() })).ok) {
     return serveAgentVersion(request, env);

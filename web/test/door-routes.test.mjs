@@ -107,7 +107,7 @@ test("without DOOR_TOKEN_KEY the door is closed: agents keep #66's pages and the
       assert.equal(JSON.parse(r.text).error, "door_closed");
     }
     const page = await s.go("/agents/intent?purpose=read", agent(UA.curl));
-    assert.deepEqual([page.status, page.text.includes("The agent door is not open on this site right now.")], [503, true]);
+    assert.deepEqual([page.status, page.text.includes("Submissions are not open on this site right now.")], [503, true]);
     assert.equal((await s.go(`/s?t=x&l=${REF}`, { headers: BROWSER })).status, 503);
     assert.equal((await s.go("/agents/submit", postJson({ t: "x", layout: REF }))).status, 503);
   }

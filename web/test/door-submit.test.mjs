@@ -85,12 +85,13 @@ test("hostile and malformed submissions are refused at the edge with contract co
     ["proto field", postJson(`{"t":"${token}","layout":"${REF}","__proto__":{"x":1}}`), 400, [{ code: "unknown_field", path: "" }]],
     ["NaN item", postJson({ t: token, layout: REF.replace("36.35.0", "NaN.35.0") }), 400, [{ code: "schema_invalid", path: "/l/0", keyword: "pattern" }]],
     ["huge number", postJson({ t: token, layout: REF.replace("36.35.0", "99999999999999999999.35.0") }), 400, [{ code: "schema_invalid", path: "/l/0", keyword: "pattern" }]],
-    ["huge dies", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, x_um: 1e300 })) }), 400, [{ code: "schema_invalid", path: "/layout/0/x_um", keyword: "maximum" }]],
-    ["infinite dies", postJson(`{"t":"${token}","layout":[{"die":0,"x_um":1e999,"y_um":0,"rot_deg":0}]}`), 422, [{ code: "die_count", count: 1 }]],
+    ["huge dies", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, x_um: 1e300 })) }), 400, [{ code: "schema_invalid", path: "/layout/0/x_um", keyword: "type" }]],
+    ["huge integer", postJson(`{"t":"${token}","layout":[{"die":0,"x_um":1000001,"y_um":0,"rot_deg":0},1,2,3,4,5,6,7]}`), 400, [{ code: "schema_invalid", path: "/layout/0/x_um", keyword: "maximum" }, ...[1, 2, 3, 4, 5, 6, 7].map((i) => ({ code: "schema_invalid", path: `/layout/${i}`, keyword: "type" }))]],
+    ["infinite dies", postJson(`{"t":"${token}","layout":[{"die":0,"x_um":1e999,"y_um":0,"rot_deg":0}]}`), 400, [{ code: "nonfinite_number" }]],
     ["out of frame", postJson({ t: token, layout: REF.replace("73.35.0", "95.35.0") }), 422, [{ code: "out_of_frame", dies: [5], amount_um: 2500 }]],
     ["nine dies", postJson({ t: token, layout: `${REF},1.1.0` }), 422, [{ code: "die_count", count: 9 }]],
     ["turned DRAM", postJson({ t: token, layout: REF.replace("17.35.0", "17.35.1") }), 422, [{ code: "rotation_not_allowed", dies: [4] }]],
-    ["CPU 180", postJson({ t: token, layout: REF.replace("36.35.0", "36.35.2") }), 422, [{ code: "rotation_not_allowed", dies: [0] }]],
+    ["CPU 180", postJson({ t: token, layout: REF.replace("36.35.0", "36.35.2") }), 400, [{ code: "schema_invalid", path: "/l/0", keyword: "enum" }]],
     ["dies extra field", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i === 2 ? { ...d, label: HOSTILE } : d)) }), 400, [{ code: "unknown_field", path: "/layout/2" }]],
     ["dies swapped", postJson({ t: token, layout: [DIES_FORM[1], DIES_FORM[0], ...DIES_FORM.slice(2)] }), 422, [{ code: "die_order", dies: [0, 1] }]],
     ["off lattice", postJson({ t: token, layout: DIES_FORM.map((d, i) => (i ? d : { ...d, y_um: 17600 })) }), 422, [{ code: "lattice", dies: [0], amount_um: 100 }]],
@@ -98,9 +99,9 @@ test("hostile and malformed submissions are refused at the edge with contract co
     ["no layout", postJson({ t: token }), 400, [{ code: "schema_invalid", path: "/layout", keyword: "required" }]],
     ["token number", postJson({ t: 7, layout: REF }), 400, [{ code: "schema_invalid", path: "/t", keyword: "type" }]],
     ["bad request key", postJson({ t: token, layout: REF, request_key: HOSTILE }), 400, [{ code: "schema_invalid", path: "/request_key", keyword: "pattern" }]],
-    ["array body", postJson([token, REF]), 400, [{ code: "schema_invalid", path: "", keyword: "type" }]],
+    ["array body", postJson([token, REF]), 400, [{ code: "malformed_json" }]],
     ["broken JSON", postJson(`{"t":"${token}",`), 400, [{ code: "malformed_json" }]],
-    ["NaN literal", postJson(`{"t":"${token}","layout":NaN}`), 400, [{ code: "malformed_json" }]],
+    ["NaN literal", postJson(`{"t":"${token}","layout":NaN}`), 400, [{ code: "nonfinite_number" }]],
     ["not UTF-8", { ...postJson(""), body: new Uint8Array([0x7b, 0xff, 0xfe, 0x7d]) }, 400, [{ code: "not_utf8" }]],
     ["oversize", postJson({ t: token, layout: REF, pad: "x".repeat(5000) }), 413, null],
     ["form extra field", postForm(`t=${token}&l=${encodeURIComponent(REF)}&note=${encodeURIComponent(HOSTILE)}`), 400, null],
@@ -166,15 +167,20 @@ test("client prefixes: IPv4 /24 and IPv6 /48, anything else one shared 'unknown'
 
 test("the intake down, slow or odd: the honest answer, and nothing claimed", async (t) => {
   const token = await mint();
-  installApi(t, { submit: async () => { throw new Error("down"); } });
+  // Down before anything is sent (its board unreachable): nothing was sent, and the door says so.
+  t.mock.method(globalThis, "fetch", async () => { throw new Error("down"); });
   let r = await setup().go("/agents/submit", postJson({ t: token, layout: REF }));
   assert.deepEqual([r.status, JSON.parse(r.text)], [503, { error: "intake_unavailable" }]);
   t.mock.restoreAll();
-  for (const answer of [new Response("not json", { status: 200 }), new Response("{}", { status: 404 }), Response.json({ detail: "Not Found" }, { status: 404 }),
-    Response.json({ state: "queued" }, { status: 202 }), Response.json({ schema: SUBMIT, state: "queued" }, { status: 500 }), Response.json([1, 2]), Response.json({ error: "anything" }, { status: 403 })]) {
-    installApi(t, { submit: async () => answer });
+  // After the POST, no answer or an answer the door cannot trust: delivery unknown, with the same request to retry.
+  for (const answer of [() => { throw new Error("reset"); }, () => new Response("not json", { status: 200 }), () => new Response("{}", { status: 404 }),
+    () => Response.json({ detail: "Not Found" }, { status: 404 }), () => Response.json({ state: "queued" }, { status: 202 }),
+    () => Response.json({ schema: SUBMIT, state: "queued" }, { status: 500 }), () => Response.json([1, 2]), () => Response.json({ error: "anything" }, { status: 403 })]) {
+    installApi(t, { submit: async () => answer() });
     r = await setup().go("/agents/submit", postJson({ t: token, layout: REF }));
-    assert.deepEqual([r.status, JSON.parse(r.text)], [503, { error: "intake_unavailable" }]);
+    const body = JSON.parse(r.text);
+    assert.deepEqual([r.status, body.error], [502, "delivery_unknown"]);
+    assert.match(body.request_key, /^door-[0-9a-f]{32}$/);
     t.mock.restoreAll();
   }
   // The intake's own refusals come back as they are: closed, over quota, a token it will not take.
@@ -192,7 +198,7 @@ test("the intake down, slow or odd: the honest answer, and nothing claimed", asy
   t.mock.timers.tick(8000);
   r = await pending;
   const slow = JSON.parse(r.text);
-  assert.deepEqual([r.status, slow.error], [504, "intake_timeout"]);
+  assert.deepEqual([r.status, slow.error, slow.cause], [504, "delivery_unknown", "timeout"]);
   assert.match(slow.request_key, /^door-[0-9a-f]{32}$/, "the key to retry with: an identical retry returns the same run");
 });
 
@@ -236,8 +242,8 @@ test("the tap-link confirm page never submits on its own: one form, one POST but
 });
 
 test("without published terms nothing can be submitted: the page says so and submit answers not_open_yet at the edge", async (t) => {
-  const calls = installApi(t);
-  const s = setup({ DOOR_TERMS: undefined });
+  const calls = installApi(t, { board: async () => Response.json({ door: { open: true }, top: [], terms: { accepted_versions: [] } }) });
+  const s = setup();
   const token = await mint();
   const page = await s.go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
   assert.ok(page.text.includes("no challenge terms are published") && !page.text.includes("<form"));
@@ -245,12 +251,17 @@ test("without published terms nothing can be submitted: the page says so and sub
   assert.deepEqual([r.status, JSON.parse(r.text)], [503, refused([{ code: "not_open_yet" }])]);
   const view = JSON.parse((await s.go(`/agents/engram?t=${token}`, agent())).text);
   assert.equal(view.submissions.terms, null);
-  for (const bad of ["sentilab-open-terms/1", `sentilab-open-terms/0@${"0f".repeat(32)}`, `x${TERMS}`]) {
-    const odd = setup({ DOOR_TERMS: bad });
-    assert.equal((await odd.go("/agents/submit", postJson({ t: token, layout: REF }))).status, 503, bad);
+  t.mock.restoreAll();
+  // Versions that are not the contract's shape never count as terms.
+  for (const bad of ["sentilab-open-terms/1", `sentilab-open-terms/0@${"0f".repeat(32)}`, `x${TERMS}`, 7, null]) {
+    const odd = installApi(t, { board: async () => Response.json({ door: { open: true }, top: [], terms: { accepted_versions: [bad] } }) });
+    assert.equal((await setup().go("/agents/submit", postJson({ t: token, layout: REF }))).status, 503, String(bad));
+    assert.deepEqual(submits(odd), []);
+    t.mock.restoreAll();
   }
   await s.drain();
   assert.deepEqual(submits(calls), []);
+  installApi(t);
   const open = await setup().go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
   assert.ok(open.text.includes(`Submitting accepts the challenge terms <code>${TERMS}</code>.`));
 });
@@ -318,11 +329,11 @@ test("the layout thumbnail is a pure SVG of whole micrometres with fixed labels 
 });
 
 test("the board reader takes admission only from an explicit boolean and drops everything it does not know", () => {
-  assert.deepEqual(readBoard({ ok: false }), { admission: "unknown", board: null, cpuSecondsLeft: null });
+  assert.deepEqual(readBoard({ ok: false }), { reachable: false, admission: "unknown", board: null, cpuSecondsLeft: null, terms: null });
   assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: "yes" } } }).admission, "unknown");
   assert.equal(readBoard({ ok: true, status: 500, json: { door: { open: true } } }).admission, "unknown");
   assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: false } } }).admission, "closed");
   assert.equal(readBoard({ ok: true, status: 200, json: { admission: { open: true } } }).admission, "unknown", "only the intake's own door.open counts");
   assert.deepEqual(readBoard({ ok: true, status: 200, json: { top: [{ class: "automation", short_id: "abcd", status: "nonsense", wire_proxy_mm: -1, verdict: "beat", operator: "openai", extra: 1 }], token: { cpu_s_remaining: -2 } } }),
-    { admission: "unknown", board: [{ rank: 1, class: "automation", short_id: "abcd" }], cpuSecondsLeft: null });
+    { reachable: true, admission: "unknown", board: [{ rank: 1, class: "automation", short_id: "abcd" }], cpuSecondsLeft: null, terms: null });
 });

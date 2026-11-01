@@ -4,11 +4,14 @@
 // die centre in 500 um lattice steps from the interposer's lower-left corner (decimal integers 0..999, no sign, no
 // leading zero), r quarter-turns: CPU 0 or 1, DRAM 0. It maps to the contract's proposal dies as
 // dies[i] = {die: i, x_um: 500 x, y_um: 500 y, rot_deg: 90 r}. Anything else is refused with contract reason codes:
-//   schema_invalid  an item that is not three such integers, or a layout that is not a string or is too long
+//   schema_invalid  an item that is not three such integers, a layout that is not a string or is too long, or r of 2
+//                   or more (rot_deg outside the contract's enum [0, 90], as the intake reports it)
 //   die_count       not exactly eight items
-//   rotation_not_allowed  r outside the die's rotations
+//   rotation_not_allowed  a DRAM turned 90 degrees (r = 1): in the contract's enum, not in its catalogue
 //   out_of_frame    a centre beyond the 45 mm frame
-// The dies form ({die, x_um, y_um, rot_deg} x 8, only on POST /agents/submit) adds unknown_field, die_order and lattice.
+// The dies form ({die, x_um, y_um, rot_deg} x 8, only on POST /agents/submit) adds unknown_field, die_order and lattice,
+// with the contract's field rules: integers that are JSON integer literals, die 0..31, x_um and y_um 0..1000000,
+// rot_deg in [0, 90].
 //
 // The preview check reproduces TapGeometry.layout_violations (sundai_hotspot/tap_oracle.py) on whole micrometres:
 // margin (body plus halo at least 500 um inside every edge), halo_overlap (halo rings may touch, never overlap) and
@@ -21,7 +24,9 @@ export const MAX_COMPACT_CHARS = 200;
 export const PREVIEW_LABEL = "preview check; the scorer intake decides";
 const ITEM = /^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.([0-9])$/;
 const DIE_KEYS = ["die", "x_um", "y_um", "rot_deg"];
-const MAX_UM = 1000000;
+// The contract's dies schema (contracts/open-proposal-v1/schemas/common.schema.json #/$defs/dies).
+const BOUNDS = Object.freeze({ die: [0, 31], x_um: [0, 1000000], y_um: [0, 1000000] });
+const ROT_DEG = Object.freeze([0, 90]);
 
 const code = (name, fields = {}) => ({ code: name, ...fields });
 
@@ -49,7 +54,9 @@ export function parseCompact(text) {
   const dies = items.map((item, index) => {
     const match = ITEM.exec(item);
     if (!match) { shape.push(code("schema_invalid", { path: `/l/${index}`, keyword: "pattern" })); return null; }
-    return { die: index, x_um: Number(match[1]) * LATTICE_UM, y_um: Number(match[2]) * LATTICE_UM, rot_deg: Number(match[3]) * 90 };
+    const rot = Number(match[3]) * 90;
+    if (!ROT_DEG.includes(rot)) { shape.push(code("schema_invalid", { path: `/l/${index}`, keyword: "enum" })); return null; }
+    return { die: index, x_um: Number(match[1]) * LATTICE_UM, y_um: Number(match[2]) * LATTICE_UM, rot_deg: rot };
   });
   if (shape.length) return { ok: false, codes: shape };
   const found = catalogue(dies);
@@ -68,10 +75,12 @@ export function parseDies(value) {
     if (!plainObject(die)) { shape.push(code("schema_invalid", { path: `/layout/${index}`, keyword: "type" })); return; }
     if (Object.keys(die).some((key) => !DIE_KEYS.includes(key))) shape.push(code("unknown_field", { path: `/layout/${index}` }));
     for (const key of DIE_KEYS) {
+      const at = `/layout/${index}/${key}`;
       if (!Object.hasOwn(die, key)) shape.push(code("schema_invalid", { path: `/layout/${index}`, keyword: "required" }));
-      else if (!Number.isInteger(die[key])) shape.push(code("schema_invalid", { path: `/layout/${index}/${key}`, keyword: "type" }));
-      else if (die[key] < 0) shape.push(code("schema_invalid", { path: `/layout/${index}/${key}`, keyword: "minimum" }));
-      else if (die[key] > MAX_UM) shape.push(code("schema_invalid", { path: `/layout/${index}/${key}`, keyword: "maximum" }));
+      else if (!Number.isInteger(die[key])) shape.push(code("schema_invalid", { path: at, keyword: "type" }));
+      else if (key === "rot_deg") { if (!ROT_DEG.includes(die[key])) shape.push(code("schema_invalid", { path: at, keyword: "enum" })); }
+      else if (die[key] < BOUNDS[key][0]) shape.push(code("schema_invalid", { path: at, keyword: "minimum" }));
+      else if (die[key] > BOUNDS[key][1]) shape.push(code("schema_invalid", { path: at, keyword: "maximum" }));
     }
   });
   if (shape.length) return { ok: false, codes: shape };

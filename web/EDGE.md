@@ -113,11 +113,17 @@ requests are not observed.
 and `withEdge` hands it `{ identity, ctx }` as a third argument. With a usable
 `DOOR_TOKEN_KEY`, a classified agent's GET or HEAD of a mapped page gets the wall ("What are
 you here to do?": plain purpose links and a GET form) until it holds a valid scoped purpose
-token of this host (`?t=`), and then the agent version above. Without the key the door is
-closed and this section does not apply. The door's own routes (`/agents/intent`,
+token of this host (`?t=`), and then the agent version above. Search and link-preview crawlers
+(the vendored gate's `indexOrPreviewCrawler`) never meet the wall: they keep the agent version
+exactly as before. Without the key the door is closed and this section does not apply. Every
+response to a URL that can carry a token (a `t` parameter, or a token-shaped value anywhere in
+the query) is `Referrer-Policy: no-referrer` and `private, no-store, no-transform`, whichever
+path served it. The door's own routes (`/agents/intent`,
 `/agents/engram`, `/agents/check`, `/agents/submit`, `/agents/status/<run_id>`,
 `/agents/board`, `/s`) are answered before `withEdge`; `identityFor` gives them the same bounded
-identity for arrivals. The `/api` proxy drops every `x-door-*` request header.
+identity for arrivals. The `/api` proxy drops every `x-door-*` request header and any Referer
+that carries a token, and passes the intake's open feeds (`/api/open/v1/door/board`, `results`,
+`events`) on without their declared-operator fields.
 
 ## Aquarium and privacy
 

@@ -62,15 +62,18 @@ test("compact: every malformed form is refused with a contract reason code and n
   for (const [text, codes] of cases) assert.deepEqual(parseCompact(text), { ok: false, codes }, String(text).slice(0, 60));
 });
 
-test("compact rotations: CPU 0 or 1 quarter-turns, DRAM 0 only; anything else is rotation_not_allowed", () => {
+test("compact rotations: CPU 0 or 1 quarter-turns, DRAM 0 only; r of 2 or more is outside the contract's enum", () => {
+  // As the intake reports them: rot_deg 180, 270 ... are schema_invalid (enum [0, 90]); a turned DRAM is in the enum
+  // but not in its catalogue, rotation_not_allowed.
   for (const die of [0, 1, 2, 3]) {
     const [x, y] = items(REF)[die].split(".");
     assert.equal(parseCompact(withItem(die, `${x}.${y}.1`)).ok, true, `C${die} turned 90 degrees`);
-    for (const r of [2, 3, 4, 9]) assert.deepEqual(parseCompact(withItem(die, `${x}.${y}.${r}`)), { ok: false, codes: [{ code: "rotation_not_allowed", dies: [die] }] });
+    for (const r of [2, 3, 4, 9]) assert.deepEqual(parseCompact(withItem(die, `${x}.${y}.${r}`)), { ok: false, codes: [{ code: "schema_invalid", path: `/l/${die}`, keyword: "enum" }] });
   }
   for (const die of [4, 5, 6, 7]) {
     const [x, y] = items(REF)[die].split(".");
-    for (const r of [1, 2, 3]) assert.deepEqual(parseCompact(withItem(die, `${x}.${y}.${r}`)), { ok: false, codes: [{ code: "rotation_not_allowed", dies: [die] }] });
+    assert.deepEqual(parseCompact(withItem(die, `${x}.${y}.1`)), { ok: false, codes: [{ code: "rotation_not_allowed", dies: [die] }] });
+    for (const r of [2, 3]) assert.deepEqual(parseCompact(withItem(die, `${x}.${y}.${r}`)), { ok: false, codes: [{ code: "schema_invalid", path: `/l/${die}`, keyword: "enum" }] });
   }
   assert.deepEqual(DIES.map((d) => d.rot_deg), [[0, 90], [0, 90], [0, 90], [0, 90], [0], [0], [0], [0]]);
 });
@@ -106,7 +109,10 @@ test("dies form: the contract's {die, x_um, y_um, rot_deg} x 8, refused field by
     ["off lattice", set(0, { x_um: 18250 }), [{ code: "lattice", dies: [0], amount_um: 250 }]],
     ["off lattice small", set(1, { y_um: 17501 }), [{ code: "lattice", dies: [1], amount_um: 1 }]],
     ["DRAM turned", set(4, { rot_deg: 90 }), [{ code: "rotation_not_allowed", dies: [4] }]],
-    ["CPU 180", set(0, { rot_deg: 180 }), [{ code: "rotation_not_allowed", dies: [0] }]],
+    ["CPU 180", set(0, { rot_deg: 180 }), [{ code: "schema_invalid", path: "/layout/0/rot_deg", keyword: "enum" }]],
+    ["minus 90", set(0, { rot_deg: -90 }), [{ code: "schema_invalid", path: "/layout/0/rot_deg", keyword: "enum" }]],
+    ["die 32", set(0, { die: 32 }), [{ code: "schema_invalid", path: "/layout/0/die", keyword: "maximum" }]],
+    ["float literal", set(0, { x_um: new Number(18000) }), [{ code: "schema_invalid", path: "/layout/0/x_um", keyword: "type" }]],
     ["out of frame", set(7, { x_um: 46000 }), [{ code: "out_of_frame", dies: [7], amount_um: 1000 }]],
   ];
   for (const [name, value, codes] of cases) {

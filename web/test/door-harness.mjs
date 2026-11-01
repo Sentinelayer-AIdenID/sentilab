@@ -53,7 +53,7 @@ export const BOARD = Object.freeze({ schema: "sentilab-door-board/1", label: "si
     max_chiplet_centre_cell_mean_C: 101.25, native_all_block_max_C: 101.2, active_layer_peak_C: 104.5, wire_proxy_mm: 9.75, verdict: null },
   { id: "open-12345678-ffffffffffffffffffffffffffffffff", label: "ours · 0f0f", class: "ours", operator: "unknown", short_id: "0f0f",
     status: "reproduced", max_chiplet_centre_cell_mean_C: 99.5, wire_proxy_mm: 10.25, verdict: "candidate" },
-], token: { cpu_s_remaining: 28.9 } });
+], token: { cpu_s_remaining: 28.9 }, terms: { accepted_versions: [TERMS] } });
 
 // The stand-in intake: route -> async (call) => Response. Records { method, path, headers, body } per call.
 export function installApi(t, routes = {}) {
@@ -71,7 +71,7 @@ export function installApi(t, routes = {}) {
     const url = new URL(String(input));
     const headers = Object.fromEntries(new Headers(init.headers ?? {}));
     const body = typeof init.body === "string" ? JSON.parse(init.body) : init.body ?? null;
-    const call = { method: init.method ?? "GET", origin: url.origin, path: url.pathname + url.search, headers, body, signal: init.signal };
+    const call = { method: init.method ?? "GET", origin: url.origin, path: url.pathname + url.search, headers, body, signal: init.signal, redirect: init.redirect };
     calls.push(call);
     const name = url.pathname === "/api/open/v1/door/board" ? "board" : url.pathname === "/api/open/v1/door/submit" ? "submit"
       : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status" : null;
@@ -85,7 +85,7 @@ export function installApi(t, routes = {}) {
 export function setup(extra = {}) {
   resetDoorState();
   const pending = [];
-  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, DOOR_TERMS: TERMS, AQUARIUM_POST: "off" };
+  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off" };
   for (const [k, v] of Object.entries(extra)) { if (v === undefined) delete env[k]; else env[k] = v; }
   const ctx = { waitUntil: (promise) => pending.push(promise) };
   const go = async (path, init = {}, base = BASE) => {

@@ -160,7 +160,7 @@ const CODE_TEXT = Object.freeze({
 });
 export const codeText = (found) => `${found.code}${found.dies ? ` (${found.dies.map((d) => DIES[d]?.id ?? d).join(", ")})` : ""}: ${CODE_TEXT[found.code] ?? "refused"}`;
 
-export function confirmHtml({ claims, token, compact, dies, violations, wireMm, submissions, terms }) {
+export function confirmHtml({ claims, token, compact, dies, violations, wireMm, reachable = true, submissions, terms }) {
   const flagged = new Set(violations.flatMap((v) => v.dies ?? []));
   const check = violations.length
     ? `<p class="check illegal">Preview check: ${violations.length} rule${violations.length === 1 ? "" : "s"} broken.</p>
@@ -170,7 +170,9 @@ ${violations.map((v) => `<li>${esc(codeText(v))}</li>`).join("\n")}
     : `<p class="check legal">Preview check: no placement rule broken.</p>`;
   const action = submissions === "closed"
     ? `<p class="check illegal">Submissions are closed right now, so nothing can be sent.</p>`
-    : !terms
+    : !reachable
+      ? `<p class="check illegal">The scorer intake cannot be reached right now, so nothing can be sent. Open this same link again in a minute.</p>`
+      : !terms
       ? `<p class="check illegal">Submissions are not open yet: no challenge terms are published, so nothing can be sent.</p>`
       : `<form method="post" action="/agents/submit">
 <input type="hidden" name="t" value="${esc(token)}">
@@ -192,17 +194,29 @@ ${action}
 }
 
 // ── results and refusals, for people ─────────────────────────────────────────────────────────────────────────────
+// Refusals that happen before anything is sent to the scorer intake: only these pages say "Nothing was sent".
 const ERROR_TEXT = Object.freeze({
   token_missing: "This link has no token.",
   token_invalid: "This link's token is not one this site issued.",
   token_expired: "This link's token has expired (tokens last 60 minutes).",
   token_scope: "This link's token was issued for another purpose.",
   layout: "This link's layout is not in the format the scorer reads.",
-  rate_limited: "Too many submissions from here just now. Wait a minute and try again.",
-  door_closed: "The agent door is not open on this site right now.",
-  intake_unavailable: "The scorer intake could not be reached, so nothing was sent.",
-  intake_timeout: "The scorer intake did not answer in time. The layout may or may not be queued; pressing the button again is safe and returns the same run.",
+  rate_limited: "Too many submissions from here just now.",
+  door_closed: "Submissions are not open on this site right now.",
+  intake_unavailable: "The scorer intake could not be reached.",
+  cross_site: "This form can only be sent from this site's own confirm page.",
   unsupported: "This request is not one the door accepts.",
+});
+const NEXT_STEP = Object.freeze({
+  token_missing: "Ask your assistant for a new link if you still want to submit.",
+  token_invalid: "Ask your assistant for a new link if you still want to submit.",
+  token_expired: "Ask your assistant for a new link if you still want to submit.",
+  token_scope: "Ask your assistant for a new link if you still want to submit.",
+  layout: "Ask your assistant for a corrected layout.",
+  rate_limited: "Wait a minute, then open this same link again.",
+  door_closed: "Open this same link again later, while its token is still valid.",
+  intake_unavailable: "Open this same link again in a minute.",
+  cross_site: "Open the link your assistant gave you and press its button there.",
 });
 
 export function problemHtml(error, codes = []) {
@@ -210,7 +224,23 @@ export function problemHtml(error, codes = []) {
   return page("SentiLab: this link can't be used", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Not sent</h1>
 <p>${esc(ERROR_TEXT[error] ?? ERROR_TEXT.unsupported)}</p>
-${list}<p class="fine">Ask your assistant for a new link if you still want to submit. Nothing was sent.</p>`);
+${list}<p class="fine">Nothing was sent. ${esc(NEXT_STEP[error] ?? NEXT_STEP.layout)}</p>`);
+}
+
+// After the POST was attempted with no answer the door can trust: the layout may or may not be queued. The same
+// button repeats the same request (same token and layout, so the same request key): it returns the same run and is
+// charged once. No "nothing was sent", and no new link: a new token would make the retry a second submission.
+export function notConfirmedHtml({ token, compact, cause }) {
+  const what = cause === "timeout" ? "did not answer in time" : cause === "no_answer" ? "did not answer" : "gave an answer the door could not read";
+  return page("SentiLab: not confirmed", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
+<h1>Not confirmed</h1>
+<p>This layout was sent to the scorer intake, but the intake ${esc(what)}, so it may or may not be queued.</p>
+<form method="post" action="/agents/submit">
+<input type="hidden" name="t" value="${esc(token)}">
+<input type="hidden" name="l" value="${esc(compact)}">
+<button type="submit">Send the same layout again</button>
+</form>
+<p class="fine">Sending it again is safe: it repeats this exact request, with the same token and layout, so the intake returns the same run and charges it once. Keep using this page and this link rather than starting over.</p>`);
 }
 
 const STATE_TEXT = Object.freeze({ queued: "queued for the scorer", held: "held", evaluating: "being simulated", evaluated: "simulated",
