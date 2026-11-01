@@ -11,6 +11,7 @@
 //     input, with no total mark quota; plus the reserved interface labels; accepted text is passed on as written;
 //   - ?via= only pre-fills source; the heartbeat proxy; the open feeds; the copy.
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -446,6 +447,9 @@ test("the pass views: the token page's JSON and markdown and the ENGRAM view say
   const view = JSON.parse((await go(intent({ purpose: "place-chiplets", via: "senti" }), json())).text);
   const nonce = view.t.split(".")[4];
   const key = await declareKey(KEY, { site: "sentilab.aidenid.com", nonce, version: V });
+  // The documented construction, computed independently: the first 32 hex of HMAC-SHA256 under the door's key, over
+  // JSON ["sentilab-declare/1", site, nonce, notice version] (docs/sentilab/DOOR-PRESENCE-STATS.md, section 4).
+  assert.equal(key, createHmac("sha256", KEY).update(JSON.stringify(["sentilab-declare/1", "sentilab.aidenid.com", nonce, V])).digest("hex").slice(0, 32));
   assert.deepEqual(view.declare.body, { t: view.t, notice_version: V, declare_key: key, name: "{name}", reason: "{reason}", source: "senti" });
   assert.equal(view.declare.status, "available");
   const engram = JSON.parse((await go(`/agents/engram?t=${view.t}&via=moltbook`, json())).text);

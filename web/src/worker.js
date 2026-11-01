@@ -91,8 +91,9 @@ export default {
     // fresh headers. Any other spelling of it is the read-only API below.
     if (pathname === HERE_PATH) return handleHere(request, env);
     // SentiLab is hands-off: the service runs its own loop, so the public /api is read-only. No caller can start runs
-    // or reach any API write route from outside. The edge's write routes are the agent door's POST /agents/submit, which
-    // reaches the API only after the door's token, format and rate checks, and the heartbeat above (door/door.js).
+    // or reach any API write route from outside. The edge's write routes are the agent door's POST /agents/submit and
+    // POST /agents/declare, which reach the API only after the door's token, format and rate checks, and the heartbeat
+    // above (door/door.js).
     if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
       return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
         { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });

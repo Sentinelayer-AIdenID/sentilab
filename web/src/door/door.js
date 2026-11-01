@@ -715,13 +715,11 @@ function declareFields(text, form) {
   return { params: new URLSearchParams(entries) };
 }
 
-// A person's form comes from this site's own page: Sec-Fetch-Site same-origin, or, where a browser sends none, an
-// Origin of this site. (A cross-site JSON body needs a preflight, which this route refuses.)
-function ownPageForm(request, url) {
-  const site = request.headers.get("sec-fetch-site");
-  if (site !== null) return site === "same-origin";
-  return request.headers.get("origin") === url.origin;
-}
+// A person's declaration form comes from this site's own confirm page: the submit form's check (sameSiteForm), except
+// that a POST the browser marks as user-initiated (Sec-Fetch-Site: none) is refused too. So Sec-Fetch-Site same-origin,
+// or, where a browser sends none, an Origin of this site. (A cross-site JSON body needs a preflight, which this route
+// refuses.)
+const ownPageForm = (request, url) => request.headers.get("sec-fetch-site") !== "none" && sameSiteForm(request, url);
 
 async function declare(request, env, ctx, url) {
   const type = (request.headers.get("content-type") ?? "").toLowerCase();
@@ -779,7 +777,7 @@ export function doorRoute(pathname) {
 
 export async function handleDoor(route, request, env, ctx) {
   if (!route.methods.includes(request.method)) {
-    return json(request, 405, { error: "read_only", detail: "The agent door's only write route is POST /agents/submit." }, { allow: route.methods.join(", ") });
+    return json(request, 405, { error: "read_only", detail: "The agent door's write routes are POST /agents/submit and POST /agents/declare." }, { allow: route.methods.join(", ") });
   }
   return route.handler(request, env, ctx, new URL(request.url));
 }

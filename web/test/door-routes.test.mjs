@@ -348,13 +348,13 @@ test("token refusals on every token route: 401 missing, invalid or expired; 403 
   assert.deepEqual([submit.status, JSON.parse(submit.text)], [403, { error: "token_scope", allowed: "read" }]);
 });
 
-test("methods: the door's only new write is POST /agents/submit; every other method stays 405 read_only", async (t) => {
+test("methods: the door's writes are POST /agents/submit and POST /agents/declare; every other method stays 405 read_only", async (t) => {
   const calls = installApi(t);
   const s = setup();
   const token = await mint();
   const routes = { "/agents/intent?purpose=read": ["GET", "HEAD"], [`/agents/engram?t=${token}`]: ["GET", "HEAD"],
     [`/agents/check?t=${token}&l=${REF}`]: ["GET", "HEAD"], "/agents/board": ["GET", "HEAD"], [`/s?t=${token}&l=${REF}`]: ["GET", "HEAD"],
-    [`/agents/status/${RUN}?t=${token}`]: ["GET", "HEAD"], "/agents/submit": ["POST"] };
+    [`/agents/status/${RUN}?t=${token}`]: ["GET", "HEAD"], "/agents/submit": ["POST"], "/agents/declare": ["POST"] };
   for (const [path, allowed] of Object.entries(routes)) {
     for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
       const r = await s.go(path, { method, headers: { "user-agent": UA.curl, "content-type": "application/json" }, body: ["GET", "HEAD"].includes(method) ? undefined : "{}" });
@@ -362,7 +362,9 @@ test("methods: the door's only new write is POST /agents/submit; every other met
       else {
         assert.equal(r.status, 405, `${method} ${path}`);
         assert.equal(r.headers.get("allow"), allowed.join(", "));
-        if (method !== "HEAD") assert.equal(JSON.parse(r.text).error, "read_only");
+        if (method !== "HEAD") {
+          assert.deepEqual(JSON.parse(r.text), { error: "read_only", detail: "The agent door's write routes are POST /agents/submit and POST /agents/declare." });
+        }
       }
     }
   }

@@ -113,8 +113,10 @@ pass. **A GET never records a declaration.**
   - **The declare key.** Either way, an opt-in (`notice_version` present) must carry the pass's `declare_key`. That is
     the first 32 hex of HMAC-SHA256 under the door's key, over `["sentilab-declare/1", site, the pass's nonce, the
     notice version]`. A link, another pass's page, or another notice version can't produce it.
-  - **Limits.** Per pass (`DOOR_NONCE_LIMITER`, key `declare:<nonce>`) and per client prefix (`DOOR_IP_LIMITER`, key
-    `declare:<prefix>`).
+  - **Limits.** Per pass (`DOOR_NONCE_LIMITER`, key `declare:<nonce>`, 10 a minute) and per client prefix
+    (`DOOR_IP_LIMITER`, key `declare:<prefix>`, 60 a minute, shared by everyone behind one /24 or /48, such as a
+    venue's network). Both go through the door's existing `allow`, as submit's limits do: the platform binding, or the
+    isolate's own window if a binding is missing. Only the heartbeat's limiter has no such fallback.
   - The pass itself is never changed.
 - **The fields.** They follow root's shared character policy, judged on the original input:
   - any code point in the general categories Cc, Cf, Co, Cs, Cn, Zl or Zp is refused. That covers controls, format and
@@ -144,9 +146,15 @@ pass. **A GET never records a declaration.**
     - `{"status": "not_recorded", "code", "detail"}` for a refusal at the door, before anything is sent. `code` is one of
       `notice_changed`, `field_repeated`, `too_long`, `control_character`, `combining_marks`, `source_unknown` or
       `reserved_name`.
-  - **Protocol refusals:** `400` for a malformed body or unknown field; `401` for the token's own errors; `403` for
-    `cross_site` and `declare_key_invalid`; `405` to any other method; `415` for another content type; `429` for the
-    limits.
+  - **Protocol refusals:**
+    - `400` `malformed_body` for a body over 2,048 bytes, one too slow to read, a JSON body that isn't one object of
+      string values, or a repeated JSON key;
+    - `400` `unknown_field` for a field other than `t`, `notice_version`, `declare_key`, `name`, `reason` and `source`;
+    - `401` for a missing, invalid or expired pass;
+    - `403` `cross_site` and `declare_key_invalid`;
+    - `405` `read_only` to any other method;
+    - `415` for another content type;
+    - `429` for the limits.
   - The text is never echoed.
 - **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the confirm form's selected option, and the
   body in the pass views. It is carried in the wall's purpose links and in the token page's link to the agent view, and
