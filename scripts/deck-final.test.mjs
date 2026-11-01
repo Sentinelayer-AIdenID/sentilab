@@ -82,10 +82,12 @@ const REVIEW_LINE = "Across 34 code reviews, a later agent was first on record w
 // The demo instruction as given for the live-demo slide.
 const INSTRUCTION = "Tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout.";
 // The plain talk's nine main slides, then every slide of the earlier five-minute deck, in its order, as backup.
-const MAIN = ["talk1", "talk2", "talk3", "talk4", "talk5", "talk6", "talk7", "talk8", "talk9"];
+// Script v3's ten main slides; then the earlier five-minute deck, the figures the v2.5 talk carried, and the answer pages.
+const MAIN = ["t-hook", "t-grader", "t-team", "t-reports", "t-stop", "t-step", "t-bar", "t-open", "t-lesson", "t-door"];
 const OLD_MAIN = ["problem", "stack", "timeline", "gate", "checks", "teams", "numbers", "demo"];
-const BACKUP = [...OLD_MAIN, "how", "chronology", "reviews", "metrics", "view3d", "profile", "layers", "gate-detail", "drill", "status", "gb10", "prs", "receipt", "qa"];
-const DOOR = "talk9";
+const OLD_DECK = [...OLD_MAIN, "how", "chronology", "reviews", "metrics", "view3d", "profile", "layers", "gate-detail", "drill", "status", "gb10", "prs", "receipt"];
+const PLAIN_BACKUP = ["b-plain1", "b-plain4", "b-plain5", "b-fig6"];
+const DOOR = "t-door";
 
 // ── 1. the committed files ──────────────────────────────────────────────────────────────────────────────────────────
 test("deck/final-5min is a fresh build of FINAL.json under the options it records, figures included", () => {
@@ -97,12 +99,13 @@ test("deck/final-5min is a fresh build of FINAL.json under the options it record
   assert.ok(figureDirMatches(data), "deck/final-5min/figures holds exactly the generated figures");
   assert.equal(committed.source.finalSha256, sha(readFileSync(FINAL_SOURCE)));
   // The committed export is the reviewed result recorded in FINAL.json, never a preview or a review render, with the
-  // re-derivation stated (it is on record before the cutoff) and the door at its honest default: the labelled REPLAY
-  // until the address is confirmed.
+  // re-derivation stated (it is on record before the cutoff), the full 3+2 slot, and the door at its honest default:
+  // RECORDED until the address is confirmed.
   assert.deepEqual([committed.build.gate, committed.build.measured], [loaded.final.gate.result.outcome, loaded.final.gate.result.measured]);
-  assert.deepEqual([committed.build.preview, committed.deck.reviewOnly, committed.build.rederived, committed.build.demoStatus, committed.build.demoReview],
-    [false, false, true, "replay", false]);
-  assert.equal(loaded.final.plainTalk.numbersOnStage, false, "the numbers line is off until Carter keeps it");
+  assert.deepEqual([committed.build.preview, committed.deck.reviewOnly, committed.build.rederived, committed.build.demoStatus, committed.build.demoReview, committed.build.slot],
+    [false, false, true, "recorded", false, "3+2"]);
+  const qaIds = committed.slides.map((s) => s.id).filter((id) => /^qa(-\d+)?$/.test(id));
+  const BACKUP = [...OLD_DECK, ...PLAIN_BACKUP, ...qaIds];
   assert.deepEqual(committed.slides.map((s) => s.id), [...MAIN, ...BACKUP]);
   assert.deepEqual(committed.slides.map((s) => s.main), [...MAIN.map(() => true), ...BACKUP.map(() => false)]);
 });
@@ -211,7 +214,7 @@ test("every figure time names a room record that carries its minute, and its dur
   // plain4, aneta's lane chart on slide 4: every event time it shows (the hour ticks are its axis) has a claim whose
   // records carry that minute, and its durations are recomputed from them.
   const p4 = loaded.final.figures.plain4;
-  const shown = new Set(recorded().slides.find((s) => s.id === "talk4").content.figure.texts.flatMap((t) => t.match(/\b\d\d:\d\d\b/g) ?? []).filter((t) => !t.endsWith(":00")));
+  const shown = new Set(recorded().slides.find((s) => s.id === "b-plain4").content.figure.texts.flatMap((t) => t.match(/\b\d\d:\d\d\b/g) ?? []).filter((t) => !t.endsWith(":00")));
   assert.deepEqual([...shown].sort(), p4.claims.map((c) => c.label).sort());
   for (const c of p4.claims) assert.ok(c.records.flatMap((r) => [r.at, r.stated].filter(Boolean)).some((t) => t.slice(11, 16) === c.label), c.label);
   assert.deepEqual(p4.durations.map((x) => x.text), ["32 min", "39 min", "1 h 41"]);
@@ -251,8 +254,9 @@ test("only a team whose consent is on record is named: slides, notes, figures an
   assert.match(slideText(d, "receipt"), /Reproduction Delfie \(delphisci team\): both simulator versions built from source/);
   assert.match(slideText(d, "receipt"), /An outside team \(public repository, frozen report at commit c73d642b\)/);
   assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie \(delphisci team\), ScienceClaw\. The other 6 teams are not named here\./);
-  assert.match(slideText(d, "talk3"), /With the detailed-3D mode off, both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
-  assert.match(slideText(d, "qa"), /What happens with the special 3D mode off\? Both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
+  assert.match(slideText(d, "t-step"), /Mode off, both versions agree, as reported by Delfie \(delphisci team\)\./);
+  const answers = d.slides.filter((s) => /^qa(-\d+)?$/.test(s.id)).map((s) => slideText(d, s.id)).join("\n");
+  assert.match(answers, /What should I do if I use HotSpot\? If you run version 7's detailed-3D mode on stacks like these, compare it against 6\.0\. Delfie reports that with that mode off, both versions give the same answer\./);
   // fig6 v1.15: the map after Delfie's consent and ScienceClaw's 04:01 re-run, drawn for exactly these two consents.
   assert.equal(loaded.final.figures.fig6.sha256, "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79", "aneta's v1.15, drawn for Delfie and ScienceClaw");
   assert.deepEqual(loaded.final.figures.fig6.drawnFor, ["delfie", "scienceclaw"]);
@@ -260,10 +264,11 @@ test("only a team whose consent is on record is named: slides, notes, figures an
   assert.match(figureText(d, "teams"), /Ran through the open-source \| ScienceClaw registry, executor \| ScienceClaw \| Re-ran our case: same numbers\. \| Used our review on its package/);
   assert.match(notesOf(d, "teams"), /ScienceClaw credited our matchmaking, and later used our review to fix its package\. Our rigidity skill ran through the open-source ScienceClaw registry and executor\.$/);
   assert.match(slideText(d, "teams"), /Help room, to 1 November 04:01 UTC; a dated snapshot\. Only teams that agreed are named\./);
-  assert.match(slideText(d, "talk7"), /Help room, to 1 November 04:01 UTC\. Only teams that agreed are named\./);
+  assert.match(slideText(d, "b-fig6"), /Help room, to 1 November 04:01 UTC\. Only teams that agreed are named\./);
+  assert.match(slideText(d, "t-open"), /Only what each team said or did counts\. Help room, to 1 November 04:01 UTC\./);
   assert.match(figureText(d, "teams"), /blind solve, compared/);
-  assert.equal(figureText(d, "talk7"), figureText(d, "teams"), "slide 7 and its backup show the same drawing");
-  assert.match(notesOf(d, "talk7"), /ScienceClaw credits our matchmaking and used our review to fix its package\.$/);
+  assert.equal(figureText(d, "b-fig6"), figureText(d, "teams"), "both backups show the same drawing");
+  assert.match(notesOf(d, "t-open"), /ScienceClaw used our review to fix its package\.$/);
   assert.match(figureText(d, "gate"), /Delfie 75\.48 \| 78\.06 Outside/);
   assert.match(figureText(d, "timeline"), /Delfie reproduces \| it: 39 min/);
   assert.match(figureText(d, "timeline"), /Outside finite- \| element solve: 1 h 41/);
@@ -519,7 +524,8 @@ test("outside teams: results as reported by them, the blindness note, the open g
   assert.match(slideText(d, "metrics"), /An outside team, as reported by them: 78\.060 C and 122\.252 C \(\+2\.58 K and \+6\.31 K\)\./);
   assert.match(slideText(d, "gate"), /Finite element sits 8 to 9 percent above 6\.0 in rise; that gap is open\./);
   const all = everything(d);
-  assert.doesNotMatch(all, /still pending/i);
+  // The answer sheet's note to the authors is the one thing still pending; no outside result is.
+  assert.doesNotMatch(all.replace("Sending it is still pending.", ""), /still pending/i);
   for (const s of sentences(all)) if (/0\.001 K|thousandth/.test(s)) assert.match(s, /extrapolat/, s);
   for (const s of slidesOf(d)) for (const m of s.text.matchAll(/[^.]*leaderboard[^.]*\./gi)) {
     assert.match(m[0], /not (?:used|counted) as evidence|not independent|Notice on the leaderboard/i, `${s.id}: ${m[0]}`);
@@ -528,7 +534,7 @@ test("outside teams: results as reported by them, the blindness note, the open g
   // fig6 v1.15's legend, and the same words in the backup notes and on slide 7 (script v2.5).
   assert.match(figureText(d, "teams"), /3 checked our thermal case \| 2 said other help was useful \| 3 haven't confirmed yet/);
   assert.match(notesOf(d, "teams"), /We offered help to eight outside teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed\./);
-  assert.match(notesOf(d, "talk7"), /We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed\./);
+  assert.match(notesOf(d, "t-open"), /We offered help to eight teams\. Three re-checked our thermal result themselves, and ScienceClaw used our review to fix its package\./);
   assert.doesNotMatch(everything(d), /used it and returned a result|said it helped in their own words/);
 });
 
@@ -580,212 +586,188 @@ test("the numbers slide refuses values or labels the pack does not have, a fifth
   assert.doesNotMatch(slideText(d, "numbers"), /MEASURED|ESTIMATE/);
 });
 
-// ── 7. the door to the live demo ────────────────────────────────────────────────────────────────────────────────────
-// Slide 9 is the door, in two stage variants (warden reads production back at 18:45 and picks one); the earlier
-// door slide stays in backup with the same status.
-test("the door: the instruction as given, the six-step path and the live status line; the backup keeps the conditional words", () => {
-  const D = loaded.final.demo;
-  assert.equal(D.instruction, INSTRUCTION);
-  assert.deepEqual(D.diagram.map((n) => n.title), ["Wall", "Scoped token", "Agent view", "Propose", "Simulated score", "Live view"]);
-  const live = recorded({ demoStatus: "live", demoReview: true });
-  // Slide 9 LIVE: the address and the instruction are the call to action, each in its own large-type element.
-  const cta = /id="s-talk9"[\s\S]*?<div class="dcta"><p class="dcta-url">([^<]*)<\/p><p class="dcta-inst">([^<]*)<\/p>/.exec(Deck.renderSlides(live));
-  assert.ok(cta, "the call to action renders");
-  assert.deepEqual([decode(cta[1]), decode(cta[2])], [D.url, INSTRUCTION]);
-  assert.equal(D.url, "sentilab.aidenid.com");
-  for (const id of [DOOR, "demo"]) {
-    const shown = slideText(live, id);
-    assert.ok(shown.includes(INSTRUCTION), id);
-    assert.match(shown, /Wall .* Scoped token .* Agent view .* Propose .* Simulated score .* Live view/, id);
-    assert.match(shown, /address to be confirmed/, id);
-    assert.ok(shown.includes(D.statuses.live.text), id);
-  }
-  assert.match(notesOf(live, "demo"), new RegExp(`^If the door is open, ${INSTRUCTION[0].toLowerCase()}${INSTRUCTION.slice(1).replace(/[.]/g, "\\.")}`), "conditional, then the instruction word for word");
-  assert.throws(() => recorded({}, (f) => { f.demo.url = "example.org"; }), /must name the door's address/);
-});
-test("--demo-status picks LIVE or REPLAY for the door; live is refused while the address is a placeholder", () => {
-  const D = loaded.final.demo;
-  const texts = (status, mutate) => slideText(recorded({ demoStatus: status }, mutate), DOOR);
-  assert.throws(() => recorded({ demoStatus: "live" }), /cannot say live while the agent door's address is still a placeholder/);
-  assert.throws(() => recorded({ demoStatus: "staging" }), /the plain door has LIVE and REPLAY only/);
-  assert.throws(() => build({ demoStatus: "tonight" }), /--demo-status must be one of staging, live, replay/);
-  const confirmed = (f) => { f.demo.urlIsPlaceholder = false; };
-  assert.doesNotMatch(texts("live", confirmed), /address to be confirmed/);
-  for (const s of ["live", "replay"]) {
-    const t = texts(s, confirmed);
-    for (const o of ["staging", "live", "replay"]) assert.equal(t.includes(D.statuses[o].text), o === s, `${s}: ${o}`);
-  }
-  assert.doesNotMatch(everything(recorded()), /\btonight\b/i);
-});
-// REPLAY shows the 3D still with the replay line in place of the instruction, and never calls it a recorded run: the
-// fixture holds saved reference temperatures and synthetic arrivals that were never scored. LIVE says the door is open,
-// and before the address is confirmed it can only be a marked review render, never a PDF.
-test("the door's REPLAY variant shows the 3D still as a preview; a LIVE render before the address is confirmed is review only", () => {
-  const html = (d, id) => new RegExp(`id="s-${id}"[\\s\\S]*?<\\/section>`).exec(Deck.renderSlides(d))[0];
-  const replay = recorded();
-  assert.equal(replay.deck.demoStatus, "replay");
-  assert.match(html(replay, DOOR), /<img src="figures\/package-render-35323889\.png"[^>]*data-still="render"/);
-  assert.doesNotMatch(html(replay, DOOR), /dcta|Tell your assistant/, "REPLAY shows no call to action");
-  assert.match(slideText(replay, DOOR), /Status: replay preview\. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission\./);
-  assert.doesNotMatch(slideText(replay, DOOR), /Tell your assistant|Scoped token/);
-  for (const id of [DOOR, "demo", "view3d"]) assert.doesNotMatch(`${slideText(replay, id)}\n${notesOf(replay, id)}`, /recorded (?:run|door)|recording/i, id);
-  const live = recorded({ demoStatus: "live", demoReview: true });
-  assert.match(slideText(live, DOOR), /Status: live\. The agent door is open at this address now\./);
-  assert.doesNotMatch(html(live, DOOR), /data-still/);
-  for (const s of slidesOf(live)) assert.match(s.text, /REVIEW · door variant, not the export/, s.id);
-  assert.throws(() => finalPdfName(live), /demo review render never exports a PDF/);
-  const v3 = slidesOf(replay).find((x) => x.id === "view3d");
-  assert.equal(v3.main, false);
-  assert.match(v3.text, /replay · simulated, not silicon/);
-  assert.throws(() => recorded({}, (f) => { f.stills.view3d.sha256 = "0".repeat(64); }), /still view3d .* is not the reviewed file/);
-  assert.throws(() => recorded({}, (f) => { f.stills.view3d.width = 1280; }), /must be a 1280x1080 PNG/);
-});
-// ── 7b. the plain-language talk ─────────────────────────────────────────────────────────────────────────────────────
-// Carter presents the main slides in plain language (team room 57563, 02:51). The coordinator's script v2.5 is
-// committed byte for byte as PLAIN-SCRIPT.md; the main slides carry its titles and its "Say" text exactly.
+// ── 7. script v3: the ten main slides ───────────────────────────────────────────────────────────────────────────────
+// aneta's 3+2 arc (team room 57701), assembled by the coordinator with root's and chatgpt's corrections as script v3,
+// committed byte for byte as PLAIN-SCRIPT.md, and its short cut as PLAIN-SCRIPT-SHORT.md. Each main slide is built
+// from its "Screen:" line; its notes are its "Say" text, exactly.
 const PLAIN_SCRIPT = join(FINAL_DIR, "PLAIN-SCRIPT.md");
-const scriptSlides = () => read(PLAIN_SCRIPT).split(/\n(?=## \d+\. )/).slice(1).map((sec) => {
+const SHORT_SCRIPT = join(FINAL_DIR, "PLAIN-SCRIPT-SHORT.md");
+const scriptSections = (file) => read(file).split(/\n(?=## \d+\. )/).slice(1).map((sec) => {
   const say = (label) => new RegExp(`^${label}: (.*)$`, "m").exec(sec)?.[1].trim() ?? null;
-  return { title: /^## \d+\. (.*)$/m.exec(sec)[1].replace(/ \((?:Numbers line|Inside the 120 s).*\)$/, "").trim(),
-    say: say("Say"), live: say("Say \\(LIVE\\)"), replay: say("Say \\(REPLAY\\)") };
+  return { heading: /^## \d+\. (.*)$/m.exec(sec)[1].trim(), say: say("Say"), live: say("Say \\(LIVE\\)"), recorded: say("Say \\(RECORDED\\)") };
 });
-const numbersOn = (f) => { f.plainTalk.numbersOnStage = true; };
-test("the main slides are the plain script's nine: its titles on the slides and its words in the notes, exactly", () => {
-  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "cd1cb88934cec18f916cab7862570f9d4d9e19283a5065a83ad17591df36cb67", "script v2.5 as sent");
-  const S = scriptSlides();
-  assert.equal(S.length, 9);
-  const numbersLine = /^\[If on stage: (.*?)\] (.*)$/.exec(S[7].say);
-  assert.ok(numbersLine, "slide 8's optional numbers line, in square brackets");
+const liveReview = (options = {}, mutate) => recorded({ demoStatus: "live", demoReview: true, ...options }, mutate);
+const short = (options = {}, mutate) => recorded({ slot: "3total", ...options }, mutate);
+const PT = loaded.final.plainTalk;
+test("the main slides are script v3's ten: each slide's heading and its words in the notes, exactly", () => {
+  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "0706566796c3a8297f5d017bd8aac034393f45224b1ab6e6a78a77c71fb8cbcf", "script v3 as sent");
+  const V = scriptSections(PLAIN_SCRIPT);
+  assert.equal(V.length, 10);
   const d = recorded();
   const main = d.slides.filter((s) => s.main);
   assert.deepEqual(main.map((s) => s.id), MAIN);
-  main.forEach((s, i) => {
-    assert.equal(s.content.title, S[i].title, s.id);
-    assert.ok(slideText(d, s.id).includes(S[i].title), `${s.id}: the title renders`);
-  });
-  S.slice(0, 7).forEach((x, i) => assert.equal(main[i].notes.text, x.say, main[i].id));
-  assert.equal(notesOf(d, "talk8"), numbersLine[2], "the numbers line is off");
-  assert.equal(notesOf(d, DOOR), S[8].replay);
-  assert.equal(notesOf(recorded({ demoStatus: "live", demoReview: true }), DOOR), S[8].live);
-  assert.equal(notesOf(recorded({}, numbersOn), "talk8"), `${numbersLine[1]} ${numbersLine[2]}`);
+  PT.slides.forEach((t, i) => assert.equal(t.heading, V[i].heading.replace(/ \(Demo clock.*\)$/, ""), t.id));
+  // Slide 1 is the hook: its top line, not a heading, opens it; every other slide shows its heading as its title.
+  assert.equal(main[0].content.title, null);
+  main.slice(1).forEach((s, i) => assert.equal(s.content.title, PT.slides[i + 1].heading, s.id));
+  V.slice(0, 9).forEach((x, i) => assert.equal(main[i].notes.text, x.say, main[i].id));
+  assert.equal(notesOf(d, DOOR), V[9].recorded, "RECORDED by default");
+  assert.equal(notesOf(liveReview(), DOOR), V[9].live);
 });
-test("one picture per main slide, the one chosen for it, never below the type floor", () => {
+test("the short cut (--slot 3total) speaks script v3-short over the same screens, slides 3 and 8 in backup, a 60 s demo", () => {
+  assert.equal(sha(readFileSync(SHORT_SCRIPT)), "fc472ef52516dee8215c1dcc99ff129a6a0b9dfdaeca42028906dbdbb39c4949", "script v3-short as sent");
+  const S = scriptSections(SHORT_SCRIPT);
+  assert.equal(S.length, 8);
+  const d = short();
+  assert.equal(d.build.slot, "3total");
+  const main = d.slides.filter((s) => s.main);
+  assert.deepEqual(main.map((s) => s.id), MAIN.filter((id) => !["t-team", "t-open"].includes(id)));
+  S.slice(0, 7).forEach((x, i) => assert.equal(main[i].notes.text, x.say, main[i].id));
+  assert.equal(notesOf(d, DOOR), S[7].recorded);
+  assert.equal(notesOf(short({ demoStatus: "live", demoReview: true }), DOOR), S[7].live);
+  // The same screens: every main slide's content is the full talk's.
+  const full = recorded();
+  for (const s of main) assert.deepEqual(s.content, full.slides.find((x) => x.id === s.id).content, s.id);
+  // The two moved slides lead the backup, with the full talk's words as their notes.
+  assert.deepEqual(d.slides.filter((s) => !s.main).slice(0, 2).map((s) => s.id), ["t-team", "t-open"]);
+  assert.deepEqual([d.budget.talkCapSeconds, d.budget.demoSeconds, d.budget.maxSeconds], [120, 60, 180]);
+  assert.throws(() => recorded({ slot: "4min" }), /--slot must be one of 3\+2, 3total/);
+});
+test("the pictures follow the coordinator's mapping, from reviewed values only", () => {
   const d = recorded();
-  const pic = (s) => s.content.figure?.id ?? s.content.still?.id ?? (s.content.numbers ? "numbers" : s.content.statement ? "statement" : s.content.diagram ? "door steps" : null);
-  assert.deepEqual(Object.fromEntries(d.slides.filter((s) => s.main).map((s) => [s.id, pic(s)])),
-    { talk1: "render", talk2: "plain1", talk3: "plain2", talk4: "plain4", talk5: "plain3", talk6: "plain5", talk7: "fig6", talk8: "plain6", talk9: "render" });
-  assert.equal(pic(recorded({ demoStatus: "live", demoReview: true }).slides.find((s) => s.id === DOOR)), "door steps");
-  assert.equal(pic(recorded({}, numbersOn).slides.find((s) => s.id === "talk8")), "numbers");
+  const c = (id) => d.slides.find((s) => s.id === id).content;
+  // 1: two bars to scale from the reviewed chip-layer peaks, 119.07 and 240.53, rounded.
+  assert.deepEqual(c("t-hook").hook.bars.map((b) => [b.value, b.label, b.tone]), [["119°C", "older version 6.0", "older"], ["241°C", "newer version 7.0", "newer"]]);
+  assert.equal(c("t-hook").hook.bars[0].share, 119.07 / 240.53);
+  assert.equal(c("t-hook").hook.top, "One published chip design · same input files · same 3D mode");
+  assert.match(slideText(d, "t-hook"), /Hottest spot on the chips · simulated, not silicon/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[0].hook.bars[1].value = 241; }), /is not a reviewed peak/);
+  // 2: the cropped 3D still beside the three steps and the punchline.
+  assert.deepEqual([c("t-grader").still.id, c("t-grader").still.label], ["render", "simulated, not silicon"]);
+  assert.match(slideText(d, "t-grader"), /Agent proposes simulator scores agent chases the score Wrong grader → confidently wrong agent\./);
+  // 3: two person cards and five role chips; no names until Carter says yes.
+  assert.deepEqual(c("t-team").roles.map((r) => r.role), ["builder", "guard", "fact-checker", "skeptic", "science reader"]);
+  assert.ok(c("t-team").people.every((p) => p.name === null) && c("t-team").roles.every((r) => r.agent === null));
+  assert.match(slideText(d, "t-team"), /Each agent has its own tools, data and job/);
+  // 4: the three reports at their record minutes, and the 32 minutes recomputed.
+  assert.deepEqual(c("t-reports").cards.map((k) => k.when), ["sealed 13:06", "posted 13:15", "posted 13:15"]);
+  assert.match(slideText(d, "t-reports"), /Together: a suspect in 32 minutes\./);
+  assert.match(slideText(d, "t-reports"), /Sealed before reading each other's full reports; one had seen a one-line preview\. In the review log, later agents raised 17 issues after an approval; descriptive, not controlled\./);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[3].cards[0].when = "sealed 13:07"; }), /not its record minute 13:06/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[3].together.value = "31 min"; }), /not what the records give/);
+  // 5: the orange statement, its "under 5 minutes" recomputed.
+  assert.deepEqual(c("t-stop").statement, ["1 agent proposed", "2 agreed", "under 5 minutes to halt", "numbers withdrawn in public"]);
+  // 6: plain2 v1.11 with the reported line, credited in the caption.
+  assert.equal(c("t-step").figure.id, "plain2");
+  assert.match(slideText(d, "t-step"), /Delfie changed only that step: most of the gap went away\. ScienceClaw got the same\..*Mode off, both versions agree, as reported by Delfie \(delphisci team\)\./);
+  // 7: plain3 v2 with the two-row test, each row the recorded result against its published reference.
+  assert.equal(c("t-bar").figure.id, "plain3");
+  assert.deepEqual(c("t-bar").table.map((r) => [r.published, r.ours, r.result]), [["75.48", "75.48", "PASS"], ["115.94", "115.93", "PASS"]]);
+  assert.match(slideText(d, "t-bar"), /A reproduction, not proof of physical accuracy\./);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[6].table[1].ours = "115.94"; }), /is not the recorded result/);
+  // 8: big numbers and two cards; no leaderboard claim.
+  assert.deepEqual(c("t-open").numbers.map((x) => x.value), ["8", "3", "2", "3"]);
+  assert.deepEqual(c("t-open").cards, ["ScienceClaw fixed its package using our review", "A blind cross-team solve started in our room"]);
+  assert.doesNotMatch(slideText(d, "t-open"), /leaderboard|top 3/i);
+  // 9: the closer, the check line, and aneta's why figure under it.
+  assert.match(slideText(d, "t-lesson"), /An optimizer is only as reliable as the tool grading it\. Independent checks expose disagreements before we build on them\. Using the newer version's 3D mode\? Check it against the older one\./);
+  assert.equal(c("t-lesson").figure.id, "plain6");
+  // One picture per main slide at most, and the backup keeps the figures that left the main deck.
   for (const m of Deck.renderSlides(d).matchAll(/<section class="slide main" id="s-([\w-]+)"[^>]*>([\s\S]*?)<\/section>/g)) {
     assert.ok((m[2].match(/<img /g) ?? []).length <= 1, `${m[1]}: one picture`);
   }
-  // Slide 1's still is our own view, labelled; slide 6's waffle is drawn larger, alone on its slide.
-  // Slide 1 shows the package render cut from our 3D view, captioned; nothing else of the view's screen.
-  assert.equal(d.slides.find((s) => s.id === "talk1").content.caption, "Simulated heat map of the published reference design. Simulated, not silicon.");
-  assert.match(slideText(d, "talk1"), /Simulated heat map of the published reference design\. Simulated, not silicon\./);
-  assert.equal(d.slides.find((s) => s.id === "checks").content.figure.scale, loaded.final.figures.fig5.scale, "the backup keeps its own scale");
-  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[1].picture.scale = 0.5; }), /under 22 px/);
-  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[0].picture.still = "view4d"; }), /names a missing still view4d/);
-  // aneta's short captions (CAPTIONS.md v1.15), in the plain words a main slide allows.
-  assert.match(slideText(d, "talk2"), /The CPU-DRAM reference layout\. HotSpot 6\.0 and 7\.0\. Design from TAP-2\.5D, DATE 2021\. Both versions run in the detailed-3D mode the published method uses\. The ring marks the hottest point of the chip layer\. Run 2026-10-31 23:41-23:44 UTC\. Simulated, not silicon\./);
-  assert.match(slideText(d, "talk3"), /Metal lid: the heat spreader\. Cooler: the heat sink, with its fins lumped into one air-cooling number\. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator\. One configured model, simulated\. With the detailed-3D mode off, both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
-  assert.match(slideText(d, "talk4"), /UTC, from the room record, 31 October into 1 November\. Linear on each side of the break\. Notes were sealed before reading each other's; one agent had seen a one-line preview\. Agent 4 had read the suspect before modelling it\. Lanes show who contributed what in the room record; they don't prove nobody coordinated\./);
-  assert.match(slideText(d, "talk5"), /Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block\. Solvers: die centres\. Below, the test on both published designs: 115\.93 against 115\.94, and 75\.48 against 75\.48\. Delfie's and ScienceClaw's values are as reported by them\. It reproduces published numbers, not physical accuracy\./);
-  assert.match(slideText(d, "talk6"), /34 code reviews in the room log, to 31 October 22:57 UTC\. Not blind, so a description, not a controlled test\./);
-  assert.match(slideText(d, "talk8"), /Reruns agree to 0\.01 °C, as each team reports them\. Gap: CPU-DRAM reference, from the reported table, 232\.67 to 125\.52 against 115\.94\. One configured model, simulated\./);
-  // plain6 says the challenge "will use" the build that passed: future tense until the scorer reads back as that build.
-  const p6 = d.slides.find((s) => s.id === "talk8").content.figure;
-  assert.match(p6.texts.join(" | "), /The \| challenge will use only \| the build that passed/);
-  assert.doesNotMatch(`${p6.texts.join(" ")} ${p6.alt}`, /scored only by/);
-  // plain5 serves this deck's own label: aneta's says "Grid", a word a main slide may not show.
-  assert.match(d.slides.find((s) => s.id === "talk6").content.figure.alt, /^A field of 190 squares/);
-  // plain2 v1.11 carries root's two labels (team room 57638, accepted 03:42).
-  assert.match(figureText(d, "talk3"), /In the model: \| lid to cooler/);
-  assert.match(figureText(d, "talk3"), /Separate check: \| hottest point \| in each part/);
-  assert.doesNotMatch(figureText(d, "talk3"), /Independent check|between the lid \| and the cooler/);
-  // plain3 opens with the reading the paper check uses (v1.10); its accessible label says so too (root, on 57630).
-  const p3 = d.slides.find((s) => s.id === "talk5").content.figure;
-  assert.ok(p3.texts.includes("The paper's own temperature reading, not the hottest spot"), "the figure's own line");
-  assert.match(p3.alt, /^The paper's own temperature reading, not the hottest spot\. /);
-  assert.match(figureText(d, "talk2"), /hottest spot 119 °C/);
-  assert.match(figureText(d, "talk2"), /hottest spot 241 °C/);
+  assert.deepEqual(d.slides.filter((s) => s.id.startsWith("b-")).map((s) => s.content.figure.id), ["plain1", "plain4", "plain5", "fig6"]);
 });
-test("slide 8's numbers are a toggle, off by default; on, three measured numbers with their windows, and never a savings estimate", () => {
-  const off = recorded();
-  assert.equal(off.slides.find((s) => s.id === "talk8").content.numbers, null);
-  // Off, the closer is the picture, in the script's own words; the spoken words do not change.
-  assert.deepEqual(off.slides.find((s) => s.id === "talk8").content.statement,
-    { text: "An optimizer is only as reliable as the tool grading it.", sub: "Independent checks expose disagreements before we build on them." });
-  assert.match(slideText(off, "talk8"), /Why it matters\. An optimizer is only as reliable as the tool grading it\. Independent checks expose disagreements before we build on them\./);
-  assert.equal(notesOf(off, "talk8"), "Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.");
-  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[7].statement.text = "An optimizer is only as good as its grader."; }), /must be the script's own words/);
-  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[7].statement.sub = "Checks find every problem."; }), /must be the script's own words/);
-  assert.doesNotMatch(`${slideText(off, "talk8")}\n${notesOf(off, "talk8")}`, /\$|\b90\b|minutes?\b/);
-  const on = recorded({}, numbersOn);
-  assert.equal(on.slides.find((s) => s.id === "talk8").content.statement, null, "one picture: the numbers replace the closer");
-  assert.equal(on.slides.find((s) => s.id === "talk8").content.figure, null, "and aneta's why figure");
-  assert.equal(off.slides.find((s) => s.id === "talk8").content.figure.id, "plain6");
-  assert.deepEqual(on.slides.find((s) => s.id === "talk8").content.numbers.map((x) => `${x.value} ${x.label}`), [
-    "about 90 code changes merged, since 31 Oct 00:00 UTC, collected 1 Nov 00:22-00:27 UTC",
-    "under 6 min median from ask to first result, 9 asks",
-    "about $6,400 posted to the shared cloud account when checked at 02:44 UTC; includes delayed postings; not the price of this experiment",
-  ]);
-  assert.match(slideText(on, "talk8"), /Measured counts; the cost was posted so far when read, and is not the price of this experiment\./);
-  // Each is the backup slide's measured value, rounded the way the label says.
-  const N = loaded.final.numbers.items;
-  assert.deepEqual([N[0].value, N[1].value, N[2].value], ["90", "5 min 46.2 s", "$6,376.21"]);
-  assert.match(N[2].label, /posted by 02:44 UTC/);
-  for (const d of [off, on]) {
-    assert.doesNotMatch(everything(d), /ESTIMATE|engineer-hours|360–720|28,800/);
-    // The only "time saved" in the deck is the workstation backup's disclaimer, twice: wall time is not human time saved.
-    assert.doesNotMatch(everything(d).replace(/(?:is not|reports no) human time saved/g, ""), /savings|hours saved|time saved/i);
-  }
-  // The line adds 22 words; with it the talk still fits the cap at 150 words a minute.
-  assert.equal(on.budget.talkWords - off.budget.talkWords, 22);
-  assert.ok(on.budget.talkSeconds + on.budget.transitionSeconds <= 180);
+test("names stay off the slides until Carter says yes; the talk's own words may name the co-lead", () => {
+  assert.equal(PT.namesOnStage, false);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.namesOnStage = true; }), /names are on, but a person or an agent has no name to show/);
+  // The public-render rule still refuses a person's name on a slide ...
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[2].people[1].card = "Aneta builds AI agents"; }), /public-render rule/);
+  // ... while the script's spoken line keeps it, in the notes only.
+  assert.match(notesOf(recorded(), "t-team"), /Aneta builds AI agents and research pipelines\./);
+  assert.doesNotMatch(slideText(recorded(), "t-team"), /Aneta|Carter/);
+});
+test("the door: LIVE shows the address, its QR code and three steps; RECORDED shows only real recorded runs, or says there are none", () => {
+  const D = loaded.final.demo;
+  const live = liveReview();
+  const html = (d) => /id="s-t-door"[\s\S]*?<\/section>/.exec(Deck.renderSlides(d))[0];
+  assert.match(html(live), /<p class="dcta-url">sentilab\.aidenid\.com<\/p>/);
+  assert.match(html(live), /data-qr="https:\/\/sentilab\.aidenid\.com"/);
+  assert.match(slideText(live, DOOR), /say you're here to place chiplets get a one-hour pass for that one job propose a layout and watch it land in 3D/);
+  assert.match(slideText(live, DOOR), /address to be confirmed/);
+  for (const s of slidesOf(live)) assert.match(s.text, /REVIEW · door variant, not the export/, s.id);
+  assert.throws(() => finalPdfName(live), /demo review render never exports a PDF/);
+  // RECORDED: no instruction and no QR code; with no real recorded runs, the plain empty state and the 3D still.
+  const rec = recorded();
+  assert.equal(rec.deck.demoStatus, "recorded");
+  assert.doesNotMatch(html(rec), /dcta-url|data-qr|Tell your/);
+  assert.match(slideText(rec, DOOR), /No recorded runs yet/);
+  assert.equal(rec.slides.find((s) => s.id === DOOR).content.still.id, "render");
+  assert.ok(slideText(rec, DOOR).includes(D.statuses.recorded.text));
+  assert.doesNotMatch(`${slideText(rec, DOOR)} ${notesOf(rec, DOOR)}`, /sample arrival|synthetic|preview/i, "only real activity");
+  // A real recorded run shows with its date, and needs its room record before the cutoff.
+  const withRun = recorded({}, (f) => { f.plainTalk.slides[9].runs = [{ at: "2026-11-01T01:00:00Z", text: "A layout scored", records: [{ room: "608657e4", ref: "seq 57400", author: "pocket-forge", at: "2026-11-01T01:00:00Z" }] }]; });
+  assert.match(slideText(withRun, DOOR), /2026-11-01 01:00 UTC A layout scored/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[9].runs = [{ at: "2026-11-02T01:00:00Z", text: "x", records: [{ room: "608657e4", ref: "seq 57400", author: "x", at: "2026-11-02T01:00:00Z" }] }]; }), /after the cutoff/);
+  // The status flag: live and recorded only; live refused while the address is a placeholder.
+  assert.throws(() => recorded({ demoStatus: "live" }), /cannot say live while the agent door's address is still a placeholder/);
+  for (const st of ["staging", "replay"]) assert.throws(() => recorded({ demoStatus: st }), /LIVE and RECORDED only/);
+  assert.throws(() => build({ demoStatus: "tonight" }), /--demo-status must be one of/);
+});
+test("the QR code is the reviewed image of exactly https://sentilab.aidenid.com", () => {
+  const Q = loaded.final.stills.qr;
+  assert.deepEqual([Q.file, Q.sha256, Q.width, Q.height], ["qr-sentilab.png", "f62a077ae0010d876fe7674d3c134f0cbac994f95827ef8c286911c40fc744ec", 592, 592]);
+  const q = liveReview().slides.find((s) => s.id === DOOR).content.qr;
+  assert.deepEqual([q.id, q.payload, q.alt], ["qr", "https://sentilab.aidenid.com", "QR code for https://sentilab.aidenid.com"]);
+  // Only black and white modules: nothing else is drawn into it.
+  const px = decodePng(readFileSync(join(FIGURE_SOURCE_DIR, Q.file)));
+  const seen = new Set();
+  for (let i = 0; i < px.px.length; i += px.bpp) seen.add(`${px.px[i]},${px.px[i + 1]},${px.px[i + 2]}`);
+  assert.deepEqual([...seen].sort(), ["0,0,0", "255,255,255"]);
 });
 test("no K, formula, grid or \"statistic\" on a main slide, in its notes or in its picture, and a technical word there stops the build", () => {
-  const builds = [recorded(), recorded({ demoStatus: "live", demoReview: true }), recorded({}, numbersOn)];
-  for (const d of builds) for (const s of d.slides.filter((x) => x.main)) {
+  for (const d of [recorded(), liveReview(), short()]) for (const s of d.slides.filter((x) => x.main)) {
     const text = [slideText(d, s.id), s.notes.text, figureText(d, s.id), s.content.figure?.alt ?? "", s.content.still?.alt ?? ""].join("\n");
     for (const re of PLAIN_TALK_BANNED) assert.doesNotMatch(text, re, `${s.id}: ${re}`);
-    assert.doesNotMatch(text, /kelvin|\brz\b|\bgrid\b|statistic|=|\d\s?K\b/i, s.id);
+    assert.doesNotMatch(text, /kelvin|\brz\b|\bgrid\b|statistic|\d\s?K\b/i, s.id);
   }
   const refuse = (mutate) => assert.throws(() => recorded({}, mutate), /the plain talk keeps technical detail in backup/);
-  refuse((f) => { f.plainTalk.slides[2].say += " The gap is 142 K."; });
-  refuse((f) => { f.plainTalk.slides[1].caption += " Grid 64."; });
-  refuse((f) => { f.plainTalk.slides[1].picture.figure = "fig1"; });
-  refuse((f) => { f.plainTalk.slides[4].title = "The frozen gate statistic passed."; });
-  // The same words are fine in backup, where the technical detail lives.
-  assert.match(slideText(recorded(), "problem"), /The frozen gate statistic/);
+  refuse((f) => { f.plainTalk.slides[5].say["3+2"] += " The gap is 142 K."; });
+  refuse((f) => { f.plainTalk.slides[5].caption += " Grid 64."; });
+  refuse((f) => { f.plainTalk.slides[5].picture.figure = "fig1"; });
+  refuse((f) => { f.plainTalk.slides[6].title = "The frozen gate statistic passed."; });
 });
-// Root kept the 3D view's door temperatures "unvalidated" for this event (team room, reply to 57608, 03:40:48), so the
-// questions page answers it in the coordinator's words, with root's evidence statement; and "simulated, not silicon"
-// stays visible wherever the view's temperatures appear.
-test("the questions page answers \"unvalidated\" with the evidence, and every 3D still is labelled simulated, not silicon", () => {
+// Root kept the 3D view's door temperatures "unvalidated" for this event (team room, reply to 57608, 03:40:48); the
+// answer pages carry aneta's corrected sheet (team room 57700), with the coordinator's "unvalidated" answer added.
+test("the answer pages carry aneta's sheet, brackets filled only where the facts exist, and every 3D still says simulated", () => {
   const d = recorded();
-  const qa = slidesOf(d).find((s) => s.id === "qa");
-  assert.equal(qa.main, false);
-  assert.equal(d.slides.at(-1).id, "qa", "last, where the End key goes");
-  assert.ok(qa.text.includes("Why does it say unvalidated? That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."));
-  for (const [q, a] of [["Did you make a better chip?", "Not a verified one yet. That's the open challenge."],
-    ["Which version is right?", "We reproduced the published result and compared independent models. Nobody has measured this chip yet."],
-    ["Why more than one agent?", "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."],
-    // The mode-off result left slide 3's words for its caption and this page (script v2.5), credited to Delfie.
-    ["What happens with the special 3D mode off?", "Both versions give the same answer, as reported by Delfie (delphisci team)."]]) {
-    assert.ok(qa.text.includes(`${q} ${a}`), q);
-  }
-  assert.equal(loaded.final.backup.qa.items.length, 5);
-  assert.doesNotMatch(qa.text, /hasn't signed off|has not signed off/, "never only \"our reviewer hasn't signed off\"");
-  assert.throws(() => recorded({}, (f) => { f.backup.qa.records[1].at = "2026-11-02T00:00:00Z"; }), /after the cutoff/);
-  for (const v of [d, recorded({ demoStatus: "live", demoReview: true })]) {
+  const pages = d.slides.filter((s) => /^qa(-\d+)?$/.test(s.id));
+  assert.ok(pages.length >= 2);
+  assert.equal(d.slides.at(-1).id, pages.at(-1).id, "last, where the End key goes");
+  const all = pages.map((p) => slideText(d, p.id)).join("\n");
+  const QA = loaded.final.backup.qa;
+  for (const x of QA.items) assert.ok(all.includes(`${x.q} ${x.a}`), x.q);
+  assert.equal(QA.items.length, 25);
+  assert.match(slideText(d, "qa"), /An AI agent is only as good as the grader it optimizes against\./);
+  // Brackets: our own run of the change, the 25-layout test and the note to the authors haven't happened.
+  assert.ok(all.includes("Did you run that change yourselves? Not yet. It's reported by those two teams."));
+  assert.ok(all.includes("Does it change which design wins? We haven't measured that yet."));
+  assert.ok(all.includes("Have you told the authors? A note is drafted. Sending it is still pending."));
+  assert.doesNotMatch(all, /\[|Fill/);
+  assert.ok(all.includes("Why does it say unvalidated? That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."));
+  // "bug" appears only as the question and as Delfie's attributed word; money only in the cost answer.
+  assert.deepEqual(all.match(/[^.?]*\bbug\b[^.?]*[.?]/g).map((x) => x.trim()), ["So it's a bug?", "Delfie's report calls it a likely bug; those are their words."]);
+  assert.deepEqual(all.match(/\$[\d,]+/g), ["$6,400"]);
+  // The reading notes are the presenter's: in SCRIPT.md, never on a slide.
+  assert.doesNotMatch(everything(d), /Please don't say|Learn the first line/);
+  // Every slide that shows the 3D view says simulated, not silicon.
+  for (const v of [d, liveReview()]) {
     for (const m of Deck.renderSlides(v).matchAll(/<section class="slide (?:main|backup)" id="s-([\w-]+)"[^>]*>([\s\S]*?)<\/section>/g)) {
-      if (m[2].includes("data-still=")) assert.match(visible(m[2]), /simulated, not silicon/i, `${m[1]}: the still is labelled`);
+      if (/data-still="(?:render|view3d)"/.test(m[2])) assert.match(visible(m[2]), /simulated, not silicon/i, `${m[1]}: the still is labelled`);
     }
   }
-  assert.ok(Deck.renderSlides(d).match(/data-still=/g).length >= 4, "slide 1, slide 9 REPLAY, B8 and B13 show the still");
 });
-// Slides 1 and 9 show the package render cut from our 3D view's screenshot (PR78 build 35323889); the full screenshot,
+// The package render on slides 2 and 10 is cut from our 3D view's screenshot (PR78 build 35323889); the full screenshot,
 // with its labels, its "unvalidated" tags and its notice, is the backup still. The crop is exactly its box of that
 // screenshot: no pixel was edited.
 const decodePng = (buf) => {
@@ -799,7 +781,7 @@ const decodePng = (buf) => {
     } else if (kind === "IDAT") idat.push(data);
     off += 12 + len;
   }
-  const bpp = { 2: 3, 6: 4 }[type];
+  const bpp = { 0: 1, 2: 3, 6: 4 }[type];
   assert.ok(bpp, `PNG colour type ${type}`);
   const raw = inflateSync(Buffer.concat(idat)), stride = w * bpp, px = Buffer.alloc(h * stride);
   for (let y = 0; y < h; y++) {
@@ -812,7 +794,7 @@ const decodePng = (buf) => {
   }
   return { w, h, bpp, px };
 };
-test("slides 1 and 9 show the package render cut from our 3D view, pixel for pixel; the full screenshot is the backup still", () => {
+test("slides 2 and 10 show the package render cut from our 3D view, pixel for pixel; the full screenshot is the backup still", () => {
   const S = loaded.final.stills;
   assert.deepEqual([S.view3d.file, S.view3d.sha256], ["package-view-35323889.png", "c5356137e7b6c2b9592f1288dff95e0f37471df810c92f3267c7e411118c1bd8"]);
   assert.deepEqual([S.render.file, S.render.sha256, S.render.crop], ["package-render-35323889.png",
@@ -826,10 +808,9 @@ test("slides 1 and 9 show the package render cut from our 3D view, pixel for pix
     assert.ok(crop.px.subarray(y * crop.w * crop.bpp, (y + 1) * crop.w * crop.bpp).equals(want), `crop row ${y} is the screenshot's row ${y0 + y}`);
   }
   const d = recorded();
-  assert.deepEqual(["talk1", DOOR].map((id) => d.slides.find((s) => s.id === id).content.still.id), ["render", "render"]);
+  assert.deepEqual(["t-grader", DOOR].map((id) => d.slides.find((s) => s.id === id).content.still.id), ["render", "render"]);
   assert.deepEqual(["demo", "view3d"].map((id) => d.slides.find((s) => s.id === id).content.still.id), ["view3d", "view3d"]);
   assert.match(slideText(d, "view3d"), /Its temperatures carry the view's own unvalidated tag\./);
-  // The build refuses a crop that is not a region of its source of the declared size.
   assert.throws(() => recorded({}, (f) => { f.stills.render.crop.box = [540, 280, 1226, 781]; }), /is not a 685x501 region of view3d/);
   assert.throws(() => recorded({}, (f) => { f.stills.render.crop.from = "render"; }), /not an uncropped still/);
   assert.throws(() => recorded({}, (f) => { f.stills.render.sha256 = "0".repeat(64); }), /still render .* is not the reviewed file/);
@@ -837,11 +818,12 @@ test("slides 1 and 9 show the package render cut from our 3D view, pixel for pix
 test("every slide of the earlier five-minute deck is in backup, its content and notes unchanged", () => {
   for (const options of [{}, { demoStatus: "live", demoReview: true }]) {
     const d = recorded(options);
-    const old = recorded({ demoStatus: "replay", ...options }, (f) => { delete f.plainTalk; });
-    assert.deepEqual(old.slides.map((s) => s.id), BACKUP);
-    assert.deepEqual(d.slides.filter((s) => !s.main).map((s) => s.id), BACKUP);
-    for (const s of old.slides) {
+    const old = recorded({ demoStatus: "recorded", ...options }, (f) => { delete f.plainTalk; });
+    const oldBackup = old.slides.filter((s) => !/^qa(-\d+)?$/.test(s.id));
+    assert.deepEqual(oldBackup.map((s) => s.id), OLD_DECK);
+    for (const s of oldBackup) {
       const b = d.slides.find((x) => x.id === s.id);
+      assert.equal(b.main, false, s.id);
       assert.deepEqual(b.content, s.content, s.id);
       assert.equal(b.notes.text, s.notes.text, s.id);
     }
@@ -871,20 +853,21 @@ test("word count: whitespace tokens holding a letter or digit, timed at 150 word
   assert.deepEqual(speech("one two three four five six seven eight nine ten eleven", { checkWordsPerMinute: 150, slowWordsPerSecond: 2.2 }),
     { text: "one two three four five six seven eight nine ten eleven", words: 11, seconds: 4.4, slowSeconds: 5 });
 });
-test("the talk fits 180 s with its transitions at 150 words a minute, the door fits the 120 s demo clock, in every build", () => {
+test("each slot's talk fits its cap with its transitions at 150 words a minute, and its door lines fit its demo clock", () => {
   const t = loaded.final.talk;
   // 2.25 words a second is the relaxed 135 words a minute the coordinator asked to see beside 150.
   assert.deepEqual([t.checkWordsPerMinute, t.slowWordsPerSecond, t.talkCapSeconds, t.transitionSeconds, t.demoSeconds, t.maxSeconds], [150, 2.25, 180, 15, 120, 300]);
   const confirmed = (f) => { f.demo.urlIsPlaceholder = false; };
   const builds = {
-    recorded: () => recorded(), operator: () => build(), numbers: () => recorded({}, numbersOn),
+    recorded: () => recorded(), operator: () => build(),
     live: () => recorded({ demoStatus: "live" }, confirmed), "live-review": () => recorded({ demoStatus: "live", demoReview: true }),
+    short: () => recorded({ slot: "3total" }), "short-live": () => recorded({ slot: "3total", demoStatus: "live", demoReview: true }),
     "pass-preview": () => build({ gate: "pass", preview: true }), "fail-preview": () => build({ gate: "fail", preview: true }),
     ...Object.fromEntries(GATES.map((g) => [g, () => variant(g)])),
   };
   for (const [g, make] of Object.entries(builds)) {
     const d = make();
-    assert.deepEqual(d.slides.filter((s) => s.main).map((s) => s.id), MAIN, g);
+    assert.deepEqual(d.slides.filter((s) => s.main).map((s) => s.id), d.build.slot === "3total" ? MAIN.filter((id) => !["t-team", "t-open"].includes(id)) : MAIN, g);
     for (const s of d.slides) {
       assert.equal(s.notes.words, countWords(s.notes.text), `${g} ${s.id} words`);
       assert.equal(s.notes.seconds, Math.round((s.notes.words / 2.5) * 10) / 10, `${g} ${s.id} seconds at 150 wpm`);
@@ -895,23 +878,28 @@ test("the talk fits 180 s with its transitions at 150 words a minute, the door f
     const talkWords = d.slides.filter((s) => s.main && s.id !== DOOR).reduce((n, s) => n + s.notes.words, 0);
     assert.equal(u.talkWords, talkWords, g);
     assert.equal(u.doorWords, d.slides.find((s) => s.id === DOOR).notes.words, g);
-    assert.ok(u.talkSeconds + u.transitionSeconds <= 180, `${g}: talk ${u.talkSeconds} s + ${u.transitionSeconds} s`);
-    assert.ok(u.doorSeconds <= 120 && u.liveSeconds > 0, `${g}: door ${u.doorSeconds} s`);
-    assert.ok(180 + 120 <= 300);
+    assert.ok(u.talkSeconds + u.transitionSeconds <= u.talkCapSeconds, `${g}: talk ${u.talkSeconds} s + ${u.transitionSeconds} s`);
+    assert.ok(u.doorSeconds <= u.demoSeconds && u.liveSeconds > 0, `${g}: door ${u.doorSeconds} s`);
+    assert.ok(u.talkCapSeconds + u.demoSeconds <= u.maxSeconds);
   }
-  // The coordinator's figures for script v2.5: 368 words with the numbers line off, 390 with it; the door 34 or 61.
+  // The coordinator's figures for script v3: 358 words, 158 s at 150 wpm and 174 s at 135 with transitions; the door
+  // 79 words LIVE and 32 RECORDED. The short cut: 205 words in a 120 s talk cap and a 60 s demo.
   const u = recorded().budget;
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [368, 147.2, 163.6, 34, 13.6, 106.4]);
-  assert.equal(u.talkSeconds + u.transitionSeconds, 162.2);
-  assert.equal(recorded({}, numbersOn).budget.talkWords, 390);
-  assert.equal(recorded({ demoStatus: "live", demoReview: true }).budget.doorWords, 61);
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [358, 143.2, 159.1, 32, 12.8, 107.2]);
+  assert.deepEqual([u.talkSeconds + u.transitionSeconds, u.talkSlowSeconds + u.transitionSeconds], [158.2, 174.1]);
+  assert.equal(recorded({ demoStatus: "live", demoReview: true }).budget.doorWords, 79);
+  const v = recorded({ slot: "3total" }).budget;
+  assert.deepEqual([v.talkWords, v.talkSeconds, v.talkCapSeconds, v.doorWords, v.demoSeconds], [205, 82, 120, 30, 60]);
+  assert.equal(recorded({ slot: "3total", demoStatus: "live", demoReview: true }).budget.doorWords, 49);
 });
 test("a talk over its cap, door lines longer than the demo clock, or a cap and demo over the slot stop the build", () => {
-  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[3].say += " and then".repeat(30); }), /over the 180 s cap/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[3].say["3+2"] += " and then".repeat(30); }), /over the 180 s cap/);
+  assert.throws(() => recorded({ slot: "3total" }, (f) => { f.plainTalk.slides[3].say["3total"] += " and then".repeat(30); }), /over the 120 s cap/);
+  assert.throws(() => recorded({ slot: "3total", demoStatus: "live", demoReview: true }, (f) => { f.plainTalk.slides[9].say["3total"].live += " and then".repeat(80); }), /more than the 60 s demo clock/);
   assert.doesNotThrow(() => recorded({}, (f) => { f.timeline.notes += " and then".repeat(30); }), "backup notes are not timed");
-  assert.throws(() => recorded({}, (f) => { f.talk.transitionSeconds = 40; }), /over the 180 s cap/);
-  assert.throws(() => recorded({}, (f) => { f.talk.demoSeconds = 10; }), /more than the 10 s demo clock/);
-  assert.throws(() => recorded({}, (f) => { f.talk.demoSeconds = 121; }), /exceed the slot/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slots["3+2"].transitionSeconds = 40; }), /over the 180 s cap/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slots["3+2"].demoSeconds = 10; }), /more than the 10 s demo clock/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slots["3+2"].demoSeconds = 121; }), /exceed the slot/);
 });
 
 // ── 10. records behind every dated line ─────────────────────────────────────────────────────────────────────────────
@@ -933,25 +921,26 @@ test("every chronology row, tile and how-it-works example names a room record th
 
 // ── 11. public rules, this deck's bans, plain words ─────────────────────────────────────────────────────────────────
 test("every rendered word, figure text included, passes the public-render rules and this deck's bans", () => {
-  const builds = [...GATES.map((g) => variant(g)), recorded(), recorded({}, numbersOn), recorded({ demoStatus: "live", demoReview: true })];
+  const builds = [...GATES.map((g) => variant(g)), recorded(), recorded({ slot: "3total" }), recorded({ demoStatus: "live", demoReview: true })];
   for (const d of builds) {
     const notes = new Map(d.slides.map((s) => [s.id, s.notes.text]));
     for (const s of slidesOf(d)) {
       const money = moneyAllowed(d.slides.find((x) => x.id === s.id));
       for (const text of [s.text, notes.get(s.id), figureText(d, s.id)]) {
-        for (const re of NOT_PUBLIC) assert.doesNotMatch(text, re, `${d.deck.variant} ${s.id}`);
-        for (const re of FINAL_BANNED) if (!(MONEY.has(re) && money)) assert.doesNotMatch(text, re, `${d.deck.variant} ${s.id}`);
+        // The talk's spoken words name the co-lead; the slides do not.
+        const checked = text === notes.get(s.id) ? text.replace(/\bAneta\b/g, "the co-lead") : text;
+        for (const re of NOT_PUBLIC) assert.doesNotMatch(checked, re, `${d.deck.variant} ${s.id}`);
+        const qaPage = /^qa(-\d+)?$/.test(s.id);
+        for (const re of FINAL_BANNED) if (!(MONEY.has(re) && money) && !(qaPage && re === FINAL_BANNED[5])) assert.doesNotMatch(text, re, `${d.deck.variant} ${s.id}`);
         if (s.main) for (const re of PLAIN_WORDS) assert.doesNotMatch(text, re, `${d.deck.variant} ${s.id} (plain words)`);
       }
     }
   }
-  // Money only on the backup numbers slide, and on slide 8 while its numbers are on.
+  // Money only on the backup numbers slide and the answer pages.
   const d = recorded();
-  assert.deepEqual(d.slides.filter(moneyAllowed).map((s) => s.id), ["numbers"]);
-  assert.deepEqual(recorded({}, numbersOn).slides.filter(moneyAllowed).map((s) => s.id), ["talk8", "numbers"]);
+  assert.deepEqual(d.slides.filter(moneyAllowed).map((s) => s.id), ["numbers", ...d.slides.map((s) => s.id).filter((id) => /^qa(-\d+)?$/.test(id))]);
   assert.match(slideText(d, "numbers"), /\$6,376\.21/);
-  for (const s of slidesOf(d)) if (s.id !== "numbers") assert.doesNotMatch(`${s.text}\n${notesOf(d, s.id)}`, /\$|USD|dollar/i, s.id);
-  assert.match(slideText(recorded({}, numbersOn), "talk8"), /about \$6,400/);
+  for (const s of slidesOf(d)) if (!moneyAllowed(d.slides.find((x) => x.id === s.id))) assert.doesNotMatch(`${s.text}\n${notesOf(d, s.id)}`, /\$|USD|dollar/i, s.id);
 });
 test("banned text in the source stops the build", () => {
   const banned = [
@@ -961,8 +950,9 @@ test("banned text in the source stops the build", () => {
     [(f) => { f.backup.status.cards[0].text = "source unknown"; }, /not allowed/],
     [(f) => { f.stack.caption = "It is a bug."; }, /not allowed/],
     [(f) => { f.plainTalk.slides[5].caption = "See PR 56 for the code."; }, /plain words/],
-    [(f) => { f.plainTalk.slides[8].say.replay += " The CLI works too."; }, /plain words/],
-    [(f) => { f.plainTalk.slides[7].say += " It cost 40 dollars."; }, /not allowed/],
+    [(f) => { f.plainTalk.slides[9].say["3+2"].recorded += " The CLI works too."; }, /plain words/],
+    [(f) => { f.plainTalk.slides[7].say["3+2"] += " It cost 40 dollars."; }, /not allowed/],
+    [(f) => { f.plainTalk.slides[1].punch = "A bug in the grader."; }, /not allowed/],
     [(f) => { f.how.footnote += " The warden reviews it."; }, /public-render rule/],
     [(f) => { f.teamsSlide.caption = "Checked by Aneta."; }, /would rewrite/],
   ];
@@ -988,7 +978,8 @@ test("a pull-request refresh needs an explicit cutoff, and never moves the sourc
   assert.equal(cliOptions(["--refresh-prs", "--cutoff", "2026-11-01T02:00:00Z"]).refresh, true);
   assert.throws(() => cliOptions(["--demo-status"]), /--demo-status needs a value/);
   assert.deepEqual(cliOptions(["--rederived", "--demo-status", "replay"]).build,
-    { gate: undefined, measured: null, cutoff: null, preview: false, rederived: true, demoStatus: "replay", demoReview: false });
+    { gate: undefined, measured: null, cutoff: null, preview: false, rederived: true, demoStatus: "replay", demoReview: false, slot: undefined });
+  assert.equal(cliOptions(["--slot", "3total"]).build.slot, "3total");
   assert.equal(cliOptions(["--demo-status", "live", "--demo-review"]).build.demoReview, true);
   assert.doesNotMatch(String(refreshPrs), /cutoff/, "a refresh stamps the rows it read and nothing else");
   // The real command stops before it reads or writes anything (no gh on the PATH, so a regression cannot reach the network).
@@ -1009,7 +1000,7 @@ test("the PDF is named from the cutoff and the outcome, sits beside its source, 
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, committed.slides.length, "one PDF page per slide");
   assert.deepEqual(readdirSync(FINAL_DIR).sort(),
-    [finalPdfName(committed).split("/")[1], "FINAL.json", "FINAL.schema.json", "PLAIN-SCRIPT.md", "RE-EXPORT.md", "SCRIPT.md", "TIMELINE-VERIFY.md", "figures", "quant", "variants"].sort());
+    [finalPdfName(committed).split("/")[1], "FINAL.json", "FINAL.schema.json", "PLAIN-SCRIPT-SHORT.md", "PLAIN-SCRIPT.md", "RE-EXPORT.md", "SCRIPT.md", "TIMELINE-VERIFY.md", "figures", "quant", "variants"].sort());
   const exporter = read(join(REPO_ROOT, "scripts", "export-deck-pdf.mjs"));
   assert.match(exporter, /final: \{ dir: FINAL_DECK_DIR, pdf: \(data\) => finalPdfName\(data\), mainMinFont: 28 \}/);
   assert.match(exporter, /const FROZEN = \{ \.\.\.FROZEN_V1, \.\.\.FROZEN_DAYTIME \};/);
@@ -1021,29 +1012,29 @@ test("SCRIPT.md is the export's speaker script, word for word, under 16,000 char
   const script = read(SCRIPT_PATH);
   assert.equal(script, speakerScript(buildFinalData(loaded, committed.build), loaded.final));
   assert.ok(script.length < 16000, `${script.length} characters`);
-  assert.match(script, /^# Speaker script, five-minute deck, review export /);
-  assert.match(script, /the main slides from the plain-language script in PLAIN-SCRIPT\.md; every slide of the earlier five-minute deck is backup and is not spoken\./);
-  assert.match(script, /Slide 5's pass test is the recorded PASS \(75\.48 and 115\.93\), with the completed re-derivation\./);
-  // One section per main slide, its title and its words; no backup slide is in the script.
-  assert.deepEqual([...script.matchAll(/^## (\d+)\. /gm)].map((m) => Number(m[1])), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.match(script, /^# Speaker script, five-minute deck \(slot 3\+2\), review export /);
+  assert.match(script, /the main slides from script v3 in PLAIN-SCRIPT\.md; the backup slides are not spoken\./);
+  assert.match(script, /The pass test is the recorded PASS \(75\.48 and 115\.93\), with the completed re-derivation\./);
+  // One section per main slide, its script heading and its words; no backup slide is in the script.
+  assert.deepEqual([...script.matchAll(/^## (\d+)\. /gm)].map((m) => Number(m[1])), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (const s of committed.slides.filter((x) => x.main && x.content.layout !== "door")) {
-    assert.ok(script.includes(`## ${s.label.split(" ")[0]}. ${s.content.title}`), `${s.id}: title`);
+    const heading = loaded.final.plainTalk.slides.find((x) => x.id === s.id).heading;
+    assert.ok(script.includes(`## ${s.label.split(" ")[0]}. ${heading}`), `${s.id}: heading`);
     assert.ok(script.includes(`${s.notes.text}\n\n${s.notes.words} words, ${s.notes.seconds} s at 150 wpm.`), s.id);
   }
-  // The door's two scripted lines, and slide 8's numbers line named as off, with what it would add.
+  // The door's two scripted lines, and the answer sheet's reading notes, for the presenter only.
   const door = loaded.final.plainTalk.slides.find((x) => x.door);
-  for (const st of ["live", "replay"]) assert.ok(script.includes(`Say (${st.toUpperCase()}): ${door.say[st]}\n\n${countWords(door.say[st])} words,`), st);
-  const why = loaded.final.plainTalk.slides.find((x) => x.numbers);
-  assert.ok(script.includes(`The numbers line is off in this export. With it, the slide would say: "${why.sayNumbers} ${why.say}"`));
+  for (const st of ["live", "recorded"]) assert.ok(script.includes(`Say (${st.toUpperCase()}): ${door.say["3+2"][st]}\n\n${countWords(door.say["3+2"][st])} words,`), st);
+  assert.match(script, /## For questions \(not shown on a slide\)\n\nLearn the first line and the last row/);
+  assert.match(script, /- "bug" as your own word/);
   const u = committed.budget;
   assert.ok(script.includes(`Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at 150 wpm, plus 15 s of transitions = ${u.talkSeconds + u.transitionSeconds} s of the 180 s cap. At 135 words a minute it would take ${u.talkSlowSeconds} s, plus transitions ${Math.round((u.talkSlowSeconds + u.transitionSeconds) * 10) / 10} s.`));
   for (const name of TEAM_NAMES.filter((n) => !CONSENTED.includes(n))) assert.ok(!named(script, name), name);
   assert.match(script, /Named with consent: Delfie \(delphisci team\), help room message 57644; ScienceClaw, help room message 57532\./);
 });
-// Renders beside the export: the backup gate slide in all three outcomes, the door in both stage variants, and slide 8
-// with its numbers on, for Carter's call.
-test("the gate slide is rendered for all three outcomes, the door for LIVE and REPLAY, and slide 8 with its numbers, at 1920x1080", () => {
-  const names = [...GATES.map((g) => `gate-${g}-1920x1080.png`), "slide8-numbers-on-1920x1080.png", "slide9-live-1920x1080.png", "slide9-replay-1920x1080.png"];
+// Renders beside the export: the backup gate slide in all three outcomes, and the door in both stage variants.
+test("the gate slide is rendered for all three outcomes and the door for LIVE and RECORDED, at 1920x1080", () => {
+  const names = [...GATES.map((g) => `gate-${g}-1920x1080.png`), "slide10-live-1920x1080.png", "slide10-recorded-1920x1080.png"];
   assert.deepEqual(readdirSync(join(FINAL_DIR, "variants")).sort(), [...names].sort());
   for (const n of names) {
     const png = readFileSync(join(FINAL_DIR, "variants", n));

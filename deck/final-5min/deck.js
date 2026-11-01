@@ -36,26 +36,58 @@
   const fitStill = (st, maxW, maxH, cls) => still(st, Math.min(maxW, Math.round((maxH * st.width) / st.height)), cls);
 
   // ── slide bodies ──────────────────────────────────────────────────────────────────────────────────────────────────
-  // The plain talk: one title and one picture per slide; "why" may carry its numbers; the door is LIVE or REPLAY.
+  // The plain talk (script v3): one idea and one picture per slide, short labels and big numbers, its words in the notes.
+  const h1 = (c) => (c.title ? `<h1 class="ftitle">${esc(c.title)}</h1>` : "");
   const LAYOUTS = {
+    hook(c) {
+      // Two bars to scale, from zero, each with its reading and its version.
+      const bars = c.hook.bars.map((b) => `<div class="hbar hbar-${esc(b.tone)}"><span class="hbar-fill" style="width:${(b.share * 100).toFixed(2)}%"></span>`
+        + `<b class="hbar-val">${esc(b.value)}</b><span class="hbar-lab">${esc(b.label)}</span></div>`).join("");
+      return `<p class="htop">${esc(c.hook.top)}</p><div class="hbars">${bars}</div>`;
+    },
+    grader(c) {
+      const flow = c.flow.map((x) => `<li>${esc(x)}</li>`).join("");
+      return `${h1(c)}<div class="grader"><div class="gpic">${stillLabel(c.still)}${fitStill(c.still, 900, 600)}</div>`
+        + `<div class="gflow"><ol class="gsteps">${flow}</ol><p class="gpunch">${esc(c.punch)}</p></div></div>`;
+    },
+    team(c) {
+      const people = c.people.map((p) => `<div class="tperson"><span class="tavatar" aria-hidden="true"></span>${p.name ? `<b>${esc(p.name)}</b>` : ""}<p>${esc(p.card)}</p></div>`).join("");
+      const roles = c.roles.map((r) => `<li class="trole">${esc(r.role)}${r.agent ? `<small>${esc(r.agent)}</small>` : ""}</li>`).join("");
+      return `${h1(c)}<div class="tpeople">${people}</div><ol class="troles">${roles}</ol>`;
+    },
+    reports(c) {
+      const cards = c.cards.map((k) => `<div class="rcard"><span class="rcard-n">${esc(k.n)}</span><b class="rcard-when">${esc(k.when)}</b><p>${esc(k.what)}</p></div>`).join("");
+      return `${h1(c)}<div class="rcards">${cards}</div><p class="rtogether">${esc(c.together)}</p>`;
+    },
+    statement(c) {
+      return `${h1(c)}<div class="ostatement">${c.statement.map((x) => `<span>${esc(x)}</span>`).join("<i aria-hidden=\"true\">·</i>")}</div>`;
+    },
     talk(c) {
       const pic = c.figure ? fig(c.figure) : c.still ? `${stillLabel(c.still)}${fitStill(c.still, 1320, c.still.label ? 680 : 700)}` : "";
-      return `<h1 class="ftitle">${esc(c.title)}</h1>${pic}`;
+      const line = c.line ? `<p class="tline">${esc(c.line)}</p>` : "";
+      const table = c.table ? `<table class="ttest"><tbody>${c.table.map((r) => `<tr><th>${esc(r.design)}</th><td>published ${esc(r.published)}</td><td>ours ${esc(r.ours)}</td><td class="tpass">${esc(r.result)}</td></tr>`).join("")}</tbody></table>` : "";
+      return `${h1(c)}${pic}${line}${table}`;
     },
-    why(c) {
-      // With its numbers, the tiles take the height of their words; without them, the closer in large type, over the
-      // figure when there is one; with neither, the title alone, centred.
-      const tiles = c.numbers ? `<div class="ngrid why-numbers n${c.numbers.length}">${c.numbers.map((x) => `<div class="ntile"><b class="nval">${esc(x.value)}</b><p class="nlab">${esc(x.label)}</p></div>`).join("")}</div>` : "";
-      const words = !c.numbers && c.statement ? `<div class="why-statement${c.figure ? " ws-with-figure" : ""}"><p class="ws-main">${esc(c.statement.text)}</p><p class="ws-sub">${esc(c.statement.sub)}</p></div>` : "";
-      return `<h1 class="ftitle${c.numbers || words ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}${words}${!c.numbers && c.figure ? fig(c.figure) : ""}`;
+    open(c) {
+      const nums = c.numbers.map((x) => `<div class="onum"><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join("");
+      const cards = c.cards.map((x) => `<div class="ocard">${esc(x)}</div>`).join("");
+      return `${h1(c)}<div class="onums">${nums}</div><div class="ocards">${cards}</div>`;
+    },
+    closer(c) {
+      return `${h1(c)}<p class="csub">${esc(c.sub)}</p><p class="ccheck">${esc(c.check)}</p>${c.figure ? fig(c.figure) : ""}`;
     },
     door(c) {
-      if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${fitStill(c.still, 1100, 600, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
-      // LIVE: the address and the instruction are the call to action, large enough to read from the back of the room.
-      const flow = c.diagram.map((d) => `<li><b>${esc(d.title)}</b><span>${esc(d.text)}</span></li>`).join("");
-      return `<h1>${esc(c.title)}</h1><div class="dcta"><p class="dcta-url">${esc(c.url)}</p><p class="dcta-inst">${esc(c.instruction)}</p>`
-        + `${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}</div>`
-        + `<ol class="dflow dflow-compact">${flow}</ol><p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      if (c.status !== "live") {
+        // RECORDED: only real recorded runs, each with its date; with none yet, the plain empty state beside the 3D still.
+        const runs = c.runs.length ? `<ol class="druns">${c.runs.map((r) => `<li><b>${esc(r.at)}</b>${esc(r.text)}</li>`).join("")}</ol>` : `<p class="dempty">${esc(c.empty)}</p>`;
+        return `${h1(c)}<div class="drec"><div class="drec-list">${runs}</div><div class="drec-pic">${stillLabel(c.still)}${fitStill(c.still, 800, 560)}</div></div>`
+          + `<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      }
+      // LIVE: the address, its QR code and three steps, large enough to read and scan from the back of the room.
+      const steps = c.steps.map((x) => `<li>${esc(x)}</li>`).join("");
+      return `${h1(c)}<div class="dlive"><div class="dlive-main"><p class="dcta-url">${esc(c.url)}</p>${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}`
+        + `<ol class="dsteps">${steps}</ol></div><figure class="dqr"><img src="${esc(c.qr.src)}" alt="${esc(c.qr.alt)}" width="420" height="420" data-still="${esc(c.qr.id)}" data-qr="${esc(c.qr.payload)}"></figure></div>`
+        + `<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
     },
   };
   const BODY = {
@@ -174,13 +206,19 @@
     },
     qa(c) {
       const items = c.items.map((x) => `<div class="qa-item"><dt>${esc(x.q)}</dt><dd>${esc(x.a)}</dd></div>`).join("");
-      return `<h1>${esc(c.title)}</h1><dl class="qa">${items}</dl>`;
+      return `<h1>${esc(c.title)}</h1>${c.story ? `<p class="qa-story">${esc(c.story)}</p>` : ""}<dl class="qa">${items}</dl>`;
     },
   };
   // Footer notes that belong to a slide (the cutoff and the page label are on every slide).
   const LAYOUT_FOOT = {
+    hook: (c) => c.caption ?? "",
+    grader: (c) => c.caption ?? "",
+    team: (c) => c.caption ?? "",
+    reports: (c) => c.caption ?? "",
+    statement: (c) => c.caption ?? "",
     talk: (c) => c.caption ?? "",
-    why: (c) => (c.numbers ? "Measured counts; the cost was posted so far when read, and is not the price of this experiment." : c.caption ?? ""),
+    open: (c) => c.caption ?? "",
+    closer: (c) => c.caption ?? "",
     door: () => "Scores shown in the demo are simulated, not measured on silicon.",
   };
   const FOOT = {
@@ -204,7 +242,8 @@
 
   function renderSlide(s, data) {
     const layout = s.content.layout;
-    const body = layout ? LAYOUTS[layout] : BODY[s.id];
+    // The answer pages ("qa", "qa-2", ...) share one body.
+    const body = layout ? LAYOUTS[layout] : BODY[s.id] ?? BODY[s.id.replace(/-[0-9]+$/, "")];
     if (!body) throw new Error(`no layout for slide ${s.id}`);
     const note = (layout ? LAYOUT_FOOT[layout] : FOOT[s.id])?.(s.content) ?? "";
     const mark = Object.keys(MARKS).filter((k) => data.deck[k]).map((k) => `<span class="preview">${MARKS[k]}</span>`).join("");

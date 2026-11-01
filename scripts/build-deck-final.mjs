@@ -99,8 +99,14 @@ export const FINAL_BANNED = [
 // asked for money to be quantified), and on the plain talk's "Why it matters" slide while its numbers are on stage;
 // everywhere else a dollar figure still stops the build.
 export const MONEY = new Set([FINAL_BANNED[0], FINAL_BANNED[1], FINAL_BANNED[2]]);
-export const moneyAllowed = (slide) => slide?.id === "numbers" || (slide?.content?.layout === "why" && Boolean(slide.content.numbers));
-export const DEMO_STATUSES = ["staging", "live", "replay"];
+export const onQaPage = (slide) => /^qa(?:-\d+)?$/.test(slide?.id ?? "");
+export const moneyAllowed = (slide) => slide?.id === "numbers" || onQaPage(slide) || (slide?.content?.layout === "why" && Boolean(slide.content.numbers));
+// aneta's answer sheet quotes Delfie's word for it, attributed ("those are their words"); nowhere else may "bug" appear.
+const BUG = FINAL_BANNED[5];
+// The talk's own spoken words name the co-lead (script v3, slide 3); the slides themselves name no person.
+const SPOKEN_NAMES = /\bAneta\b/g;
+export const DEMO_STATUSES = ["staging", "live", "replay", "recorded"];
+export const SLOTS = ["3+2", "3total"];
 // Internal jargon kept off the main slides (backup slides may name pull requests and verdict codes).
 export const PLAIN_WORDS = [
   /merged_source_verified/i, /\bP[0-3]\b/, /\bCSP\b/, /\bblobs?\b/i, /\bgrid-?64\b/i, /\bnative6\b/i, /finite controls/i,
@@ -346,8 +352,12 @@ export function buildFigureFrom(bytes, id, fig, { teams, named, cutoffMs }) {
 // ── build ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 export function buildFinalData({ final, hashes }, options = {}) {
   const { cutoff = null, preview = false, rederived = false, demoReview = false } = options;
-  // The plain talk's door is LIVE or REPLAY, REPLAY until warden's production readback shows LIVE is true.
-  const demoStatus = options.demoStatus ?? (final.plainTalk ? "replay" : "staging");
+  // The plain talk's door is LIVE or RECORDED, RECORDED until warden's production readback shows LIVE is true.
+  const demoStatus = options.demoStatus ?? (final.plainTalk ? "recorded" : "staging");
+  // The slot: three minutes of talk plus a two-minute demo (the default), or three minutes in all.
+  const slot = options.slot ?? "3+2";
+  if (!SLOTS.includes(slot)) throw new FinalError(`--slot must be one of ${SLOTS.join(", ")} (got ${JSON.stringify(slot)})`);
+  if (slot !== "3+2" && !final.plainTalk) throw new FinalError("--slot applies to the plain talk only");
   if (!DEMO_STATUSES.includes(demoStatus)) throw new FinalError(`--demo-status must be one of ${DEMO_STATUSES.join(", ")} (got ${JSON.stringify(demoStatus)})`);
   // A demo review render (--demo-review) shows a door variant before it is true: marked on every slide, never a PDF.
   if (demoStatus === "live" && final.demo.urlIsPlaceholder && !demoReview) throw new FinalError("the demo cannot say live while the agent door's address is still a placeholder in FINAL.json");
@@ -373,7 +383,9 @@ export function buildFinalData({ final, hashes }, options = {}) {
     checkComparator(recorded.comparator, final.gate.references);
   }
   const verification = showResult ? recorded.verification[rederived ? "rederived" : "operator"] : null;
-  const talk = final.talk;
+  // Each slot has its own clock; the pace and the rest come from FINAL.json's talk block.
+  const slotClock = final.plainTalk?.slots?.[slot];
+  const talk = slotClock ? { ...final.talk, talkCapSeconds: slotClock.talkCapSeconds, transitionSeconds: slotClock.transitionSeconds, demoSeconds: slotClock.demoSeconds, maxSeconds: slotClock.maxSeconds } : final.talk;
   const B = final.backup;
 
   // Outside teams: named only where consent is on record before the cutoff. The generated data lists the named teams
@@ -543,7 +555,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
       title: final.demo.title, instruction: final.demo.instruction, urlNote: final.demo.urlIsPlaceholder ? final.demo.urlNote : null,
       diagram: final.demo.diagram, status: demoStatus, statusText: final.demo.statuses[demoStatus].text,
       // REPLAY shows the 3D still in place of the instruction and the six steps (warden reads production back at 18:45).
-      still: demoStatus === "replay" && stills.view3d ? { ...stills.view3d, label: B.view3d?.label ?? null } : null } },
+      still: ["replay", "recorded"].includes(demoStatus) && stills.view3d ? { ...stills.view3d, label: B.view3d?.label ?? null } : null } },
     { id: "how", main: false, kicker: "Backup · how the team works", notes: "Backup. If asked how the team works, walk the four steps; each has a dated example.", content: {
       title: final.how.title, footnote: final.how.footnote, evidence: null,
       steps: final.how.steps.map((s) => ({ title: s.title, text: s.text, today: s.today })) } },
@@ -580,10 +592,16 @@ export function buildFinalData({ final, hashes }, options = {}) {
       title: B.receipt.title, facts: B.receipt.facts, notYet: B.receipt.notYet, notEvidence: B.receipt.notEvidence,
       names: namesLine(final.teams, named) } },
     // Last, so the End key reaches it during questions: plain answers, the "unvalidated" one in the coordinator's words.
-    ...(B.qa ? [{ id: "qa", main: false, kicker: B.qa.kicker, notes: B.qa.notes, content: { title: B.qa.title, items: B.qa.items } }] : []),
   ];
   // With the plain talk, its slides lead and the whole earlier deck follows as backup.
-  if (final.plainTalk) raw.splice(0, raw.length, ...plainTalkSlides(final.plainTalk, { figureView, stills, demo: final.demo, demoStatus }), ...raw.map((s) => ({ ...s, main: false })));
+  if (final.plainTalk) {
+    const talkSlides = plainTalkSlides(final.plainTalk, { figureView, stills, demo: final.demo, demoStatus, slot, final, cutoffMs });
+    // The slot's backup moves (the team and other-teams slides in the short cut) lead the backup.
+    raw.splice(0, raw.length, ...talkSlides.filter((x) => x.main), ...talkSlides.filter((x) => !x.main), ...raw.map((x) => ({ ...x, main: false })),
+      ...plainBackupSlides(final.plainBackup, { figureView }));
+  }
+  // Last, so the End key reaches them during questions: the answer sheet, page by page.
+  if (B.qa) raw.push(...qaPages(B.qa));
   // Team names, resolved per slide (content and notes together), then the notes counted.
   const slides = raw.map((s) => {
     const resolve1 = resolver([...allStrings(s.content), s.notes]);
@@ -608,7 +626,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
 
   const data = {
     schema: DATA_SCHEMA,
-    deck: { ...final.deck, cutoff: utcStamp(cut), variant: gate, variantLabel: v.label, preview, reviewOnly, demoReview, demoStatus, plain: Boolean(final.plainTalk) },
+    deck: { ...final.deck, cutoff: utcStamp(cut), variant: gate, variantLabel: v.label, preview, reviewOnly, demoReview, demoStatus, plain: Boolean(final.plainTalk), slot: final.plainTalk ? slot : null },
     budget: {
       checkWordsPerMinute: talk.checkWordsPerMinute, slowWordsPerSecond: talk.slowWordsPerSecond,
       talkWords, talkSeconds, talkSlowSeconds, transitionSeconds: talk.transitionSeconds, talkCapSeconds: talk.talkCapSeconds,
@@ -617,7 +635,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
     },
     teams: teamData,
     slides,
-    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview, rederived, demoStatus, demoReview },
+    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview, rederived, demoStatus, demoReview, slot },
     source: { ...hashes },
   };
   checkRendered(data, final.teams, named);
@@ -631,48 +649,127 @@ export function buildFinalData({ final, hashes }, options = {}) {
 // nothing true is lost. No K, kelvin, formula, grid or "statistic" may appear on a main slide, in its notes or in its
 // figure.
 export const PLAIN_TALK_BANNED = [/\d\s?K\b/, /\bkelvin\b/i, /\brz\b/, /convection/i, /\bgrid\b/i, /\bstatistic\b/i, /native block/i, /chiplet-centre/i];
-export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus }) {
-  return PT.slides.map((t) => {
-    if (t.door) {
-      if (!["live", "replay"].includes(demoStatus)) throw new FinalError(`the plain door has LIVE and REPLAY only (got ${JSON.stringify(demoStatus)})`);
-      const live = demoStatus === "live";
-      const doorStill = t.picture?.still ?? "view3d";
-      if (!stills[doorStill]) throw new FinalError(`plain slide ${t.id} names a missing still ${doorStill}`);
-      return { id: t.id, main: true, kicker: t.kicker, notes: t.say[demoStatus], content: {
-        layout: "door", title: t.title, status: demoStatus, statusText: demo.statuses[demoStatus].text,
-        // LIVE carries the address and the instruction in large type; REPLAY shows neither as an instruction.
-        url: live ? demo.url : null, instruction: live ? demo.instruction : null, urlNote: live && demo.urlIsPlaceholder ? demo.urlNote : null,
-        // REPLAY shows the 3D still, labelled like slide 1's: "simulated, not silicon" stays visible wherever a 3D-view
-        // temperature appears (root, team room reply to 57608, 03:40:48).
-        diagram: live ? demo.diagram : null,
-        still: live ? null : { ...stills[doorStill], label: t.picture?.label ?? null } } };
-    }
-    if (t.numbers) {
-      // With its numbers off, the slide's picture is the script's own closer, in large type; the words must be the ones
-      // spoken.
-      const said = (s) => t.say.toLowerCase().includes(s.toLowerCase());
-      if (t.statement && !(said(t.statement.text) && said(t.statement.sub))) {
-        throw new FinalError(`plain slide ${t.id}: its statement must be the script's own words, but ${JSON.stringify(t.statement)} is not in what is said`);
-      }
-      // Off, its picture is aneta's "why" figure under the closer, captioned; on, the three numbers take its place.
-      const off = !PT.numbersOnStage;
-      return { id: t.id, main: true, kicker: t.kicker, notes: off ? t.say : `${t.sayNumbers} ${t.say}`, content: {
-        layout: "why", title: t.title, numbers: off ? null : t.numbers, statement: off ? t.statement ?? null : null,
-        figure: off && t.picture?.figure ? figureView(t.picture.figure) : null, caption: off ? t.caption ?? null : null } };
-    }
-    const st = t.picture?.still ? { ...stills[t.picture.still], label: t.picture.label ?? null } : null;
-    if (t.picture?.still && !stills[t.picture.still]) throw new FinalError(`plain slide ${t.id} names a missing still ${t.picture.still}`);
-    // A figure alone on its slide may be drawn larger than its backup use; never smaller than the type floor allows.
+// Script v3 (aneta's 3+2 arc, team room 57701, assembled by the coordinator): each main slide is built from its
+// "Screen:" line, one idea and one picture, its Say text as the notes. The slot picks the cut: "3+2" shows all ten;
+// "3total" moves its listed slides to backup and speaks the short script's words.
+export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus, slot, final, cutoffMs }) {
+  const S = PT.slots[slot];
+  const fit = (t, scale) => {
     let figure = t.picture?.figure ? figureView(t.picture.figure) : null;
-    if (figure && t.picture.scale !== undefined) {
-      if (figure.minFont * t.picture.scale < FIGURE_MIN_RENDERED_FONT - 1e-9) {
-        throw new FinalError(`plain slide ${t.id}: ${figure.id} at scale ${t.picture.scale} shows ${figure.minFont * t.picture.scale} px text, under ${FIGURE_MIN_RENDERED_FONT} px`);
+    const s = scale ?? t.picture?.scale;
+    if (figure && s !== undefined) {
+      if (figure.minFont * s < FIGURE_MIN_RENDERED_FONT - 1e-9) {
+        throw new FinalError(`plain slide ${t.id}: ${figure.id} at scale ${s} shows ${figure.minFont * s} px text, under ${FIGURE_MIN_RENDERED_FONT} px`);
       }
-      figure = { ...figure, scale: t.picture.scale };
+      figure = { ...figure, scale: s };
     }
-    return { id: t.id, main: true, kicker: t.kicker, notes: t.say, content: {
-      layout: "talk", title: t.title, figure, still: st, caption: t.caption ?? null } };
+    return figure;
+  };
+  const still = (t) => {
+    if (!t.picture?.still) return null;
+    if (!stills[t.picture.still]) throw new FinalError(`plain slide ${t.id} names a missing still ${t.picture.still}`);
+    return { ...stills[t.picture.still], label: t.picture.label ?? null };
+  };
+  return PT.slides.map((t) => {
+    const main = !S.backup.includes(t.id);
+    // A slide this slot moves to backup keeps the full talk's words as its notes.
+    const words = t.say[slot] ?? t.say["3+2"];
+    if (main && words === undefined) throw new FinalError(`plain slide ${t.id} has no words for the ${slot} slot`);
+    const base = { id: t.id, main, kicker: t.kicker };
+    const c = { layout: t.layout, title: t.title };
+    if (t.door) {
+      if (!["live", "recorded"].includes(demoStatus)) throw new FinalError(`the plain door has LIVE and RECORDED only (got ${JSON.stringify(demoStatus)})`);
+      const live = demoStatus === "live";
+      if (!stills[t.qr]) throw new FinalError(`plain slide ${t.id} names a missing QR still ${t.qr}`);
+      // The runs RECORDED replays are real ones only, each with its date and room record.
+      for (const r of t.runs) checkRecords(r, `recorded run at ${r.at}`, cutoffMs);
+      return { ...base, notes: words[demoStatus], content: { ...c, status: demoStatus, statusText: demo.statuses[demoStatus].text,
+        // LIVE: the address, its QR code and the three steps, in large type. RECORDED: real recorded runs with their
+        // dates, or the plain empty state, beside the 3D still; no instruction.
+        url: live ? demo.url : null, qr: live ? { ...stills[t.qr], payload: `https://${demo.url}` } : null,
+        urlNote: live && demo.urlIsPlaceholder ? demo.urlNote : null, steps: live ? t.steps : null,
+        runs: live ? null : t.runs.map((r) => ({ at: utcStamp(r.at), text: r.text })),
+        empty: !live && !t.runs.length ? "No recorded runs yet" : null, still: live ? null : still(t) } };
+    }
+    const content = { ...c, caption: t.caption ?? null };
+    switch (t.layout) {
+      case "hook": {
+        // The two bars carry the reviewed chip-layer peaks, rounded; the backup's reviewed caption must state them.
+        for (const b of t.hook.bars) {
+          if (!final.problem.caption.includes(`${b.value.toFixed(2)} C`)) throw new FinalError(`plain slide ${t.id}: ${b.value} is not a reviewed peak (backup B1 caption)`);
+        }
+        const top = Math.max(...t.hook.bars.map((b) => b.value));
+        content.hook = { top: t.hook.top, bars: t.hook.bars.map((b) => ({ value: `${Math.round(b.value)}°C`, label: b.label, tone: b.tone, share: b.value / top })) };
+        break;
+      }
+      case "grader": Object.assign(content, { still: still(t), flow: t.flow, punch: t.punch }); break;
+      case "team": {
+        // Names go on stage only on Carter's yes: every person and agent then needs the name to show.
+        const on = Boolean(PT.namesOnStage);
+        if (on && (t.people.some((p) => !p.name) || t.roles.some((r) => !r.agent))) throw new FinalError(`plain slide ${t.id}: names are on, but a person or an agent has no name to show`);
+        Object.assign(content, { people: t.people.map((p) => ({ card: p.card, name: on ? p.name : null })), roles: t.roles.map((r) => ({ role: r.role, agent: on ? r.agent : null })) });
+        break;
+      }
+      case "reports": {
+        for (const k of t.cards) {
+          checkRecords(k, `plain slide ${t.id} ${k.n}`, cutoffMs);
+          if (!k.when.endsWith(hhmm(k.at))) throw new FinalError(`plain slide ${t.id} ${k.n} shows ${k.when}, not its record minute ${hhmm(k.at)}`);
+        }
+        checkRecords(t.together, `plain slide ${t.id}`, cutoffMs);
+        checkDuration(t.together.value, t.together.from, t.together.to, t.together.rule, `plain slide ${t.id}`);
+        if (!t.together.text.includes(t.together.value.replace(" min", " minutes"))) throw new FinalError(`plain slide ${t.id}: "${t.together.text}" does not say ${t.together.value}`);
+        Object.assign(content, { cards: t.cards.map((k) => ({ n: k.n, when: k.when, what: k.what })), together: t.together.text });
+        break;
+      }
+      case "statement":
+        checkRecords(t, `plain slide ${t.id}`, cutoffMs);
+        checkDuration(t.duration.value, t.duration.from, t.duration.to, t.duration.rule, `plain slide ${t.id}`);
+        content.statement = t.statement;
+        break;
+      case "talk": {
+        // The test table shows the recorded result against the published references, value for value.
+        if (t.table) {
+          const refs = final.gate.references.map((r) => String(r.publishedC));
+          const ours = final.gate.result.measured.split(",");
+          for (const row of t.table) {
+            const i = refs.indexOf(row.published);
+            if (i < 0 || ours[i] !== row.ours || final.gate.result.outcome !== row.result.toLowerCase()) {
+              throw new FinalError(`plain slide ${t.id}: the table row ${row.published} / ${row.ours} ${row.result} is not the recorded result`);
+            }
+          }
+        }
+        Object.assign(content, { figure: fit(t), still: still(t), line: t.line ?? null, table: t.table ?? null });
+        break;
+      }
+      case "open":
+        checkRecords(t, `plain slide ${t.id}`, cutoffMs);
+        Object.assign(content, { numbers: t.numbers, cards: t.cards });
+        break;
+      case "closer": Object.assign(content, { sub: t.sub, check: t.check, figure: fit(t) }); break;
+      default: throw new FinalError(`plain slide ${t.id} has no layout ${t.layout}`);
+    }
+    return { ...base, notes: words, content };
   });
+}
+// The figures the earlier plain talk carried, kept in backup with their captions.
+export function plainBackupSlides(list, { figureView }) {
+  return (list ?? []).map((b) => ({ id: b.id, main: false, kicker: b.kicker, notes: b.notes, content: {
+    layout: "talk", title: b.title, figure: b.picture?.figure ? figureView(b.picture.figure) : null, still: null, caption: b.caption } }));
+}
+// The questions pages: aneta's answer sheet, split so each page holds what fits.
+export function qaPages(qa) {
+  const pages = [];
+  let page = [], size = 0;
+  for (const item of qa.items) {
+    const n = item.q.length + item.a.length;
+    // The first page also carries the story line, so it takes less.
+    const room = pages.length ? 720 : 360;
+    if (page.length && (page.length >= 5 || size + n > room)) { pages.push(page); page = []; size = 0; }
+    page.push(item); size += n;
+  }
+  if (page.length) pages.push(page);
+  return pages.map((items, i) => ({ id: i ? `qa-${i + 1}` : "qa", main: false, kicker: `${qa.kicker} · ${i + 1} of ${pages.length}`, notes: qa.notes,
+    content: { title: qa.title, story: i ? null : qa.story, items } }));
 }
 // The backup line on names, from the consent flags alone.
 export function namesLine(teams, named) {
@@ -691,19 +788,20 @@ export function renderedStrings(data) {
     else if (Array.isArray(v)) v.forEach((x) => walk(x, slide));
     else if (v && typeof v === "object") Object.entries(v).forEach(([k, x]) => { if (!["src", "sha256", "id"].includes(k)) walk(x, slide); });
   };
-  for (const s of data.slides) { walk(s.content, s); walk(s.kicker, s); walk(s.notes.text, s); }
+  for (const s of data.slides) { walk(s.content, s); walk(s.kicker, s); out.push({ slide: s, text: s.notes.text, notes: true }); }
   for (const k of ["title", "event", "talk", "cutoff", "variantLabel"]) out.push({ slide: null, text: data.deck[k] });
   return out;
 }
 export function checkRendered(data, teams = {}, named = new Set()) {
-  for (const { slide, text } of renderedStrings(data)) {
+  for (const { slide, text: raw, notes } of renderedStrings(data)) {
     const where = slide ? `slide ${slide.id}` : "deck";
+    const text = notes && data.deck.plain ? raw.replace(SPOKEN_NAMES, "the co-lead") : raw;
     if (CONTROL.test(text)) throw new FinalError(`${where}: a control character in ${JSON.stringify(text)}`);
     if (/\{(?:repo:)?[A-Za-z]+\}/.test(text)) throw new FinalError(`${where}: an unresolved team token in ${JSON.stringify(text)}`);
     let shown;
     try { shown = publicText(text, where); } catch (e) { if (e instanceof PacketError) throw new FinalError(e.message); throw e; }
     if (shown !== text) throw new FinalError(`${where}: the public-render rules would rewrite ${JSON.stringify(text)}; write it plainly instead`);
-    const bad = FINAL_BANNED.find((re) => re.test(text) && !(MONEY.has(re) && moneyAllowed(slide)));
+    const bad = FINAL_BANNED.find((re) => re.test(text) && !(MONEY.has(re) && moneyAllowed(slide)) && !(re === BUG && onQaPage(slide)));
     if (bad) throw new FinalError(`${where}: ${bad} is not allowed in this deck: ${JSON.stringify(text)}`);
     // The plain-language talk carries no physics arithmetic or simulator internals on a main slide or in its notes.
     if (data.deck.plain && slide?.main) {
@@ -728,39 +826,40 @@ export function speakerScript(data, final, { label = "review export" } = {}) {
   const u = data.budget;
   const at = (w) => `${tenths(w / (u.checkWordsPerMinute / 60))} s`;
   const names = data.teams.named.map((t) => `${t.name}, help room message ${t.consent.seq}`);
+  const slot = data.build.slot ?? "3+2";
+  const PT = final.plainTalk;
   const out = [
-    `# Speaker script, five-minute deck, ${label} ${data.deck.cutoff}`,
+    `# Speaker script, ${slot === "3total" ? "three-minute" : "five-minute"} deck (slot ${slot}), ${label} ${data.deck.cutoff}`,
     "",
-    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${final.plainTalk ? ", the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken" : ""}. ${names.length ? `Named with consent: ${names.join("; ")}.` : "No team has consented yet."} Every other team reads "an outside team". ${final.plainTalk ? "Slide 5's pass test" : "Slide 4"} is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
+    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${PT ? `, the main slides from script v3 in ${PT.slots[slot].script}; the backup slides are not spoken` : ""}. ${names.length ? `Named with consent: ${names.join("; ")}.` : "No team has consented yet."} Every other team reads "an outside team". The pass test is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
     "",
-    `Clock (root, team room 57481): the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s live demo.`,
+    `Clock: the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s demo.`,
   ];
   const slowWpm = Math.round(u.slowWordsPerSecond * 60);
   for (const s of data.slides.filter((x) => x.main)) {
     const n = s.label.split(" ")[0];
-    const fig = s.content.figure ? ` (${s.content.figure.id})` : s.content.still ? ` (${s.content.still.id})` : "";
-    out.push("", `## ${n}. ${s.content.title}${fig}`, "");
+    const t = PT?.slides.find((x) => x.id === s.id);
+    const pic = s.content.figure ? ` (${s.content.figure.id})` : s.content.still ? ` (${s.content.still.id})` : "";
+    out.push("", `## ${n}. ${t?.heading ?? s.content.title}${pic}`, "");
     if (s.content.layout === "door") {
-      // The plain door: one of two scripted lines, whichever warden's production readback shows is true.
-      const t = final.plainTalk.slides.find((x) => x.door);
-      for (const st of ["live", "replay"]) out.push(`Say (${st.toUpperCase()}): ${t.say[st]}`, "", `${countWords(t.say[st])} words, ${at(countWords(t.say[st]))} at ${u.checkWordsPerMinute} wpm.`, "");
+      // The door: one of two scripted lines, whichever warden's production read-back shows is true.
+      for (const st of ["live", "recorded"]) {
+        const w = t.say[slot][st];
+        out.push(`Say (${st.toUpperCase()}): ${w}`, "", `${countWords(w)} words, ${at(countWords(w))} at ${u.checkWordsPerMinute} wpm.`, "");
+      }
       out.push(`Inside the ${u.demoSeconds} s demo clock. This export shows ${data.deck.demoStatus.toUpperCase()}: ${u.doorWords} words, ${u.doorSeconds} s, leaving ${u.liveSeconds} s for the demo itself.`);
       continue;
     }
-    if (s.id !== "demo") {
-      out.push(s.notes.text, "", `${s.notes.words} words, ${at(s.notes.words)} at ${u.checkWordsPerMinute} wpm.`);
-      if (s.content.layout === "why") {
-        const t = final.plainTalk.slides.find((x) => x.numbers);
-        out.push("", `The numbers line is ${final.plainTalk.numbersOnStage ? "on" : "off"} in this export. ${final.plainTalk.numbersOnStage ? "Without it" : "With it"}, the slide would say: "${final.plainTalk.numbersOnStage ? t.say : `${t.sayNumbers} ${t.say}`}"`);
-      }
-      continue;
-    }
-    const base = final.demo.notes;
-    out.push(base, "", "Then one status line, whichever is true at the talk:", "");
-    for (const st of DEMO_STATUSES) out.push(`- ${st}: "${final.demo.statuses[st].notes}" (${countWords(final.demo.statuses[st].notes)} words)`);
-    out.push("", `${countWords(base)} words plus the status line, inside the ${u.demoSeconds} s demo clock. This export is at "${data.deck.demoStatus}": ${u.doorWords} words, ${u.doorSeconds} s, leaving ${u.liveSeconds} s live.`);
+    out.push(s.notes.text, "", `${s.notes.words} words, ${at(s.notes.words)} at ${u.checkWordsPerMinute} wpm.`);
   }
   out.push("", `**Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at ${u.checkWordsPerMinute} wpm, plus ${u.transitionSeconds} s of transitions = ${tenths(u.talkSeconds + u.transitionSeconds)} s of the ${u.talkCapSeconds} s cap. At ${slowWpm} words a minute it would take ${u.talkSlowSeconds} s, plus transitions ${tenths(u.talkSlowSeconds + u.transitionSeconds)} s.**`, "");
+  // For the presenter only: how to use the answer pages, and the words to avoid.
+  const P = final.backup.qa?.presenter;
+  if (P) {
+    out.push("## For questions (not shown on a slide)", "", P.learn, "", "Please don't say:", "");
+    for (const d of P.dontSay) out.push(`- ${d}`);
+    out.push("");
+  }
   return out.join("\n");
 }
 export function serialize(data) {
@@ -776,7 +875,9 @@ export function finalPdfName(data) {
   if (data.deck.reviewOnly) throw new FinalError("a review render of another outcome never exports a PDF");
   if (data.deck.demoReview) throw new FinalError("a demo review render never exports a PDF");
   const c = data.build.cutoff;
-  return `final-5min/SentiLab-5min-${c.slice(0, 10)}-${c.slice(11, 13)}${c.slice(14, 16)}-${data.build.gate}.pdf`;
+  // The three-minute cut, when it is the one used, is named for its slot.
+  const minutes = data.build.slot === "3total" ? "3min" : "5min";
+  return `final-5min/SentiLab-${minutes}-${c.slice(0, 10)}-${c.slice(11, 13)}${c.slice(14, 16)}-${data.build.gate}.pdf`;
 }
 
 // ── pull-request refresh (the only step that reads the clock or the network) ───────────────────────────────────────
@@ -814,6 +915,7 @@ export function cliOptions(args) {
     build: {
       gate: arg(args, "--gate"), measured: arg(args, "--measured") ?? null, cutoff, preview: args.includes("--preview"),
       rederived: args.includes("--rederived"), demoStatus: arg(args, "--demo-status"), demoReview: args.includes("--demo-review"),
+      slot: arg(args, "--slot") ?? undefined,
     },
   };
 }

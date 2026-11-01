@@ -11,7 +11,51 @@ same minute, after a last sweep of both rooms found no new consent answer. This 
 the room's adversarial review (team room 57558) closed at 03:30. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
 are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackathon help room.
 
-## The plain-language main talk (Carter, team room 57563, 02:51)
+## Script v3, the main talk in this export (aneta's 3+2 arc, team room 57701)
+
+The ten main slides follow script v3 (`PLAIN-SCRIPT.md`, sha256 `07065667…`), which the coordinator assembled from
+aneta's arc (57701) with root's corrections (reply 9d18d50c to 57701, 05:15:26) and chatgpt's (05:14:17). Each slide is
+built from its "Screen:" line, one idea and one picture, short labels and big numbers; its notes are its "Say" text,
+word for word, and the tests compare both with the script. Slide 1 opens with its top line rather than a heading; every
+other slide shows its heading as its title. The v2.5 export (commit 8e998d8b, cutoff 05:02) is the fallback.
+
+The slot is a build flag: `--slot 3+2`, the default and the talk Carter confirmed (5 minutes per team, 3-4 of talk and
+1-2 of demo, team room 57411, re-read by root), or `--slot 3total`, which speaks script v3-short
+(`PLAIN-SCRIPT-SHORT.md`, `fc472ef5…`) over the same screens, with slides 3 and 8 moved to the head of the backup
+and a 60 s demo.
+
+| Slot | Talk words | 150 wpm, with 15 s transitions | 135 wpm | Talk cap | Door words (LIVE / RECORDED) | Demo clock |
+|---|---:|---:|---:|---:|---:|---:|
+| 3+2 | 358 | 158.2 s | 174.1 s | 180 s | 79 / 32 | 120 s |
+| 3total | 205 | 97.0 s | 106.1 s | 120 s | 49 / 30 | 60 s |
+
+| Slide | Picture | What the build checks |
+|---|---|---|
+| 1 | two bars to scale, "119°C" and "241°C" | the values are the reviewed chip-layer peaks 119.07 and 240.53 stated in B1's caption, rounded |
+| 2 | the cropped 3D still, "simulated, not silicon", beside the three steps and the punchline | the crop's pixels (below) |
+| 3 | two person cards and five role chips | names stay off: the public-render rule refuses a person's name on a slide, and `namesOnStage` needs every name before it can be on. The script's spoken line names the co-lead in the notes only |
+| 4 | three report cards and "Together: a suspect in 32 minutes." | 13:06 is root's local freeze (stated in reply 9d18d50c to 57701; the report was posted at 13:08:41, seq 56630); 13:15 are seq 56643 (13:15:06) and 56645 (13:15:38); the 32 minutes are recomputed from seq 56598 (12:43:33) to 56645 |
+| 5 | the orange statement | the records of the proposal (56865), the two agreements (reply 67f2695a, 56866), the halt (56870, stated 15:56:58.678) and the withdrawal (56906, 56927); "under 5 minutes" recomputed |
+| 6 | plain2 v1.11 and the reported line | the caption credits "as reported by Delfie (delphisci team)" |
+| 7 | plain3 v2 and the two-row test | each row is the recorded result (75.48 and 115.93) against its published reference (75.48 and 115.94) |
+| 8 | 8 · 3 · 2 · 3, and two cards | the help-room records behind fig6 v1.15 (57312, 161c27f0, 57532, 57666, 9e9e733a); no leaderboard claim |
+| 9 | the closer, the check line, plain6 v1.15 | |
+| 10 | LIVE: the address, its QR code and three steps; RECORDED: real recorded runs with their dates, or "No recorded runs yet", beside the cropped still | the QR code (below); each recorded run needs its room record before the cutoff. No real door run has been recorded, so RECORDED shows the empty state |
+
+The QR code (`qr-sentilab.png`, 592x592, `f62a077a…`) encodes exactly `https://sentilab.aidenid.com`: made with qrcode
+1.5.4 (error correction M), then read back from its own pixels by jsQR 1.4.0, and read again from the rendered LIVE slide
+at 1920x1080 and 1280x720. The evidence folder holds the scripts and their output.
+
+The answer pages (B26 onward) carry aneta's corrected answer sheet (team room 57700, 05:06:22; root's acceptance in reply
+9d18d50c to 57701) word for word, plus the coordinator's "unvalidated" answer. Its brackets are filled only with what is
+true now: our own run of the one-step change has not run (its grant deadline is Mon 11-02 06:00Z), the 25-layout test
+has not been measured, and the note to the authors is drafted, not sent. On these pages only, "bug" may appear, as the
+question and as Delfie's attributed word, and the one cost figure, "about $6,400", may appear; the build refuses both
+everywhere else. The sheet's reading notes ("learn the first line…", "please don't say…") are in SCRIPT.md, not on a
+slide. The figures the v2.5 talk carried that left the main deck (plain1, plain4, plain5, fig6) are backup slides with
+their v2.5 captions.
+
+## The v2.5 plain talk, now the fallback (Carter, team room 57563, 02:51)
 
 The nine main slides follow the coordinator's plain-language script v2.5, committed byte for byte as `PLAIN-SCRIPT.md`
 (sha256 `cd1cb889…`). It went v2, v2.1, v2.2, v2.3 and v2.5, with astra's truth fixes, aneta's plain charts and truth check

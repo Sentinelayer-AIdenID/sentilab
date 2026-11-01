@@ -295,3 +295,76 @@ body.print #notes { display: none; }
 .qa dt { font: 700 34px/1.2 var(--display); color: var(--text); }
 .qa dd { margin: 10px 0 0; font-size: 30px; line-height: 1.35; color: var(--body); }
 .ntile .nval { font-size: 64px; }
+
+/* ── script v3: one idea and one picture per slide, big numbers and short labels ─────────────────────────────────── */
+.htop { margin: 34px 0 0; font: 600 44px/1.2 var(--display); color: var(--body); }
+.hbars { margin: auto 0; display: grid; gap: 54px; }
+.hbar { position: relative; display: grid; grid-template-columns: 1fr; gap: 10px; }
+.hbar-fill { display: block; height: 120px; border-radius: 0 14px 14px 0; }
+.hbar-older .hbar-fill { background: #3987e5; }
+.hbar-newer .hbar-fill { background: #d95926; }
+.hbar-val { font: 800 104px/1 var(--display); letter-spacing: -.02em; }
+.hbar-older .hbar-val { color: #6fa9f0; }
+.hbar-newer .hbar-val { color: #f08a5d; }
+.hbar-lab { font: 600 36px var(--display); color: var(--body); }
+.hbar { grid-template-areas: "fill fill" "val lab"; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 28px; }
+.hbar-fill { grid-area: fill; }
+.hbar-val { grid-area: val; }
+.hbar-lab { grid-area: lab; }
+.grader { margin-top: 30px; display: grid; grid-template-columns: auto 1fr; gap: 56px; align-items: center; }
+.gpic { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.gsteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; counter-reset: g; }
+.gsteps li { position: relative; padding: 18px 26px 18px 86px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); font: 650 44px/1.15 var(--display); counter-increment: g; }
+.gsteps li::before { content: counter(g); position: absolute; left: 22px; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font: 700 28px var(--mono); color: #0d1418; background: var(--cyan); }
+.gpunch { margin-top: 40px; font: 750 52px/1.15 var(--display); color: var(--amber); }
+.tpeople { margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 34px; }
+.tperson { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "a n" "a p"; column-gap: 26px; align-items: center; padding: 28px 34px; border: 2px solid var(--line); border-radius: 18px; background: var(--panel); }
+.tavatar { grid-area: a; width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle at 50% 36%, var(--cyan) 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, var(--cyan) 0 46%, transparent 47%); background-color: var(--cy-bg); }
+.tperson b { grid-area: n; font: 700 42px var(--display); }
+.tperson p { grid-area: p; font: 600 38px/1.2 var(--display); color: var(--body); }
+.troles { list-style: none; margin: 56px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 22px; }
+.trole { padding: 18px 34px; border: 2px solid var(--cy-line); border-radius: 999px; background: var(--cy-bg); font: 700 44px var(--display); color: var(--cyan); display: flex; flex-direction: column; align-items: center; }
+.trole small { font: 600 26px var(--mono); color: var(--body); }
+.rcards { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.rcard { display: flex; flex-direction: column; gap: 14px; padding: 30px 32px; border: 2px solid var(--line); border-radius: 18px; background: var(--panel); }
+.rcard-n { font: 700 30px var(--mono); color: var(--eyebrow); text-transform: uppercase; letter-spacing: .08em; }
+.rcard-when { font: 800 64px/1 var(--display); color: var(--text); }
+.rcard p { font: 600 40px/1.2 var(--display); color: var(--body); }
+.rtogether { margin: auto 0; font: 750 64px/1.15 var(--display); color: var(--amber); }
+.ostatement { margin: auto 0; padding: 48px 56px; border-radius: 24px; background: #3a1d12; border: 3px solid #d95926; display: flex; flex-wrap: wrap; align-items: center; gap: 18px 26px; font: 750 64px/1.2 var(--display); color: #fbe3d6; }
+.ostatement i { font-style: normal; color: #f08a5d; }
+.tline { margin-top: 18px; font: 650 40px/1.25 var(--display); color: var(--amber); }
+.ttest { margin-top: 14px; border-collapse: collapse; font: 600 30px var(--display); }
+.ttest th, .ttest td { padding: 4px 28px 4px 0; text-align: left; white-space: nowrap; }
+.ttest th { color: var(--body); font-weight: 600; }
+.ttest .tpass { color: var(--green); font: 700 30px var(--mono); }
+.onums { margin-top: 44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; }
+.onum { display: flex; flex-direction: column; gap: 10px; padding: 26px 30px; border: 2px solid var(--line); border-radius: 18px; background: var(--panel); }
+.onum b { font: 800 120px/1 var(--display); color: var(--text); }
+.onum span { font: 600 34px/1.2 var(--display); color: var(--body); }
+.ocards { margin-top: 34px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px; }
+.ocard { padding: 26px 32px; border-left: 10px solid var(--cyan); border-radius: 6px 18px 18px 6px; background: var(--cy-bg); font: 650 40px/1.2 var(--display); }
+.csub { margin-top: 18px; font: 600 44px/1.25 var(--display); color: var(--body); }
+.ccheck { margin: 18px 0 14px; font: 650 36px/1.25 var(--display); color: var(--amber); }
+.dlive { margin-top: 26px; display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: center; }
+.dlive-main .dcta-url { font: 800 96px/1.05 var(--mono); color: var(--cyan); letter-spacing: -.02em; }
+.dqr { margin: 0; padding: 18px; background: #ffffff; border-radius: 16px; line-height: 0; }
+.dqr img { display: block; image-rendering: pixelated; }
+.dsteps { list-style: none; margin: 30px 0 0; padding: 0; display: grid; gap: 16px; counter-reset: d3; }
+.dsteps li { position: relative; padding: 10px 0 10px 76px; font: 650 42px/1.2 var(--display); counter-increment: d3; }
+.dsteps li::before { content: counter(d3); position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font: 700 32px var(--mono); color: #0d1418; background: var(--cyan); }
+.drec { margin-top: 26px; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; }
+.dempty { font: 700 60px/1.2 var(--display); color: var(--muted); }
+.druns { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font: 600 34px/1.25 var(--display); }
+.druns b { font: 700 30px var(--mono); color: var(--eyebrow); margin-right: 18px; }
+.drec-pic { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.qa-story { margin-top: 16px; font: 600 28px/1.35 var(--display); color: var(--amber); }
+/* The answer pages hold more, so their cards are tighter than the old single questions page. */
+.qa { margin-top: 16px; gap: 14px; }
+.qa-item { padding: 12px 24px; }
+.qa dt { font-size: 30px; }
+.qa dd { margin-top: 4px; font-size: 27px; line-height: 1.3; }
+.dstat-recorded { color: #f8dcd2; background: var(--rd-bg); border: 2px solid var(--rd-line); }
+/* Short content sits in the middle of its slide, not under the title. */
+.tpeople, .onums { margin-top: auto; }
+.troles, .ocards { margin-bottom: auto; }

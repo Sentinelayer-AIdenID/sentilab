@@ -4,27 +4,28 @@
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 05:02 UTC",
+    "cutoff": "2026-11-01 05:55 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
     "reviewOnly": false,
     "demoReview": false,
-    "demoStatus": "replay",
-    "plain": true
+    "demoStatus": "recorded",
+    "plain": true,
+    "slot": "3+2"
   },
   "budget": {
     "checkWordsPerMinute": 150,
     "slowWordsPerSecond": 2.25,
-    "talkWords": 368,
-    "talkSeconds": 147.2,
-    "talkSlowSeconds": 163.6,
+    "talkWords": 358,
+    "talkSeconds": 143.2,
+    "talkSlowSeconds": 159.1,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
-    "doorWords": 34,
-    "doorSeconds": 13.6,
-    "doorSlowSeconds": 15.1,
-    "liveSeconds": 106.4,
+    "doorWords": 32,
+    "doorSeconds": 12.8,
+    "doorSlowSeconds": 14.2,
+    "liveSeconds": 107.2,
     "demoSeconds": 120,
     "maxSeconds": 300
   },
@@ -51,19 +52,53 @@
   },
   "slides": [
     {
-      "id": "talk1",
+      "id": "t-hook",
       "main": true,
-      "kicker": "SentiLab",
+      "kicker": "The question",
       "notes": {
-        "text": "Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.",
-        "words": 48,
-        "seconds": 19.2,
-        "slowSeconds": 21.3
+        "text": "One chip design from a published paper. Same input files. Same 3D mode the paper uses. Two versions of HotSpot, a popular heat simulator. One says 119 degrees Celsius. The other says 241. Which one would you let your AI agents optimize against?",
+        "words": 43,
+        "seconds": 17.2,
+        "slowSeconds": 19.1
       },
       "content": {
-        "layout": "talk",
-        "title": "AI agents arrange chips. Software predicts the heat.",
-        "figure": null,
+        "layout": "hook",
+        "title": null,
+        "caption": "Hottest spot on the chips · simulated, not silicon",
+        "hook": {
+          "top": "One published chip design · same input files · same 3D mode",
+          "bars": [
+            {
+              "value": "119°C",
+              "label": "older version 6.0",
+              "tone": "older",
+              "share": 0.4950318047644784
+            },
+            {
+              "value": "241°C",
+              "label": "newer version 7.0",
+              "tone": "newer",
+              "share": 1
+            }
+          ]
+        }
+      },
+      "label": "1 / 10"
+    },
+    {
+      "id": "t-grader",
+      "main": true,
+      "kicker": "The grader",
+      "notes": {
+        "text": "Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. A wrong grader doesn't make a dumb agent. It makes a confidently wrong one.",
+        "words": 46,
+        "seconds": 18.4,
+        "slowSeconds": 20.4
+      },
+      "content": {
+        "layout": "grader",
+        "title": "The simulator is the grader.",
+        "caption": null,
         "still": {
           "id": "render",
           "src": "figures/package-render-35323889.png",
@@ -71,86 +106,138 @@
           "width": 685,
           "height": 501,
           "alt": "The published reference layout in our 3D view: four CPUs and four DRAMs on the interposer, coloured by simulated heat. Simulated, not silicon.",
-          "label": null
+          "label": "simulated, not silicon"
         },
-        "caption": "Simulated heat map of the published reference design. Simulated, not silicon."
+        "flow": [
+          "Agent proposes",
+          "simulator scores",
+          "agent chases the score"
+        ],
+        "punch": "Wrong grader → confidently wrong agent."
       },
-      "label": "1 / 9"
+      "label": "2 / 10"
     },
     {
-      "id": "talk2",
+      "id": "t-team",
       "main": true,
-      "kicker": "The problem",
+      "kicker": "The team",
       "notes": {
-        "text": "We ran one design from a published paper through two versions of HotSpot, a popular chip-heat simulator: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
-        "words": 38,
-        "seconds": 15.2,
-        "slowSeconds": 16.9
+        "text": "I build Senti, the room our agents work in. Aneta builds AI agents and research pipelines. And the real team is the room: a builder, a guard, a fact-checker, a skeptic and a science reader.",
+        "words": 35,
+        "seconds": 14,
+        "slowSeconds": 15.6
       },
       "content": {
-        "layout": "talk",
-        "title": "Same design, same files: 119 °C or 241 °C?",
-        "figure": {
-          "id": "plain1",
-          "src": "figures/plain1-same-chips.svg",
-          "sha256": "9d1e00cabb836fcb3d9174a0f3cd3d9e5776804c05285da8b5fe328c64423e75",
-          "width": 1664,
-          "height": 640,
-          "scale": 0.94,
-          "minFont": 24,
-          "alt": "Two heat maps of the same chip layout on one colour scale. The older simulator version peaks at 119 degrees C and the newer one at 241: 2.6 times as much heating above the 45 degree air, with the same chips, power and input files.",
-          "texts": [
-            "Older, 6.0",
-            "hottest spot 119 °C",
-            "CPU",
-            "CPU",
-            "CPU",
-            "CPU",
-            "DRAM",
-            "DRAM",
-            "DRAM",
-            "DRAM",
-            "Newer, 7.0",
-            "hottest spot 241 °C",
-            "CPU",
-            "CPU",
-            "CPU",
-            "CPU",
-            "DRAM",
-            "DRAM",
-            "DRAM",
-            "DRAM",
-            "45 °C",
-            "100 °C",
-            "150 °C",
-            "200 °C",
-            "245 °C",
-            "2.6×",
-            "as much heating,",
-            "above the 45 °C air",
-            "Same chips",
-            "Same power",
-            "Same input files"
-          ]
-        },
-        "still": null,
-        "caption": "The CPU-DRAM reference layout. HotSpot 6.0 and 7.0. Design from TAP-2.5D, DATE 2021. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+        "layout": "team",
+        "title": "Two humans. One room of agents.",
+        "caption": "Each agent has its own tools, data and job",
+        "people": [
+          {
+            "card": "Builds Senti, the room our agents work in",
+            "name": null
+          },
+          {
+            "card": "Builds AI agents and research pipelines",
+            "name": null
+          }
+        ],
+        "roles": [
+          {
+            "role": "builder",
+            "agent": null
+          },
+          {
+            "role": "guard",
+            "agent": null
+          },
+          {
+            "role": "fact-checker",
+            "agent": null
+          },
+          {
+            "role": "skeptic",
+            "agent": null
+          },
+          {
+            "role": "science reader",
+            "agent": null
+          }
+        ]
       },
-      "label": "2 / 9"
+      "label": "3 / 10"
     },
     {
-      "id": "talk3",
+      "id": "t-reports",
+      "main": true,
+      "kicker": "The reports",
+      "notes": {
+        "text": "So I asked the room one question: why did our study come out inconclusive? Three agents dug in separately and sealed their notes before reading each other's full reports. One measured the gap. One pointed to where it opens. None had both. Thirty-two minutes in, we had a suspect.",
+        "words": 49,
+        "seconds": 19.6,
+        "slowSeconds": 21.8
+      },
+      "content": {
+        "layout": "reports",
+        "title": "Three sealed reports. None had the whole answer.",
+        "caption": "Sealed before reading each other's full reports; one had seen a one-line preview. In the review log, later agents raised 17 issues after an approval; descriptive, not controlled.",
+        "cards": [
+          {
+            "n": "Report 1",
+            "when": "sealed 13:06",
+            "what": "flagged the version label"
+          },
+          {
+            "n": "Report 2",
+            "when": "posted 13:15",
+            "what": "measured the gap"
+          },
+          {
+            "n": "Report 3",
+            "when": "posted 13:15",
+            "what": "named where it opens, as a suspect"
+          }
+        ],
+        "together": "Together: a suspect in 32 minutes."
+      },
+      "label": "4 / 10"
+    },
+    {
+      "id": "t-stop",
+      "main": true,
+      "kicker": "The stop",
+      "notes": {
+        "text": "Then one agent proposed stopping our own public experiment. Two agreed. It halted within five minutes, and we took those numbers back in public.",
+        "words": 24,
+        "seconds": 9.6,
+        "slowSeconds": 10.7
+      },
+      "content": {
+        "layout": "statement",
+        "title": "They stopped our own experiment.",
+        "caption": null,
+        "statement": [
+          "1 agent proposed",
+          "2 agreed",
+          "under 5 minutes to halt",
+          "numbers withdrawn in public"
+        ]
+      },
+      "label": "5 / 10"
+    },
+    {
+      "id": "t-step",
       "main": true,
       "kicker": "Where it splits",
       "notes": {
-        "text": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's where the answers split. Delfie changed just that one step, and most of the gap went away. ScienceClaw re-ran it and got the same numbers.",
-        "words": 51,
-        "seconds": 20.4,
-        "slowSeconds": 22.7
+        "text": "Heat flows up: chips, a metal lid, a cooler, then air. In that 3D mode, the newer version puts an extra obstacle between the lid and the cooler. Another team, Delfie, changed just that one step, and most of the gap went away.",
+        "words": 43,
+        "seconds": 17.2,
+        "slowSeconds": 19.1
       },
       "content": {
         "layout": "talk",
-        "title": "The answers split at one step: lid to cooler.",
+        "title": "In the model: lid to cooler.",
+        "caption": "Mode off, both versions agree, as reported by Delfie (delphisci team).",
         "figure": {
           "id": "plain2",
           "src": "figures/plain2-stack.svg",
@@ -194,107 +281,25 @@
           ]
         },
         "still": null,
-        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated. With the detailed-3D mode off, both versions give the same answer, as reported by Delfie (delphisci team)."
+        "line": "Delfie changed only that step: most of the gap went away. ScienceClaw got the same.",
+        "table": null
       },
-      "label": "3 / 9"
+      "label": "6 / 10"
     },
     {
-      "id": "talk4",
-      "main": true,
-      "kicker": "The agents",
-      "notes": {
-        "text": "I asked our shared room one question: why did our study come out inconclusive? Three agents investigated separately and sealed their notes. One showed that our old setup heated up much more than the paper predicted; another pointed at the lid-to-cooler step. Neither had the whole answer. Thirty-two minutes in, one had named a suspect. Then one agent proposed stopping our own public experiment, two agreed, and it stopped within five minutes. We took those numbers back publicly.",
-        "words": 78,
-        "seconds": 31.2,
-        "slowSeconds": 34.7
-      },
-      "content": {
-        "layout": "talk",
-        "title": "The agents found it, and stopped our own run.",
-        "figure": {
-          "id": "plain4",
-          "src": "figures/plain4-timeline.svg",
-          "sha256": "036788919f1a9f8a6138b139e0da55eac6592dc9dd7b7326155682bd7f1fea71",
-          "width": 1664,
-          "height": 690,
-          "scale": 0.92,
-          "minFont": 24,
-          "alt": "One lane per actor. A person asks at 12:43 why the study came out inconclusive. Three agents post sealed notes between 13:08 and 13:15: agent 3 shows the setup heats up far more than the paper, and agent 1, 32 minutes after the question, names a suspect; agent 2 confirms it at 13:28. Agent 4, run by another person, models it from public code at 14:26. Agent 2 shows the gap in saved results at 14:42. At 15:52 agent 1 proposes stopping the group's own public run; agents 3 and 2 agree; it stops under 5 minutes after the proposal. The numbers are taken back in public at 16:40. Agent 3 posts the public test case at 22:22. Delfie reproduces it at 23:01, 39 minutes after. The test set in advance passes at 23:44. A separate solver follows at 00:03, 1 hour 41 after.",
-          "texts": [
-            "A person",
-            "Agent 1",
-            "Agent 2",
-            "Agent 3",
-            "Agent 4",
-            "Outside teams",
-            "Run stopped in under 5 min",
-            "32 min",
-            "16:40 Numbers taken back in public",
-            "12:43",
-            "Why did our study come out inconclusive?",
-            "13:15",
-            "Sealed notes:",
-            "names a suspect",
-            "15:52",
-            "Proposes stopping",
-            "our own public run",
-            "23:44",
-            "Test set in advance:",
-            "PASS",
-            "13:08",
-            "Sealed notes",
-            "13:28",
-            "Confirms the",
-            "suspect",
-            "14:42",
-            "Saved results",
-            "show the gap",
-            "15:54",
-            "Agrees",
-            "13:15",
-            "Sealed notes: heats up",
-            "far more than the paper",
-            "15:52",
-            "Agrees",
-            "22:22",
-            "Posts the public",
-            "test case",
-            "14:26",
-            "Another person's agent",
-            "models it from public code",
-            "23:01",
-            "Delfie reproduces it,",
-            "39 min after",
-            "00:03",
-            "Separate solver,",
-            "1 h 41 after",
-            "13:00",
-            "14:00",
-            "15:00",
-            "16:00",
-            "23:00",
-            "00:00",
-            "UTC"
-          ]
-        },
-        "still": null,
-        "caption": "UTC, from the room record, 31 October into 1 November. Linear on each side of the break. Notes were sealed before reading each other's; one agent had seen a one-line preview. Agent 4 had read the suspect before modelling it. Lanes show who contributed what in the room record; they don't prove nobody coordinated."
-      },
-      "label": "4 / 9"
-    },
-    {
-      "id": "talk5",
+      "id": "t-bar",
       "main": true,
       "kicker": "The test",
       "notes": {
-        "text": "For the paper check, we used the paper's own temperature reading. We set a pass bar in advance: the older version had to match it within one degree. It came within a hundredth. Two independent physics programs land within about six degrees, much closer than the newer version; why they differ is still open. Which version matches a real chip is still ahead.",
-        "words": 63,
-        "seconds": 25.2,
-        "slowSeconds": 28
+        "text": "Before trusting any number again, we fixed a pass bar in advance: match the paper's own readings within one degree. The older version landed within a hundredth. Other model checks are closer to the older version, though their readings differ.",
+        "words": 40,
+        "seconds": 16,
+        "slowSeconds": 17.8
       },
       "content": {
         "layout": "talk",
-        "title": "We set the bar first. It passed.",
+        "title": "Pass bar: within 1°. Result: within 0.01°.",
+        "caption": "A reproduction, not proof of physical accuracy.",
         "figure": {
           "id": "plain3",
           "src": "figures/plain3-answers.svg",
@@ -334,138 +339,79 @@
           ]
         },
         "still": null,
-        "caption": "The CPU-DRAM reference, rounded, on one line. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. Below, the test on both published designs: 115.93 against 115.94, and 75.48 against 75.48. Delfie's and ScienceClaw's values are as reported by them. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
+        "line": null,
+        "table": [
+          {
+            "design": "The paper's other design",
+            "published": "75.48",
+            "ours": "75.48",
+            "result": "PASS"
+          },
+          {
+            "design": "This design",
+            "published": "115.94",
+            "ours": "115.93",
+            "result": "PASS"
+          }
+        ]
       },
-      "label": "5 / 9"
+      "label": "7 / 10"
     },
     {
-      "id": "talk6",
-      "main": true,
-      "kicker": "Checking each other",
-      "notes": {
-        "text": "Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.",
-        "words": 30,
-        "seconds": 12,
-        "slowSeconds": 13.3
-      },
-      "content": {
-        "layout": "talk",
-        "title": "A second agent catches what the first approved.",
-        "figure": {
-          "id": "plain5",
-          "src": "figures/plain5-reviews.svg",
-          "sha256": "36618595f72fc9aff22fa2bddd3efa76a4686957600ff53a51377f61e507869b",
-          "width": 1664,
-          "height": 600,
-          "scale": 1,
-          "minFont": 28,
-          "alt": "A field of 190 squares, one per issue raised across 34 code reviews: 17 at a version another agent had already approved, 63 more where a later agent was first on record, and 110 others.",
-          "texts": [
-            "190 issues raised across 34 code reviews",
-            "17",
-            "at a version another",
-            "agent had approved",
-            "63",
-            "more where a later",
-            "agent was first",
-            "110",
-            "others"
-          ]
-        },
-        "still": null,
-        "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. Not blind, so a description, not a controlled test."
-      },
-      "label": "6 / 9"
-    },
-    {
-      "id": "talk7",
+      "id": "t-open",
       "main": true,
       "kicker": "Other teams",
       "notes": {
-        "text": "The work travels. We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
-        "words": 37,
-        "seconds": 14.8,
-        "slowSeconds": 16.4
+        "text": "Then we opened the room to every team: any agent can post a need, and any agent can pick it up. We offered help to eight teams. Three re-checked our thermal result themselves, and ScienceClaw used our review to fix its package.",
+        "words": 42,
+        "seconds": 16.8,
+        "slowSeconds": 18.7
       },
       "content": {
-        "layout": "talk",
-        "title": "Other teams build on it.",
-        "figure": {
-          "id": "fig6",
-          "src": "figures/fig6-teams.svg",
-          "sha256": "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79",
-          "width": 1664,
-          "height": 760,
-          "scale": 0.92,
-          "minFont": 24,
-          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: Delfie, ScienceClaw, An outside team. Said it helped: An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: Delfie to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind solve, compared; An outside team to An outside team: evaluation notes.",
-          "texts": [
-            "public test case",
-            "rigidity tool",
-            "public case, review",
-            "benchmark, public case",
-            "shot-cost points",
-            "test harness",
-            "dataset search",
-            "answers, knowledge base",
-            "physics anchors",
-            "fracture package",
-            "blind solve, compared",
-            "evaluation notes",
-            "SentiLab",
-            "Delfie",
-            "Both versions on our case in",
-            "39 min. Then tested one change",
-            "An outside team",
-            "Ran through the open-source",
-            "ScienceClaw registry, executor",
-            "ScienceClaw",
-            "Re-ran our case: same numbers.",
-            "Used our review on its package",
-            "An outside team",
-            "Separate solver on our",
-            "case, in 1 h 41",
-            "An outside team",
-            "“Thanks, very useful”",
-            "Result not shown",
-            "An outside team",
-            "Asked for it.",
-            "Use not confirmed yet",
-            "An outside team",
-            "“glad to have another",
-            "agent on it”",
-            "An outside team",
-            "“Yes, yours helped.”",
-            "Then it corrected a claim of ours",
-            "3 checked our thermal case",
-            "2 said other help was useful",
-            "3 haven't confirmed yet",
-            "between other teams"
-          ]
-        },
-        "still": null,
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC. Only teams that agreed are named."
+        "layout": "open",
+        "title": "Then we opened the room to every team.",
+        "caption": "Only what each team said or did counts. Help room, to 1 November 04:01 UTC.",
+        "numbers": [
+          {
+            "value": "8",
+            "label": "teams offered help"
+          },
+          {
+            "value": "3",
+            "label": "re-checked our thermal result"
+          },
+          {
+            "value": "2",
+            "label": "said other help was useful"
+          },
+          {
+            "value": "3",
+            "label": "haven't confirmed"
+          }
+        ],
+        "cards": [
+          "ScienceClaw fixed its package using our review",
+          "A blind cross-team solve started in our room"
+        ]
       },
-      "label": "7 / 9"
+      "label": "8 / 10"
     },
     {
-      "id": "talk8",
+      "id": "t-lesson",
       "main": true,
-      "kicker": "Why it matters",
+      "kicker": "The lesson",
       "notes": {
-        "text": "Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.",
-        "words": 23,
-        "seconds": 9.2,
-        "slowSeconds": 10.2
+        "text": "Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the receipts are yours to verify.",
+        "words": 36,
+        "seconds": 14.4,
+        "slowSeconds": 16
       },
       "content": {
-        "layout": "why",
-        "title": "Why it matters.",
-        "numbers": null,
-        "statement": {
-          "text": "An optimizer is only as reliable as the tool grading it.",
-          "sub": "Independent checks expose disagreements before we build on them."
-        },
+        "layout": "closer",
+        "title": "An optimizer is only as reliable as the tool grading it.",
+        "caption": null,
+        "sub": "Independent checks expose disagreements before we build on them.",
+        "check": "Using the newer version's 3D mode? Check it against the older one.",
         "figure": {
           "id": "plain6",
           "src": "figures/plain6-why.svg",
@@ -509,30 +455,31 @@
             "PASS",
             "Your agent?"
           ]
-        },
-        "caption": "Reruns agree to 0.01 °C, as each team reports them. Gap: CPU-DRAM reference, from the reported table, 232.67 to 125.52 against 115.94. One configured model, simulated."
+        }
       },
-      "label": "8 / 9"
+      "label": "9 / 10"
     },
     {
-      "id": "talk9",
+      "id": "t-door",
       "main": true,
       "kicker": "Live demo",
       "notes": {
-        "text": "The live submission flow is still being finished. This preview uses saved simulation data and sample arrivals to show how it will work. No agent has a verified better layout yet. That's the challenge.",
-        "words": 34,
-        "seconds": 13.6,
-        "slowSeconds": 15.1
+        "text": "The live door isn't open for this talk. What you see is a replay of real recorded runs, with their dates. No agent has a verified better layout yet. That's the challenge.",
+        "words": 32,
+        "seconds": 12.8,
+        "slowSeconds": 14.2
       },
       "content": {
         "layout": "door",
         "title": "Send your agent.",
-        "status": "replay",
-        "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "status": "recorded",
+        "statusText": "Status: recorded runs only. The live door isn't open for this talk, and no real run has been recorded yet.",
         "url": null,
-        "instruction": null,
+        "qr": null,
         "urlNote": null,
-        "diagram": null,
+        "steps": null,
+        "runs": [],
+        "empty": "No recorded runs yet",
         "still": {
           "id": "render",
           "src": "figures/package-render-35323889.png",
@@ -543,7 +490,7 @@
           "label": "simulated, not silicon"
         }
       },
-      "label": "9 / 9"
+      "label": "10 / 10"
     },
     {
       "id": "problem",
@@ -986,10 +933,10 @@
       "main": false,
       "kicker": "Live demo",
       "notes": {
-        "text": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation. This preview uses saved simulation data and sample arrivals, labelled as a replay.",
-        "words": 50,
-        "seconds": 20,
-        "slowSeconds": 22.2
+        "text": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation. Only real recorded runs are shown, with their dates; none has been recorded yet.",
+        "words": 51,
+        "seconds": 20.4,
+        "slowSeconds": 22.7
       },
       "content": {
         "title": "Live demo: send your agent",
@@ -1021,8 +968,8 @@
             "text": "Arrivals, the queue and the package in 3D"
           }
         ],
-        "status": "replay",
-        "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "status": "recorded",
+        "statusText": "Status: recorded runs only. The live door isn't open for this talk, and no real run has been recorded yet.",
         "still": {
           "id": "view3d",
           "src": "figures/package-view-35323889.png",
@@ -1459,7 +1406,7 @@
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 05:00 UTC"
+          "checked": "checked 2026-11-01 05:53 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1661,84 +1608,84 @@
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 05:00 UTC",
+        "checked": "checked 2026-11-01 05:53 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 05:00 UTC"
+            "checked": "checked 2026-11-01 05:53 UTC"
           }
         ]
       },
@@ -1789,9 +1736,264 @@
       "label": "B21"
     },
     {
+      "id": "b-plain1",
+      "main": false,
+      "kicker": "Backup · same design",
+      "notes": {
+        "text": "Backup. The hook's two numbers as heat maps: the same design, same files, two versions.",
+        "words": 15,
+        "seconds": 6,
+        "slowSeconds": 6.7
+      },
+      "content": {
+        "layout": "talk",
+        "title": "Same design, same files: 119 °C or 241 °C?",
+        "figure": {
+          "id": "plain1",
+          "src": "figures/plain1-same-chips.svg",
+          "sha256": "9d1e00cabb836fcb3d9174a0f3cd3d9e5776804c05285da8b5fe328c64423e75",
+          "width": 1664,
+          "height": 640,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "Two heat maps of the same chip layout on one colour scale. The older simulator version peaks at 119 degrees C and the newer one at 241: 2.6 times as much heating above the 45 degree air, with the same chips, power and input files.",
+          "texts": [
+            "Older, 6.0",
+            "hottest spot 119 °C",
+            "CPU",
+            "CPU",
+            "CPU",
+            "CPU",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "Newer, 7.0",
+            "hottest spot 241 °C",
+            "CPU",
+            "CPU",
+            "CPU",
+            "CPU",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "45 °C",
+            "100 °C",
+            "150 °C",
+            "200 °C",
+            "245 °C",
+            "2.6×",
+            "as much heating,",
+            "above the 45 °C air",
+            "Same chips",
+            "Same power",
+            "Same input files"
+          ]
+        },
+        "still": null,
+        "caption": "The CPU-DRAM reference layout. HotSpot 6.0 and 7.0. Design from TAP-2.5D, DATE 2021. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+      },
+      "label": "B22"
+    },
+    {
+      "id": "b-plain4",
+      "main": false,
+      "kicker": "Backup · the agents",
+      "notes": {
+        "text": "Backup. Who contributed what, lane by lane, from the room record.",
+        "words": 11,
+        "seconds": 4.4,
+        "slowSeconds": 4.9
+      },
+      "content": {
+        "layout": "talk",
+        "title": "The agents found it, and stopped our own run.",
+        "figure": {
+          "id": "plain4",
+          "src": "figures/plain4-timeline.svg",
+          "sha256": "036788919f1a9f8a6138b139e0da55eac6592dc9dd7b7326155682bd7f1fea71",
+          "width": 1664,
+          "height": 690,
+          "scale": 0.92,
+          "minFont": 24,
+          "alt": "One lane per actor. A person asks at 12:43 why the study came out inconclusive. Three agents post sealed notes between 13:08 and 13:15: agent 3 shows the setup heats up far more than the paper, and agent 1, 32 minutes after the question, names a suspect; agent 2 confirms it at 13:28. Agent 4, run by another person, models it from public code at 14:26. Agent 2 shows the gap in saved results at 14:42. At 15:52 agent 1 proposes stopping the group's own public run; agents 3 and 2 agree; it stops under 5 minutes after the proposal. The numbers are taken back in public at 16:40. Agent 3 posts the public test case at 22:22. Delfie reproduces it at 23:01, 39 minutes after. The test set in advance passes at 23:44. A separate solver follows at 00:03, 1 hour 41 after.",
+          "texts": [
+            "A person",
+            "Agent 1",
+            "Agent 2",
+            "Agent 3",
+            "Agent 4",
+            "Outside teams",
+            "Run stopped in under 5 min",
+            "32 min",
+            "16:40 Numbers taken back in public",
+            "12:43",
+            "Why did our study come out inconclusive?",
+            "13:15",
+            "Sealed notes:",
+            "names a suspect",
+            "15:52",
+            "Proposes stopping",
+            "our own public run",
+            "23:44",
+            "Test set in advance:",
+            "PASS",
+            "13:08",
+            "Sealed notes",
+            "13:28",
+            "Confirms the",
+            "suspect",
+            "14:42",
+            "Saved results",
+            "show the gap",
+            "15:54",
+            "Agrees",
+            "13:15",
+            "Sealed notes: heats up",
+            "far more than the paper",
+            "15:52",
+            "Agrees",
+            "22:22",
+            "Posts the public",
+            "test case",
+            "14:26",
+            "Another person's agent",
+            "models it from public code",
+            "23:01",
+            "Delfie reproduces it,",
+            "39 min after",
+            "00:03",
+            "Separate solver,",
+            "1 h 41 after",
+            "13:00",
+            "14:00",
+            "15:00",
+            "16:00",
+            "23:00",
+            "00:00",
+            "UTC"
+          ]
+        },
+        "still": null,
+        "caption": "UTC, from the room record, 31 October into 1 November. Linear on each side of the break. Notes were sealed before reading each other's; one agent had seen a one-line preview. Agent 4 had read the suspect before modelling it. Lanes show who contributed what in the room record; they don't prove nobody coordinated."
+      },
+      "label": "B23"
+    },
+    {
+      "id": "b-plain5",
+      "main": false,
+      "kicker": "Backup · checking each other",
+      "notes": {
+        "text": "Backup. The review count behind the 17: a description, not a controlled test.",
+        "words": 13,
+        "seconds": 5.2,
+        "slowSeconds": 5.8
+      },
+      "content": {
+        "layout": "talk",
+        "title": "A second agent catches what the first approved.",
+        "figure": {
+          "id": "plain5",
+          "src": "figures/plain5-reviews.svg",
+          "sha256": "36618595f72fc9aff22fa2bddd3efa76a4686957600ff53a51377f61e507869b",
+          "width": 1664,
+          "height": 600,
+          "scale": 1,
+          "minFont": 28,
+          "alt": "A field of 190 squares, one per issue raised across 34 code reviews: 17 at a version another agent had already approved, 63 more where a later agent was first on record, and 110 others.",
+          "texts": [
+            "190 issues raised across 34 code reviews",
+            "17",
+            "at a version another",
+            "agent had approved",
+            "63",
+            "more where a later",
+            "agent was first",
+            "110",
+            "others"
+          ]
+        },
+        "still": null,
+        "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. Not blind, so a description, not a controlled test."
+      },
+      "label": "B24"
+    },
+    {
+      "id": "b-fig6",
+      "main": false,
+      "kicker": "Backup · other teams",
+      "notes": {
+        "text": "Backup. The map behind the 8, 3, 2 and 3, as each team said or did.",
+        "words": 16,
+        "seconds": 6.4,
+        "slowSeconds": 7.1
+      },
+      "content": {
+        "layout": "talk",
+        "title": "Other teams build on it.",
+        "figure": {
+          "id": "fig6",
+          "src": "figures/fig6-teams.svg",
+          "sha256": "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79",
+          "width": 1664,
+          "height": 760,
+          "scale": 0.92,
+          "minFont": 24,
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: Delfie, ScienceClaw, An outside team. Said it helped: An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: Delfie to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind solve, compared; An outside team to An outside team: evaluation notes.",
+          "texts": [
+            "public test case",
+            "rigidity tool",
+            "public case, review",
+            "benchmark, public case",
+            "shot-cost points",
+            "test harness",
+            "dataset search",
+            "answers, knowledge base",
+            "physics anchors",
+            "fracture package",
+            "blind solve, compared",
+            "evaluation notes",
+            "SentiLab",
+            "Delfie",
+            "Both versions on our case in",
+            "39 min. Then tested one change",
+            "An outside team",
+            "Ran through the open-source",
+            "ScienceClaw registry, executor",
+            "ScienceClaw",
+            "Re-ran our case: same numbers.",
+            "Used our review on its package",
+            "An outside team",
+            "Separate solver on our",
+            "case, in 1 h 41",
+            "An outside team",
+            "“Thanks, very useful”",
+            "Result not shown",
+            "An outside team",
+            "Asked for it.",
+            "Use not confirmed yet",
+            "An outside team",
+            "“glad to have another",
+            "agent on it”",
+            "An outside team",
+            "“Yes, yours helped.”",
+            "Then it corrected a claim of ours",
+            "3 checked our thermal case",
+            "2 said other help was useful",
+            "3 haven't confirmed yet",
+            "between other teams"
+          ]
+        },
+        "still": null,
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC. Only teams that agreed are named."
+      },
+      "label": "B25"
+    },
+    {
       "id": "qa",
       "main": false,
-      "kicker": "Backup · questions",
+      "kicker": "Backup · questions · 1 of 8",
       "notes": {
         "text": "Backup. If asked, answer in these words.",
         "words": 7,
@@ -1800,43 +2002,251 @@
       },
       "content": {
         "title": "Questions we may get, answered plainly.",
+        "story": "An AI agent is only as good as the grader it optimizes against. Our grader is a simulator, HotSpot, that predicts how hot a chip layout runs. Two versions of it gave very different answers on the same design and the same files. Our agents traced it, stopped our own run, took our numbers back in public, and reproduced two published results before trusting anything again.",
         "items": [
+          {
+            "q": "What does SentiLab do?",
+            "a": "AI agents propose chip layouts and check each other's work, and we keep the evidence behind every result."
+          }
+        ]
+      },
+      "label": "B26"
+    },
+    {
+      "id": "qa-2",
+      "main": false,
+      "kicker": "Backup · questions · 2 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "What did you find?",
+            "a": "Two versions of the same simulator gave very different answers for the same design and the same input files: on the CPU-DRAM design, 119 or 241 degrees at the hottest spot on the chips. Our earlier results used the newer one, so we took them back."
+          },
+          {
+            "q": "Which version is right?",
+            "a": "Other model checks are closer to the older version on these cases, though their readings differ. We have no hardware measurement for these reconstructed layouts."
+          },
+          {
+            "q": "So it's a bug?",
+            "a": "We can show where the two versions differ in the public code. Only the authors can say what they intended. Delfie's report calls it a likely bug; those are their words."
+          }
+        ]
+      },
+      "label": "B27"
+    },
+    {
+      "id": "qa-3",
+      "main": false,
+      "kicker": "Backup · questions · 3 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "What's the difference, simply?",
+            "a": "The newer version puts an extra obstacle between the metal lid and the cooler. Delfie changed just that one step, and most of the gap went away. ScienceClaw re-ran it and got the same numbers."
+          },
+          {
+            "q": "Did you run that change yourselves?",
+            "a": "Not yet. It's reported by those two teams."
+          },
+          {
+            "q": "Why 119 on one slide and 116 on another?",
+            "a": "Different readings of the same design. 119 is the hottest spot on the chips. 116 is the reading the paper itself reports, so that's the one we tested against."
+          },
+          {
+            "q": "What does PASS prove?",
+            "a": "We reproduced two published reference temperatures within a hundredth of a degree, using the older-version setup we fixed in advance. It doesn't prove the simulator matches a real chip."
+          }
+        ]
+      },
+      "label": "B28"
+    },
+    {
+      "id": "qa-4",
+      "main": false,
+      "kicker": "Backup · questions · 4 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "Is 241 degrees real?",
+            "a": "It's a simulator output for these fixed inputs. We have no hardware measurement showing that temperature, and this test doesn't tell us when a real chip would throttle or fail."
+          },
+          {
+            "q": "Why should anyone care?",
+            "a": "If an AI optimizes against a grader nobody checked, it can be confidently wrong, fast."
+          },
+          {
+            "q": "What should I do if I use HotSpot?",
+            "a": "If you run version 7's detailed-3D mode on stacks like these, compare it against 6.0. Delfie reports that with that mode off, both versions give the same answer."
+          },
+          {
+            "q": "Does it change which design wins?",
+            "a": "We haven't measured that yet."
+          },
+          {
+            "q": "Did your agents find a better layout?",
+            "a": "Not a verified one yet. That's what the live challenge is for."
+          }
+        ]
+      },
+      "label": "B29"
+    },
+    {
+      "id": "qa-5",
+      "main": false,
+      "kicker": "Backup · questions · 5 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "Who else is affected?",
+            "a": "We don't know how broadly it applies. In the papers we checked, the ones that named a HotSpot version named 6.0. We've established the difference in the setup we tested, and we corrected our own results."
+          },
+          {
+            "q": "Why hasn't anyone noticed?",
+            "a": "We don't know. The project issue lists we searched had no earlier report of this specific difference."
+          },
+          {
+            "q": "Have you told the authors?",
+            "a": "A note is drafted. Sending it is still pending."
+          }
+        ]
+      },
+      "label": "B30"
+    },
+    {
+      "id": "qa-6",
+      "main": false,
+      "kicker": "Backup · questions · 6 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "Did a person tell them to stop?",
+            "a": "I asked the question that started it, and I asked three agents to research separately and then challenge each other. The record shows one agent proposing the stop and two agreeing, and the run stopped under five minutes later. We don't claim nobody spoke to them outside the room."
+          },
+          {
+            "q": "Why many agents, not one?",
+            "a": "Three agents saved separate notes before reading each other's full reports; one had seen a one-line preview. One measured the gap, another named the suspect, and none had both. That's one case we reviewed afterwards, not proof that more agents work better."
+          }
+        ]
+      },
+      "label": "B31"
+    },
+    {
+      "id": "qa-7",
+      "main": false,
+      "kicker": "Backup · questions · 7 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "Are those 17 real misses?",
+            "a": "Across 34 code reviews we counted 190 findings, and 17 were first recorded after another reviewer's approval. The approving reviewer confirmed 4 were inside what it had checked. The other 13 haven't been classified that way. It's a count from real work, not a controlled test."
+          },
+          {
+            "q": "How much did you help other teams?",
+            "a": "We offered help to eight teams. Three checked our thermal case, two told us other help was useful, and three haven't confirmed. Only what they said or did counts."
+          },
+          {
+            "q": "What did it cost?",
+            "a": "About $6,400 had been posted to the shared cloud account when checked at 02:44 UTC. That includes delayed postings and isn't the price of this experiment."
+          }
+        ]
+      },
+      "label": "B32"
+    },
+    {
+      "id": "qa-8",
+      "main": false,
+      "kicker": "Backup · questions · 8 of 8",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "story": null,
+        "items": [
+          {
+            "q": "Does it save money or time?",
+            "a": "We don't claim that. We have no fair baseline to compare against."
+          },
+          {
+            "q": "Is this real hardware?",
+            "a": "No. It's all simulated, not silicon."
+          },
           {
             "q": "Why does it say unvalidated?",
             "a": "That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."
           },
           {
-            "q": "Did you make a better chip?",
-            "a": "Not a verified one yet. That's the open challenge."
-          },
-          {
-            "q": "Which version is right?",
-            "a": "We reproduced the published result and compared independent models. Nobody has measured this chip yet."
-          },
-          {
-            "q": "Why more than one agent?",
-            "a": "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."
-          },
-          {
-            "q": "What happens with the special 3D mode off?",
-            "a": "Both versions give the same answer, as reported by Delfie (delphisci team)."
+            "q": "Anything deeper",
+            "a": "That's a physics detail I won't guess at. It's in our backup slides, and the team can follow up with you."
           }
         ]
       },
-      "label": "B22"
+      "label": "B33"
     }
   ],
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T05:02:00Z",
+    "cutoff": "2026-11-01T05:55:00Z",
     "preview": false,
     "rederived": true,
-    "demoStatus": "replay",
-    "demoReview": false
+    "demoStatus": "recorded",
+    "demoReview": false,
+    "slot": "3+2"
   },
   "source": {
-    "finalSha256": "d2c5fdfe83b6440ccb83294c155dcfe8eb1e5362aec07dfd6480ee2e13e477d4",
-    "schemaSha256": "8e1122c7e6960e9bca782c2c6d06b59c068e132b77213dbc642392c2a3cd0bd7"
+    "finalSha256": "fd083b02653aa3245c946a42338b9ecff14ad354f087d5e26f08cdba3efc71b6",
+    "schemaSha256": "28db1b860c3655135cdf94e4432c2f43169214a5a198d0229eb8b84c3acb666b"
   }
 }

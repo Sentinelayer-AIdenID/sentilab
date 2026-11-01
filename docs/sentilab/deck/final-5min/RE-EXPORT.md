@@ -8,7 +8,15 @@ the contributed `make_figures.py` or `render.mjs`.
 The three-minute deck in `../final-3min/` and `deck/final/` is preserved as exported at 00:12 UTC. The tests pin every
 file, and the exporter refuses to write any of them.
 
-## The plain talk
+## Script v3 and the slot
+
+The main slides are script v3 (`PLAIN-SCRIPT.md`), and `--slot 3total` builds the short cut from
+`PLAIN-SCRIPT-SHORT.md` over the same screens; `--slot 3+2` is the default. `--demo-status live|recorded` picks the
+door's variant (RECORDED by default; LIVE needs the confirmed address, or `--demo-review` for a marked review render).
+A real recorded run goes into the door's `runs` list with its date and room record. `plainTalk.namesOnStage` puts
+names on the team slide once Carter says yes; it needs every person's and agent's name first.
+
+## The plain talk (v2.5, kept as the fallback)
 
 The nine main slides are the plain-language script in `PLAIN-SCRIPT.md`: `plainTalk` in `FINAL.json` holds each slide's
 title and "Say" text word for word, its picture and its caption, and the tests compare them with the script. For a new
