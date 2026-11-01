@@ -276,3 +276,26 @@ test("door: with every read hanging, a visitor ages out of the Door on the clock
   assert.equal(tableDoor(), `${doorCount(atlasEls())} · arrival records`, "the expanded table was redrawn with the maps (the Door's live count)");
   assert.equal(doorCount(bigEls()), doorCount(atlasEls()));
 });
+
+// Root (d9f3846, 23:26Z): every drawAtlas wrote one shared Door key. Opening the expanded atlas just after a visitor's
+// 15 minutes (age 900,500 ms) and before the next clock tick, with every read hung, drew zero there and wrote the empty
+// key, so the clock then saw "nothing changed" and the small map kept the visitor. Each map now keeps its own key.
+test("door: an expanded-only draw just past the cutoff never leaves the small map stale", async (t) => {
+  const d = await open(t, "interleave");
+  const at = Date.now();
+  d.arrive("9f8c", at);
+  await settleFor(t, 4000);
+  assert.equal(figures().filter((f) => f.guest).length, 1, "the visitor is at the Door");
+  d.state.hang = true;
+  // To 500 ms before age 900,500 in whole seconds, then the last half second: between two clock ticks.
+  await settleFor(t, at + 900000 - Date.now(), 1000);
+  await settleFor(t, 500, 500);
+  assert.equal(Date.now() - at, 900500, "age 900,500 ms, just past the inclusive 15-minute cutoff");
+  assert.equal(figures().filter((f) => f.guest).length, 1, "the last tick (age 900,000) still held it");
+  lastPage.atlasButton.click();
+  const bigGuests = () => walk(document.getElementById("modalBody")).filter((el) => el.tag === "svg" && /\bguest\b/.test(el.getAttribute("class") ?? "")).length;
+  assert.equal(bigGuests(), 0, "the expanded map, drawn now, has none");
+  await settleFor(t, 3000, 1000);
+  assert.equal(figures().filter((f) => f.guest).length, 0, "the small map catches up on the next tick");
+  assert.equal(bigGuests(), 0);
+});

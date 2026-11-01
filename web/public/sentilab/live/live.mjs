@@ -238,10 +238,6 @@ function presenceText(L, now = Date.now()) {
   const t = W.ago(act.at, now);
   return !act.bound ? W.PRESENCE.runOnly(t) : now - act.at <= M.AGENT_HERE_MS ? W.PRESENCE.here(t) : W.PRESENCE.gone(t);
 }
-function presenceLine(L, now, cls) {
-  const text = presenceText(L, now);
-  return text ? h("small", { class: cls, title: W.PRESENCE.title }, text) : null;
-}
 function renderPresence() {
   const L = shownRun().L, el = $("modelPresence");
   const text = L ? presenceText(L) : null;
@@ -277,6 +273,33 @@ function renderPackageButton() {
   b.hidden = !ok;
   b.setAttribute("title", W.PACKAGE.title);
 }
+// Stable proposal rows (root, 04927b9 P2: the timeline was rebuilt every second, so a keyboard-focused proposal, or its
+// package action, was removed on the next tick and focus was lost). One row per FULL run id, made once and updated in
+// place: name, badge, marks, outcome, time and the selected row's presence line change as text inside the same nodes,
+// so a hide or a failed or stale read still removes a declared name on the next render. The package action and the
+// view-only line are stable per run id too. The list's children are re-placed only when the set or order changes, and
+// focus is then given back to the same node.
+const proposalRows = new Map();   // run id -> { row, who, marks, when, presence, pack, view, keys }
+let proposalsEmpty = null;
+function proposalRow(L) {
+  let r = proposalRows.get(L.id);
+  if (r) return r;
+  const who = h("span", { class: "proposal-who" });
+  const marks = h("span", { class: "proposal-marks" });
+  const when = h("small", { class: "proposal-when" });
+  const presence = h("small", { class: "proposal-presence", hidden: true });
+  const row = h("button", { type: "button", class: "proposal", dataset: { run: L.id } },
+    avatar({ cls: L.cls, short: L.short, seq: 0 }), h("span", { class: "proposal-main" }, who, marks, when, presence));
+  row.addEventListener("click", () => selectRun(L.id));
+  const pack = h("button", { type: "button", class: "engineer-package text-button", title: W.PACKAGE.title }, W.PACKAGE.button);
+  pack.addEventListener("click", () => downloadPackage(L.id));
+  const view = h("p", { class: "view-only" }, W.PACKAGE.viewOnly);
+  r = { row, who, marks, when, presence, pack, view, keys: {} };
+  proposalRows.set(L.id, r);
+  return r;
+}
+// Runs fill() only when what it would draw changed (key), so an unchanged row is not touched.
+function once(r, part, key, fill) { if (r.keys[part] !== key) { r.keys[part] = key; fill(); } }
 function renderProposals() {
   const box = $("proposalList");
   if (!box) return;
@@ -286,36 +309,49 @@ function renderProposals() {
   const shown = shownRun().L;
   const names = namesNow();
   const records = [...S.records.values(), ...feed.state.events];
-  box.replaceChildren(...list.flatMap((L) => {
+  const desired = [];
+  for (const L of list) {
+    const r = proposalRow(L);
+    const selected = Boolean(shown && shown.id === L.id);
     const name = M.runName(L, feed.state.events, names);
     const at = M.proposedAt(L.id, records);
     const o = M.runOutcome(L), mark = M.proposalMark(L);
     const since = seenAt.get(L.id);
     const fresh = since !== null && since !== undefined && now - since < PROPOSAL_NEW_MS;
-    const row = h("button", { type: "button", class: `proposal${shown && shown.id === L.id ? " selected" : ""}`, dataset: { run: L.id } },
-      avatar({ cls: L.cls, short: L.short, seq: 0 }),
-      h("span", { class: "proposal-main" },
-        h("span", { class: "proposal-who" }, ...(name === null ? [W.PROPOSALS.from(L.short)] : [h("bdi", null, name), W.PROPOSALS.named(L.short)]),
-          fresh ? h("span", { class: "new-proposal small" }, W.PROPOSALS.fresh) : null),
-        mark === "received"
-          ? [h("small", { class: "proposal-received", title: W.PROPOSALS.receivedTitle }, markSvg("received"), W.PROPOSALS.received),
-            h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]
-          : h("small", { class: "proposal-refused", title: o.title }, markSvg("refused"), o.text),
-        h("small", { class: "proposal-when" }, at ? W.when(at, now) : W.TEXT.submittedEarlier),
-        shown && shown.id === L.id ? presenceLine(L, now, "proposal-presence") : null));
-    row.addEventListener("click", () => selectRun(L.id));
-    // The selected proposal, once accepted with a matching replay, can be packaged for engineers.
+    const cls = `proposal${selected ? " selected" : ""}`;
+    if (r.row.className !== cls) r.row.className = cls;
+    once(r, "who", JSON.stringify([name, L.short, fresh]), () => r.who.replaceChildren(
+      ...(name === null ? [W.PROPOSALS.from(L.short)] : [h("bdi", null, name), W.PROPOSALS.named(L.short)]),
+      fresh ? h("span", { class: "new-proposal small" }, W.PROPOSALS.fresh) : null));
+    once(r, "marks", JSON.stringify([mark, o.kind, o.text, o.title]), () => r.marks.replaceChildren(...(mark === "received"
+      ? [h("small", { class: "proposal-received", title: W.PROPOSALS.receivedTitle }, markSvg("received"), W.PROPOSALS.received),
+        h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]
+      : [h("small", { class: "proposal-refused", title: o.title }, markSvg("refused"), o.text)])));
+    const whenText = at ? W.when(at, now) : W.TEXT.submittedEarlier;
+    if (r.when.textContent !== whenText) r.when.textContent = whenText;
+    const presence = selected ? presenceText(L, now) : null;
+    once(r, "presence", presence ?? "", () => {
+      r.presence.textContent = presence ?? "";
+      r.presence.hidden = !presence;
+      if (presence) r.presence.setAttribute("title", W.PRESENCE.title); else r.presence.removeAttribute("title");
+    });
+    desired.push(r.row);
+    // The selected proposal, once accepted with a matching replay: its package action when licensed, else view only.
     const raw = rawResults.get(L.id);
-    if (!(shown && shown.id === L.id && M.packageable(raw))) return [row];
-    if (!M.downloadable(raw, licences)) return [row, h("p", { class: "view-only" }, W.PACKAGE.viewOnly)];
-    const pack = h("button", { type: "button", class: "engineer-package text-button", title: W.PACKAGE.title }, W.PACKAGE.button);
-    pack.addEventListener("click", () => downloadPackage(L.id));
-    return [row, pack];
-  }));
+    if (selected && M.packageable(raw)) desired.push(M.downloadable(raw, licences) ? r.pack : r.view);
+  }
+  const ids = new Set(list.map((L) => L.id));
+  for (const id of [...proposalRows.keys()]) if (!ids.has(id)) proposalRows.delete(id);
+  if (!list.length) desired.push(proposalsEmpty ??= h("p", { class: "rail-empty" }, W.PROPOSALS.none));
+  const current = [...box.children];
+  if (current.length !== desired.length || current.some((n, i) => n !== desired[i])) {
+    const active = document.activeElement;
+    box.replaceChildren(...desired);
+    if (active && document.activeElement !== active && desired.includes(active)) active.focus?.({ preventScroll: true });
+  }
   const top = $("topLayouts");
   top.hidden = ![...rawResults.values()].some((x) => M.downloadable(x, licences));
   top.setAttribute("title", W.PACKAGE.topTitle);
-  if (!list.length) box.append(h("p", { class: "rail-empty" }, W.PROPOSALS.none));
   $("proposalsHead").textContent = W.PROPOSALS.head;
 }
 
@@ -407,14 +443,18 @@ function renderRuns() {
   const shown = shownRun().L;
   $("runCount").textContent = String(list.length).padStart(2, "0");
   const box = $("runList"), mob = $("mobileRuns");
-  const focusId = document.activeElement?.dataset?.run ?? null;
+  // Focus is given back only to this rail's own rebuilt card, in the same list; focus elsewhere (a timeline row with the
+  // same run id, for one) is never taken (root, 04927b9 P2: restore without stealing).
+  const active = document.activeElement;
+  const inMobile = Boolean(active && mob.contains?.(active)), inRail = Boolean(active && box.contains?.(active));
+  const focusId = inRail || inMobile ? active.dataset?.run ?? null : null;
   box.replaceChildren(...list.map((L) => runCard(L, L === shown)));
   mob.replaceChildren(...list.map((L) => runCard(L, L === shown, { mobile: true })));
   if (!list.length) {
     const st = M.feedStatus(feed.state, { hostname: location.hostname }).state;
     box.append(h("p", { class: "rail-empty" }, st === "error" ? "No runs: the door feed is not answering." : st === "connecting" ? "Reading the door's runs." : "No runs yet. The first proposal appears here as it arrives."));
   }
-  if (focusId) $$(`[data-run]`).find((b) => b.dataset.run === focusId && b.offsetParent !== null)?.focus();
+  if (focusId) [...(inMobile ? mob : box).querySelectorAll("[data-run]")].find((b) => b.dataset.run === focusId)?.focus();
 }
 
 function renderModel() {
@@ -541,12 +581,15 @@ function draw2d(L) {
 const STATION_XY = [[56, 34], [150, 22], [244, 34], [258, 108], [150, 128], [42, 108]];
 // The Door visitors last drawn (their arrival seqs). The page's 1 s clock recomputes them and redraws both maps when
 // the set changes, so a visitor ages out of the Door at its 15 minutes even when no read answers (root, 26000ae P2).
-let doorKey = null;
+// Each map keeps its own key (root, d9f3846: an expanded-only draw must never acknowledge the small map's state).
+const doorKeys = new WeakMap();   // map svg -> the visitor key it was drawn with
 const doorKeyOf = (visitors) => visitors.map((e) => e.seq).join(",");
 function doorChanged() {
-  if (doorKey === null) return false;
+  const maps = [$("atlasSvg"), ...(openAtlas ? [openAtlas.svg] : [])].filter((svg) => doorKeys.has(svg));
+  if (!maps.length) return false;
   const held = [...S.records.values(), ...feed.state.events];
-  return doorKeyOf(M.doorVisitors(held, Date.now(), M.linkedArrivals(held))) !== doorKey;
+  const key = doorKeyOf(M.doorVisitors(held, Date.now(), M.linkedArrivals(held)));
+  return maps.some((svg) => doorKeys.get(svg) !== key);
 }
 function drawAtlas(svg, { large = false } = {}) {
   const a = M.atlas(layouts(), feed.state.events, walkAt());
@@ -554,7 +597,7 @@ function drawAtlas(svg, { large = false } = {}) {
   const playing = new Set(a.stations.flatMap((st) => st.playback.map((r) => r.id)));
   const held = [...S.records.values(), ...feed.state.events];
   const visitorsNow = M.doorVisitors(held, Date.now(), M.linkedArrivals(held));
-  doorKey = doorKeyOf(visitorsNow);
+  doorKeys.set(svg, doorKeyOf(visitorsNow));
   svg.replaceChildren();
   svg.append(s("ellipse", { class: "atlas-ring", cx: 150, cy: 76, rx: 108, ry: 52 }));
   a.stations.forEach((st, i) => {
