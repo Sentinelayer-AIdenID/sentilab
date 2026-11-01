@@ -1,7 +1,7 @@
 # SLAB-049 coupling allocation
 
-Implementation status: allocation, exact numeric evaluation, the three pre-registered outcome wordings relayed
-by Warden from #57614/root, and the four-file replay policy are implemented. Signing and executing the experiment
+Implementation status: allocation, exact numeric evaluation, the four final outcome wordings from Aneta #57732
+(source `4d7804bb-1300-44af-93bc-1885cc0e311d`, accepted by root522), and the four-file replay policy are implemented. Signing and executing the experiment
 remain pending independent review and Warden's new allocation; this implementation makes no experimental claim.
 
 Ticket 01ac77ac adds the four calls from `coupling-call-list.json` as an explicitly selected allocation. The
@@ -18,8 +18,29 @@ Loading a manifest path alone never selects coupling: `--manifest coupling` is r
 The four rows retain the call-list order: Ascend primary/replay, then CPU-DRAM primary/replay. Each reserves
 58.5 CPU-s (50 solver + 8.5 overhead), for a binding cap of 234 CPU-s, concurrency one, with no retries. The
 existing signed ledger and create-only tag machinery handles admission, reservation, launch and settlement.
-Ledger directories already include the manifest hash. Coupling uses `/srv/gate0/coupling/runs` for its output,
-CPU carry and operator log; gate zero keeps `/srv/gate0/runs`.
+Ledger directories already include the manifest hash. Coupling uses `/srv/gate0/runs/coupling` for its output,
+CPU carry and operator log; gate zero keeps `/srv/gate0/runs`. The coupling admission deadline is independently
+fixed at **2026-11-02T06:00:00Z** (root512 and Aneta57718). Entry and signed-ledger admission accept the exact
+deadline and refuse later times; the signed grant may close earlier. This changes no gate-zero window or grant.
+
+The operator must provision the coupling directory under the host `/srv/gate0/runs` bind mount before use.
+The coupling CLI refuses before dispatch if that directory is absent or aliased by a symlink, if mountinfo does
+not show the exact writable `/srv/gate0/runs` mount with filesystem root `/srv/gate0/runs`, or if another mount
+shadows any descendant. CPU carry, its temporary file, log and `report --out` must resolve inside coupling's
+verified tree without symlink aliases. Only fresh per-call children are created, without recreating parents.
+
+`cpu-used.json` must also be provisioned for coupling grant/run with a finite, nonnegative `used_cpu_s` number.
+The operator initializes it to zero only for a genuinely unused allocation; otherwise the operator reconciles
+retained accounting. Missing, null/unknown or invalid carry refuses; it never implicitly resets usage to zero.
+Report readback can still inspect retained evidence when carry is absent. Consumed reservations remain consumed.
+
+This mountinfo check is specific to the known host layout: its root field is filesystem-relative, not a universal
+host-source pathname. Before release Warden must retain the actual wrapper and Docker mount metadata binding
+host `/srv/gate0/runs` to container `/srv/gate0/runs`, plus a harmless marker and representative output, receipt,
+carry and log hash readback from the host after the container exits. An existing directory or an offline mount
+fixture does not establish that operational proof. Reports go directly in the coupling directory and cannot
+overwrite its carry, temporary carry, log or per-call evidence. Do not work around a refusal by making an
+ephemeral directory.
 
 ## Binary identity and provenance
 
@@ -70,19 +91,28 @@ the generator or report.
 
 Alongside that mechanical verdict, each reference has its own outcome. Any missing or unusable call or any
 replay mismatch takes precedence for the overall **DOESN'T COMPLETE** wording, even when another reference
-misses the threshold. Otherwise both references meeting `17/20` selects **MEETS**, and any miss selects
-**MISSES**. There are no retries or automatic extra calls.
+misses the threshold. Otherwise both references meeting `17/20` selects **MEETS**, both missing selects
+**MISSES**, and exactly one meeting selects **MIXED**. Each row names its reference and verdict before the
+overall outcome. The mechanical PASS/FAIL/INCOMPLETE field is distinct from the scientific no-claim wording.
+There are no retries or automatic extra calls.
 
-The manifest freezes these wordings and the percentage mapping: `[x]` is Ascend Layout A and `[y]` is CPU-DRAM.
-Each signed evaluation retains `fraction_percent`, rounded directly from the exact rational to the nearest
-whole percent, with ties away from zero and no clipping to 0–100%. The report repeats that rounding rule.
-Display rounding does not affect the predicate: an exact 84.5% displays as 85% but still misses `17/20`.
+The manifest freezes these wordings and the percentage mapping: in MEETS/MISSES, `[x]` is Ascend 910 and `[y]`
+is CPU-DRAM. In MIXED, the first `[reference]` and `[x]` are the passing reference and its percentage; the second
+`[reference]` and `[y]` are the missing reference and its percentage. This mapping reverses correctly when
+CPU-DRAM passes and Ascend 910 misses.
+Each signed evaluation retains `fraction_percent`, the mathematical floor of 100 times the exact rational,
+without float conversion or clipping to 0–100%. The report repeats that rounding rule explicitly. Display
+rounding does not affect the predicate: an exact 84.5% displays as 84% and misses `17/20`; exact 85% passes.
 
-- **MEETS:** "With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the two
-  references. That localizes it to this term in this configured model. It doesn't tell us what the authors
-  intended, or which version matches hardware."
-- **MISSES:** "That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. Something
-  else also contributes."
+- **MEETS:** "With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on Ascend 910 and
+  [y]% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term in this configured
+  model. It doesn't tell us what the authors intended, or which version matches hardware."
+- **MISSES:** "That one change accounts for [x]% of the difference on Ascend 910 and [y]% on CPU-DRAM, rounded
+  down. Both are below the 85% we fixed. Something else also contributes."
+- **MIXED:** "On [reference], that one change accounts for [x]% of the difference, rounded down, meeting the 85%
+  we fixed. On [reference], it accounts for [y]%, rounded down, below the 85% we fixed, so something else also
+  contributes there. It doesn't meet the bar on both references. It doesn't tell us what the authors intended,
+  or which version matches hardware."
 - **DOESN'T COMPLETE:** "The run didn't complete, so we make no claim from it."
 
 ## Operator review and execution
@@ -95,22 +125,22 @@ Review tests can import the new checkout mounted at `/src`; the operator resolve
 instead of the old image's `/app`. Execution still requires the merged operator code deployed at `/app`, as the
 existing supervisor specifies. Recheck the material-only binary hash in that runtime before signing.
 
-Before the grant, the image must retain material-only provenance: the existing Dockerfile builds this target but
-only explicitly writes provenance for the default HS7 and HS6 builds. Run the existing provenance writer for
-`material_only` in that image; this reads the binary and loader metadata and runs no thermal solve.
+The Dockerfile writes material-only provenance alongside default HS7 provenance. Before the grant, verify that
+the deployed image retains it and that it binds the pinned binary; this source change has not built an image.
+The existing provenance writer reads the binary and loader metadata and runs no thermal solve.
 
 ```sh
 python -m sundai_hotspot.provenance material_only
 python -m sundai_hotspot.coupling_allocation --check-binary /app/sundai_hotspot/hotspot-material-only
 python -m sundai_hotspot.gate0_operator grant --manifest coupling --grant-id <new-grant-id>
 python -m sundai_hotspot.gate0_operator run --manifest coupling --grant-id <new-grant-id>
-python -m sundai_hotspot.gate0_operator report --manifest coupling --out <report-path>
+python -m sundai_hotspot.gate0_operator report --manifest coupling --out /srv/gate0/runs/coupling/report.json
 ```
 
 The operator supplies the usual external key, ledger-root and anchor environment. The original gate-zero
 `record` command remains specific to HS6 certification; coupling adds a diagnostic report, not a gate-zero PASS.
 
-## Local implementation proof
+## Prior implementation proof at 95cb2709
 
 The surrogate executor used Python 3.12.3, GCC 13.3.0, glibc 2.39 and SuperLU 6.0.1. Test temporary files were
 placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing fixtures never reached disk.
@@ -139,7 +169,7 @@ fail with `AssertionError: True is not false`. With the fix, all 21 pass. They c
 or unusable calls, mixed results, exact rounding on both sides of a half-percent, and independent stdout/stderr
 mismatches, using the real validation/report paths and fake engines. No thermal solve is added.
 
-This tree generates coupling manifest SHA-256
+That prior tree generated coupling manifest SHA-256
 `e2de4a6ab7a10602f7236bc8747ae65c5b66597fc7b65cd4c6de943fb5341f9f`.
 The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
 its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.

@@ -45,7 +45,9 @@ import contextlib
 import ctypes
 import datetime as dt
 import json
+import math
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -57,7 +59,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sundai_controller import process_budget  # noqa: E402
 from sundai_hotspot import gate0_anchor, reference_validation  # noqa: E402
 
-RUNS = Path("/srv/gate0/runs")
+RUNS_MOUNT = Path("/srv/gate0/runs")
+RUNS = RUNS_MOUNT
 CPU_FILE = RUNS / "cpu-used.json"
 LOG = RUNS / "operator-log.jsonl"
 PR_SET_CHILD_SUBREAPER, PR_GET_CHILD_SUBREAPER = 36, 37
@@ -83,16 +86,64 @@ def cgroup_cpu_s() -> float:
     raise RuntimeError("no usage_usec in the container's cpu.stat")
 
 
-def carried_cpu_s() -> float:
+def carried_cpu_s(*, required: bool = False) -> float:
     """The cumulative CPU used by earlier runs. If a run recorded it as unknown, every run refuses until the operator
     reconciles it by hand: nothing retries on its own, and no unknown usage is ever counted as zero."""
     if not CPU_FILE.exists():
+        if required:
+            raise SystemExit("coupling CPU carry is missing: the operator must provision or reconcile it; "
+                             "missing usage never resets this allocation to zero")
         return 0.0
     record = json.loads(CPU_FILE.read_text(encoding="utf-8"))
     if record.get("used_cpu_s") is None:
         raise SystemExit(f"the cumulative CPU used is unknown since {record.get('at')} (the meter failed; at least "
                          f"{record.get('lower_bound_cpu_s')} CPU-s): reconcile it by hand before any further call")
-    return float(record["used_cpu_s"])
+    used = record["used_cpu_s"]
+    if isinstance(used, bool) or not isinstance(used, (int, float)) or not math.isfinite(used) or used < 0:
+        raise SystemExit("invalid cumulative CPU carry: reconcile it before any further call")
+    return float(used)
+
+
+def require_coupling_storage(report_out: Path | None = None) -> None:
+    """Validate the known grant host's bind mount before any CLI dispatch or write.
+
+    mountinfo's root is a filesystem-relative path, not universally a host pathname. This deployment requires
+    that root to be /srv/gate0/runs; the operator must independently retain Docker's source/destination binding
+    and post-container host readback. Directory existence alone never proves persistence.
+    """
+    try:
+        expected = RUNS_MOUNT / "coupling"
+        if RUNS != expected or not RUNS.is_dir() or RUNS.resolve(strict=True) != RUNS.absolute():
+            raise ValueError("coupling directory must already exist at the agreed path without symlink aliases")
+        entries = []
+        for line in Path("/proc/self/mountinfo").read_text(encoding="utf-8").splitlines():
+            left, right = line.split(" - ", 1)
+            fields, filesystem = left.split(), right.split()
+            if len(fields) < 6 or len(filesystem) < 3:
+                raise ValueError("malformed mountinfo")
+            decode = lambda value: re.sub(r"\\([0-7]{3})", lambda match: chr(int(match[1], 8)), value)
+            entries.append((Path(decode(fields[3])), Path(decode(fields[4])), fields[5].split(","),
+                            filesystem[0], filesystem[2].split(",")))
+        matches = [entry for entry in entries if entry[1] == RUNS_MOUNT]
+        if len(matches) != 1:
+            raise ValueError("the exact runs mount is missing or ambiguous")
+        root, _, options, filesystem, super_options = matches[0]
+        if (root != RUNS_MOUNT or "rw" not in options or "rw" not in super_options
+                or filesystem in {"overlay", "tmpfs", "ramfs"}):
+            raise ValueError("runs mount has the wrong filesystem root, is read-only or is ephemeral")
+        if any(mount != RUNS_MOUNT and mount.is_relative_to(RUNS_MOUNT) for _, mount, *_ in entries):
+            raise ValueError("a nested mount shadows the agreed runs tree")
+        paths = [CPU_FILE, CPU_FILE.with_suffix(".tmp"), LOG]
+        if report_out is not None:
+            if report_out.parent != RUNS or report_out in paths:
+                raise ValueError("coupling report must be a separate file directly in the persistent coupling directory")
+            paths.append(report_out)
+        for path in paths:
+            resolved = path.resolve()
+            if not resolved.is_relative_to(RUNS.resolve()) or resolved != path.absolute():
+                raise ValueError(f"coupling output escapes or aliases the persistent tree: {path}")
+    except (OSError, ValueError, RuntimeError) as exc:
+        raise SystemExit(f"coupling persistence preflight refused: {exc}") from exc
 
 
 def save_cpu(total: float | None, lower_bound: float | None = None) -> None:
@@ -361,7 +412,8 @@ def cmd_run(args) -> int:
     if len(build) != 40:
         raise SystemExit("BUILD_SHA (the merged build commit) is required")
     build_tree = request("GET", f"/git/commits/{build}")["tree"]["sha"]
-    budget = {"cap": float(grant["cpu_cap_s"]), "carried": carried_cpu_s() - cgroup_cpu_s()}
+    budget = {"cap": float(grant["cpu_cap_s"]),
+              "carried": carried_cpu_s(required=getattr(args, "manifest", "gate0") == "coupling") - cgroup_cpu_s()}
     calls = [call for call in manifest["calls"] if not args.only or call["id"] in args.only]
     for call in calls:
         cid = call["id"]
@@ -382,7 +434,7 @@ def cmd_run(args) -> int:
                 "reserve", args.grant_id, manifest_sha256, cid), tree=build_tree, parents=[build])
             log("reserved", call=cid, ref=ref, commit=sha)
         out = RUNS / f"{cid}-{int(time.time())}"
-        out.mkdir(parents=True)
+        out.mkdir(parents=getattr(args, "manifest", "gate0") != "coupling")
         result = run_call(call, call_argv(call, args, out), out, budget)
         if result["survivors"]:
             log("stop_survivors", call=cid, survivors=result["survivors"], killed=result["killed"], out=result["out"],
@@ -454,10 +506,15 @@ def main(argv: list[str] | None = None) -> int:
         if name in ("record", "report"):
             p.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
-    RUNS = (Path("/srv/gate0/coupling/runs") if getattr(args, "manifest", "gate0") == "coupling"
-            else Path("/srv/gate0/runs"))
+    coupling = getattr(args, "manifest", "gate0") == "coupling"
+    RUNS = RUNS_MOUNT / "coupling" if coupling else RUNS_MOUNT
     CPU_FILE, LOG = RUNS / "cpu-used.json", RUNS / "operator-log.jsonl"
-    RUNS.mkdir(parents=True, exist_ok=True)
+    if coupling:
+        require_coupling_storage(getattr(args, "out", None))
+        if args.command in ("grant", "run"):
+            carried_cpu_s(required=True)
+    else:
+        RUNS.mkdir(parents=True, exist_ok=True)
     if args.command == "grant":
         return cmd_grant(args)
     if args.command == "run":

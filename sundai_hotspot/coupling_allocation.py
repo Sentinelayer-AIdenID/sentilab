@@ -21,14 +21,21 @@ BINARY_SHA256 = "6ea3b7813412c13d20c92adc6449fbc0bc87c46b521d4d5eaf80b8abc790060
 KIND = "material_only"
 SCHEMA = "sentilab-slab049-coupling-manifest-v1"
 REPLAY_OUTPUTS = ("sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt")
-PERCENTAGE_ROUNDING = "nearest whole percent from the exact rational; ties away from zero"
+NOT_AFTER_UTC = "2026-11-02T06:00:00Z"
+PERCENTAGE_ROUNDING = "whole percent rounded down (floor) from the exact rational; no clipping"
 PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
+REFERENCE_NAMES = {"ascend910-tap25d-fig6a-raw": "Ascend 910", "micro150-tap25d-fig5a-raw": "CPU-DRAM"}
 OUTCOME_WORDINGS = {
-    "MEETS": ("With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the "
-              "two references. That localizes it to this term in this configured model. It doesn't tell us "
-              "what the authors intended, or which version matches hardware."),
-    "MISSES": ("That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. "
-               "Something else also contributes."),
+    "MEETS": ("With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on Ascend 910 "
+              "and [y]% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term "
+              "in this configured model. It doesn't tell us what the authors intended, or which version "
+              "matches hardware."),
+    "MISSES": ("That one change accounts for [x]% of the difference on Ascend 910 and [y]% on CPU-DRAM, "
+               "rounded down. Both are below the 85% we fixed. Something else also contributes."),
+    "MIXED": ("On [reference], that one change accounts for [x]% of the difference, rounded down, meeting "
+              "the 85% we fixed. On [reference], it accounts for [y]%, rounded down, below the 85% we fixed, "
+              "so something else also contributes there. It doesn't meet the bar on both references. "
+              "It doesn't tell us what the authors intended, or which version matches hardware."),
     "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
 }
 
@@ -67,7 +74,9 @@ def build_manifest() -> dict:
     if worst != frozen["total_envelope_cpu_s"]:
         raise slab049.ManifestMismatch("coupling envelope differs from the frozen call list")
     manifest = {key: copy.deepcopy(gate[key]) for key in
-                ("operator", "ledger", "anchor", "grant_window", "references", "source")}
+                ("operator", "ledger", "anchor", "references", "source")}
+    manifest["grant_window"] = {"not_before": "warden's separate coupling grant against the merged build",
+                                "not_after_utc": NOT_AFTER_UTC}
     manifest["source"]["allocation_sha256"] = {
         path: slab049._file_sha256(path) for path in (
             "sundai_hotspot/coupling_allocation.py", "sundai_hotspot/reference_validation.py",
@@ -82,6 +91,8 @@ def build_manifest() -> dict:
                                         "excluded": {"receipt.json": "per-call timestamps and accounting"}},
                     "percentage_rounding": PERCENTAGE_ROUNDING,
                     "percentage_references": dict(PERCENTAGE_REFERENCES),
+                    "reference_names": dict(REFERENCE_NAMES),
+                    "mixed_percentage_references": {"x": "the reference that meets", "y": "the reference that misses"},
                     "outcome_wordings": dict(OUTCOME_WORDINGS)},
         accounting={"calls": len(calls), "max_runs": len(calls), "retries": 0, "concurrency": 1, "gpu": False,
                     "host_architecture": gate["accounting"]["host_architecture"],
@@ -116,10 +127,8 @@ def require_receipt_identity(call: dict, identity: dict) -> None:
 
 
 def whole_percent(fraction: Fraction) -> int:
-    """Round the exact rational to the nearest whole percent, with ties away from zero."""
-    whole, remainder = divmod(abs(fraction.numerator) * 100, fraction.denominator)
-    magnitude = whole + (2 * remainder >= fraction.denominator)
-    return -magnitude if fraction < 0 else magnitude
+    """Round down mathematically, including negative values; never convert to float or clip."""
+    return fraction.numerator * 100 // fraction.denominator
 
 
 def evaluate_call(call: dict, directory: Path, record: dict, identity: dict,
@@ -207,15 +216,22 @@ def report(manifest: dict, digest: str, ledger: dict, tags) -> dict:
         complete = primary["usable"] and replay["usable"] and identical is not None
         outcome = ("DOESN'T COMPLETE" if not complete or identical is not True
                    else "MISSES" if failed else "MEETS")
-        rows.append({"reference": call["reference"], "temperature_label": gate_zero.TEMPERATURE_LABELS[KIND],
+        rows.append({"reference": call["reference"], "reference_name": REFERENCE_NAMES[call["reference"]],
+                     "temperature_label": gate_zero.TEMPERATURE_LABELS[KIND],
                      "primary": pair[0], "replay": pair[1], "replay_byte_identical": identical,
                      "predicate": False if failed else True if complete else None, "outcome": outcome})
     predicate = (False if any(row["predicate"] is False for row in rows)
                  else True if all(row["predicate"] is True for row in rows) else None)
     outcome = ("DOESN'T COMPLETE" if any(row["outcome"] == "DOESN'T COMPLETE" for row in rows)
-               else "MEETS" if predicate is True else "MISSES")
+               else "MEETS" if predicate is True
+               else "MIXED" if any(row["outcome"] == "MEETS" for row in rows) else "MISSES")
     wording = OUTCOME_WORDINGS[outcome]
-    if outcome != "DOESN'T COMPLETE":
+    if outcome == "MIXED":
+        for placeholder, result in (("x", "MEETS"), ("y", "MISSES")):
+            row = next(row for row in rows if row["outcome"] == result)
+            wording = wording.replace("[reference]", row["reference_name"], 1)
+            wording = wording.replace(f"[{placeholder}]", str(row["primary"]["fraction_percent"]))
+    elif outcome != "DOESN'T COMPLETE":
         by_reference = {row["reference"]: row for row in rows}
         for placeholder, reference in PERCENTAGE_REFERENCES.items():
             wording = wording.replace(f"[{placeholder}]", str(by_reference[reference]["primary"]["fraction_percent"]))

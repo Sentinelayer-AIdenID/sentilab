@@ -28,10 +28,10 @@ class CouplingManifestTests(unittest.TestCase):
         self.assertEqual(evaluation["replay_identity"]["comparison"], "byte-for-byte")
         self.assertIn("receipt.json", evaluation["replay_identity"]["excluded"])
         self.assertEqual(evaluation["percentage_rounding"],
-                         "nearest whole percent from the exact rational; ties away from zero")
+                         "whole percent rounded down (floor) from the exact rational; no clipping")
         self.assertEqual(evaluation["percentage_references"],
                          {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"})
-        self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "DOESN'T COMPLETE"})
+        self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "MIXED", "DOESN'T COMPLETE"})
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "manifest.json"
             evaluation["replay_identity"]["files"].remove("stderr.txt")
@@ -110,6 +110,7 @@ class CouplingEntryTests(fixtures.EntryCase):
                 wrong = self.root / "wrong-engine"
                 wrong.write_bytes(data)
                 wrong.chmod(0o755)
+                self.write_provenance(wrong, "material_only")
                 with self.assertRaisesRegex(reference_validation.CallRefused, error):
                     self.call(primary, "refused", binary=wrong)
                 self.assertFalse(self.launched("refused"))
@@ -138,9 +139,9 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertTrue(second["coupling"]["predicate"])
         self.assertEqual(second["coupling"]["outcome"], "MEETS")
         self.assertEqual(second["coupling"]["wording"],
-            "With only that one link changed in 7.0, 85% and 85% of the difference to 6.0 goes away on the two "
-            "references. That localizes it to this term in this configured model. It doesn't tell us what the "
-            "authors intended, or which version matches hardware.")
+            "With only that one link changed in 7.0, 85% of the difference to 6.0 goes away on Ascend 910 and "
+            "85% on CPU-DRAM, rounded down. Both meet the 85% we fixed. That localizes it to this term in this "
+            "configured model. It doesn't tell us what the authors intended, or which version matches hardware.")
         for entry in second["calls"]:
             evaluation = entry["coupling"]
             self.assertEqual(evaluation["fraction"], "0.85")
@@ -159,12 +160,14 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.run_pair(0, 80.274)  # exactly 90% on Ascend
         report = self.run_pair(2, 134.0247)  # exactly 84.5% on CPU-DRAM
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
-        self.assertEqual(report["coupling"]["outcome"], "MISSES")
+        self.assertEqual(report["coupling"]["outcome"], "MIXED")
         self.assertEqual(report["coupling"]["wording"],
-            "That one change accounts for 90% and 85% of the difference, below the 85% we fixed. "
-            "Something else also contributes.")
+            "On Ascend 910, that one change accounts for 90% of the difference, rounded down, meeting the 85% "
+            "we fixed. On CPU-DRAM, it accounts for 84%, rounded down, below the 85% we fixed, so something "
+            "else also contributes there. It doesn't meet the bar on both references. It doesn't tell us "
+            "what the authors intended, or which version matches hardware.")
         self.assertEqual(report["coupling"]["percentage_rounding"],
-                         "nearest whole percent from the exact rational; ties away from zero")
+                         "whole percent rounded down (floor) from the exact rational; no clipping")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MEETS", "MISSES"])
         self.assertEqual([row["primary"]["fraction_exact"] for row in report["rows"]], ["9/10", "169/200"])
         self.assertEqual([row["predicate"] for row in report["rows"]], [True, False])
@@ -279,10 +282,10 @@ class CouplingEntryTests(fixtures.EntryCase):
 class FrozenEvaluationTests(unittest.TestCase):
     def test_percentage_rounding_uses_exact_rationals_without_clipping(self):
         call = coupling_allocation.build_manifest()["calls"][0]
-        # Kelvin text, hand-computed fraction and nearest whole percent (ties away from zero).
-        cases = (("355.1019", "173/200", 87), ("356.0607", "169/200", 85),
+        # Kelvin text, hand-computed fraction and mathematical floor of the exact percentage.
+        cases = (("355.1019", "173/200", 86), ("356.0607", "169/200", 84),
                  ("356.060700000000000000000000000001", None, 84),
-                 ("396.8097", "-1/200", -1), ("348.3903", "201/200", 101),
+                 ("396.8097", "-1/200", -1), ("348.3903", "201/200", 100),
                  ("380.59", "1/3", 33))
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp) / "run"
@@ -378,6 +381,7 @@ print(module.reference_validation.__file__)
         build = scenario.api("POST", "/git/commits", {"message": "synthetic build", "tree": fixtures.EMPTY_TREE,
                                                      "parents": []})["sha"]
         launched = []
+        (self.root / "runs").mkdir(exist_ok=True)
 
         def engine(call, argv, out, budget):
             launched.append(call["id"])
@@ -414,11 +418,13 @@ print(module.reference_validation.__file__)
         paths = []
         with mock.patch.object(gate0_operator, "cmd_grant", side_effect=lambda args: paths.append(
                 (gate0_operator.RUNS, gate0_operator.CPU_FILE, gate0_operator.LOG)) or 0), \
+                mock.patch.object(gate0_operator, "require_coupling_storage"), \
+                mock.patch.object(gate0_operator, "carried_cpu_s", return_value=0), \
                 mock.patch.object(Path, "mkdir"):
             gate0_operator.main(["grant", "--manifest", "coupling", "--grant-id", "g49-coupling"])
             gate0_operator.main(["grant", "--grant-id", "g49-default"])
-        self.assertEqual(paths[0], (Path("/srv/gate0/coupling/runs"),
-            Path("/srv/gate0/coupling/runs/cpu-used.json"), Path("/srv/gate0/coupling/runs/operator-log.jsonl")))
+        self.assertEqual(paths[0], (Path("/srv/gate0/runs/coupling"),
+            Path("/srv/gate0/runs/coupling/cpu-used.json"), Path("/srv/gate0/runs/coupling/operator-log.jsonl")))
         self.assertEqual(paths[1], (Path("/srv/gate0/runs"), Path("/srv/gate0/runs/cpu-used.json"),
                                    Path("/srv/gate0/runs/operator-log.jsonl")))
 
