@@ -93,5 +93,5 @@ def events(after: str | None = None, limit: str | None = None) -> Response:
 
 
 @router.get("/board")
-def board() -> Response:
-    return _reply(*runtime().board())
+def board(x_door_nonce: str | None = Header(default=None)) -> Response:
+    return _reply(*runtime().board(x_door_nonce))

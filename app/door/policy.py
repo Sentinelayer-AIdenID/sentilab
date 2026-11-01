@@ -53,6 +53,7 @@ COMPACT_STEP_UM = 500       # the compact l= format counts 500 um lattice steps 
 UTC = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
 GRANT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
+IMAGE = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
 def parse_utc(text) -> float:
@@ -87,7 +88,8 @@ def _number(value, low: float, high: float) -> float:
 
 @dataclass(frozen=True)
 class Grant:
-    """The runtime grant binding (warden): the CPU the door may spend, per token and in total, and when."""
+    """The runtime grant binding (warden): the CPU the door may spend, per token and in total, and when, and the
+    scorer image whose answers count (every receipt and every health answer must name it)."""
     grant: str
     cpu_cap_s: float
     token_cpu_s: float
@@ -96,9 +98,10 @@ class Grant:
     not_before: float
     not_after: float
     enforcement_evidence_sha256: str
+    scorer_image_digest: str
 
     FIELDS = ("grant", "cpu_cap_s", "token_cpu_s", "parallel", "run_reserve_cpu_s", "not_before", "not_after",
-              "enforcement_evidence_sha256")
+              "enforcement_evidence_sha256", "scorer_image_digest")
 
     @classmethod
     def parse(cls, value) -> "Grant":
@@ -118,7 +121,10 @@ class Grant:
         evidence = value["enforcement_evidence_sha256"]
         if not isinstance(evidence, str) or not HEX64.match(evidence):
             raise ValueError("enforcement evidence")
-        return cls(value["grant"], cap, token, parallel, reserve, not_before, not_after, evidence)
+        image = value["scorer_image_digest"]
+        if not isinstance(image, str) or not IMAGE.match(image):
+            raise ValueError("scorer image")
+        return cls(value["grant"], cap, token, parallel, reserve, not_before, not_after, evidence, image)
 
 
 @dataclass(frozen=True)

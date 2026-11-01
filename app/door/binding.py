@@ -10,7 +10,8 @@ door would stay closed now; it never prints a key.
 
 grant.json: {"grant": "<the manifest's refs.grant>", "cpu_cap_s": 3600, "token_cpu_s": 30, "parallel": 4,
 "run_reserve_cpu_s": 20, "not_before": "<UTC>", "not_after": "<UTC>",
-"enforcement_evidence_sha256": "<the scorer's whole-container cutoff evidence>"}
+"enforcement_evidence_sha256": "<the scorer's whole-container cutoff evidence>",
+"scorer_image_digest": "sha256:<the scorer's gate-zero image digest>"}
 run_reserve_cpu_s 20 matches door-scorer, which reserves 10 CPU-s for a score and 10 for its replay.
 """
 from __future__ import annotations

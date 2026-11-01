@@ -69,8 +69,7 @@ class StateTests(tk.DoorCase, unittest.TestCase):
                  ("timeout", "scorer_timeout", "timeout", 10.0, "unknown_charged_envelope"),
                  ("error", "scorer_error", "oracle_error", 40.0, "unknown_charged_envelope"),
                  ("cutoff", "scorer_cutoff", "stopped", 10.0, "unknown_charged_envelope"),
-                 ("grant_expired", "grant_expired", "grant_expired", 10.0, "unknown_charged_envelope"),
-                 ("raise", "scorer_error", "oracle_error", 10.0, "unknown_charged_envelope"))
+                 ("grant_expired", "grant_expired", "grant_expired", 10.0, "unknown_charged_envelope"))
         for index, (mode, reason, code, charged, usage) in enumerate(cases):
             self.scorer.mode, self.scorer.healthy = mode, True
             self.door.scorer_state.state = "up"
@@ -141,20 +140,43 @@ class StateTests(tk.DoorCase, unittest.TestCase):
         held = self.reservation(run_id)
         self.assertEqual((held["charged_cpu_s"], held["usage"]), (0.0, "never_began"))
 
-    def test_restart_recovery_fails_an_interrupted_attempt_and_charges_its_envelope(self):
+    def test_an_unknown_outcome_keeps_the_attempt_open_with_its_lower_bound(self):
+        """A timeout after sending, or an adapter fault: the remote attempt may still run. Nothing is settled, the slot
+        and envelope stay counted, and a later definitive answer settles it at no less than the reported CPU."""
+        for index, mode in enumerate(("ambiguous", "raise")):
+            self.scorer.mode = mode
+            run_id = self.submit_one(moved(index), nonce_value=tk.nonce(900 + index))
+            self.assertEqual(self.drain(1), 0, mode)
+            row, _ = self.store.run(run_id)
+            self.assertEqual((row["state"], row["reason"]), ("evaluating", "unresolved"), mode)
+            held = self.reservation(run_id)
+            self.assertEqual((held["state"], held["usage"]), ("active", "recovering"), mode)
+        self.assertEqual(self.reservation(self.store.recovering()[0]["run_id"])["lower_bound_cpu_s"], 13.0)
+        self.scorer.mode = "ok"
+        self.clock.advance(11)
+        self.assertEqual(self.drain(), 2, "the same request again resolves both")
+        first = self.store.recovering()
+        self.assertEqual(first, [])
+        charges = sorted(row["charged_cpu_s"] for row in map(self.reservation, [
+            call["run_id"] for call in self.scorer.calls[-2:]]))
+        self.assertEqual(charges, [2.5, 13.0], "a reported lower bound outlives a smaller later measurement")
+
+    def test_restart_recovery_never_declares_an_end(self):
         run_id = self.submit_one()
-        claimed = self.store.claim(check=self.door.launch_check, parallel=4, now=self.clock())
+        claimed = self.store.claim(check=self.door.launch_check, parallel=4, now=self.clock(),
+                                   grant=self.policy.grant)
         self.assertEqual(claimed["run_id"], run_id)
         again = Store(self.store.path)
         self.assertEqual(again.recover(self.clock()), 1)
         row, _ = again.run(run_id)
-        self.assertEqual((row["state"], row["reason"]), ("failed", "interrupted"))
+        self.assertEqual((row["state"], row["reason"]), ("evaluating", "unresolved"))
         held = self.reservation(run_id)
-        self.assertEqual((held["state"], held["charged_cpu_s"], held["usage"]), ("settled", 10.0, "interrupted"))
-        self.assertFalse(self.store.settle(run_id=run_id, reservation_id=claimed["reservation_id"],
-                                           outcome={"kind": "failed", "code": "oracle_error", "reason": "scorer_error",
-                                                    "charged_cpu_s": 0.0, "usage": "never_began"},
-                                           now=self.clock()), "a late settle after recovery changes nothing")
+        self.assertEqual((held["state"], held["charged_cpu_s"], held["usage"]), ("active", None, "recovering"))
+        self.assertTrue(self.store.settle(run_id=run_id, reservation_id=claimed["reservation_id"],
+                                          outcome={"kind": "failed", "code": "oracle_error", "reason": "scorer_error",
+                                                   "charged_cpu_s": 35.0, "usage": "unknown_charged_envelope"},
+                                          now=self.clock()), "the original's late settlement still counts")
+        self.assertEqual(self.reservation(run_id)["charged_cpu_s"], 35.0)
 
     def test_at_most_parallel_attempts_run_at_once_across_workers(self):
         self.scorer.release = threading.Event()
@@ -183,7 +205,8 @@ class StateTests(tk.DoorCase, unittest.TestCase):
     def test_a_claim_respects_the_parallel_limit_whoever_asks(self):
         for index in range(3):
             self.submit_one(moved(index), nonce_value=tk.nonce(700 + index))
-        claims = [self.store.claim(check=self.door.launch_check, parallel=2, now=self.clock()) for _ in range(3)]
+        claims = [self.store.claim(check=self.door.launch_check, parallel=2, now=self.clock(),
+                                   grant=self.policy.grant) for _ in range(3)]
         self.assertEqual([claim is not None for claim in claims], [True, True, False])
         self.assertEqual(self.door.board()[1]['counts']['evaluating'], 2)
 

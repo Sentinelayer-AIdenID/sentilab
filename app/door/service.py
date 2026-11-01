@@ -52,6 +52,7 @@ PUBLISHED = (
     {"name": "TAP-2.5D", "source": "TAP-2.5D (Ma et al., DATE 2021), Fig. 5(c)", "peak_C": 94.89,
      "statistic": "the paper's HotSpot block selector, not this board's metric", "routed_wire_mm": 216064},
 )
+NOT_CLAIMED = ["beat", "margin", "routed wire", "source acceptance"]
 BEAT = {"available": False,
         "requires": "reproduced by replay, plus the fixed routed-wire predicates and their evidence; "
                     "this API never emits a beat verdict"}
@@ -108,15 +109,16 @@ class Door:
         policy, scorer = Policy.from_env(env), None
         if env.get("DOOR_SCORER_URL") and env.get("DOOR_SCORER_TOKEN") and policy.usable:
             try:
-                # Health reads "up" only when the scorer answers as the manifest's pinned binary under this grant.
+                # Health and every receipt must name the manifest's pinned binary, this grant and the signed image.
                 scorer = HttpScorer(env["DOOR_SCORER_URL"], env["DOOR_SCORER_TOKEN"], grant_id=policy.grant.grant,
+                                    image_digest=policy.grant.scorer_image_digest,
                                     binary_sha256=policy.manifest["statistic"]["evaluator"]["binary_sha256"])
             except ValueError:
                 scorer = None
         return cls(policy, Store(data / "door.sqlite3"), scorer)
 
-    def start(self) -> None:
-        self.dispatcher.start()
+    def start(self, workers: bool = True) -> None:
+        self.dispatcher.start(workers)
 
     def stop(self) -> None:
         self.dispatcher.stop()
@@ -255,10 +257,26 @@ class Door:
                 "replay": result["replay"], "reproduced": row["state"] == "reproduced",
                 "binding_ok": result["binding"]["ok"],
                 "evaluator": result["evaluator"], "temperature_label": label_for(EVALUATOR_IDENTITY),
-                "label": RESULT_LABEL}
+                "label": RESULT_LABEL,
+                "verification": self.verification(row, result, guard_ok, row["run_id"] in front_ids)}
             if row["run_id"] in front_ids:
                 item["verdict"] = "candidate"
         return item
+
+    @staticmethod
+    def verification(row, result: dict, guard_ok: bool, candidate: bool) -> dict:
+        """What this result has been checked for, and what it is not. The 3D view's caption binds to this block.
+        `candidate` means: reproduced by a distinct, receipt-bound replay; bound to the selector; the active guard
+        strictly met; on the front against the raw reference. It claims none of NOT_CLAIMED."""
+        replay = result["replay"]
+        basis = ["per_die"] + (["grid"] if "grid_ok" in result["binding"] else []) + (
+            ["wire"] if "wire_ok" in result["binding"] else [])
+        return {"replay": "reproduced" if row["state"] == "reproduced" else "not_reproduced",
+                "replay_code": replay.get("code"), "distinct_execution": replay["fresh_process"],
+                "receipts_bound": replay.get("receipts_bound", False), "binding_ok": result["binding"]["ok"],
+                "binding_basis": basis, "active_guard_ok": guard_ok,
+                "cpu": "measured" if result.get("cpu_known", False) else "unknown_charged_conservatively",
+                "candidate": candidate, "not_claimed": list(NOT_CLAIMED)}
 
     def status(self, run_id: str, nonce) -> tuple:
         if not isinstance(nonce, str) or not NONCE.match(nonce):
@@ -313,7 +331,8 @@ class Door:
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "scorer": self.scorer_state.snapshot()}, {}
 
-    def board(self) -> tuple:
+    def board(self, nonce=None) -> tuple:
+        """The public board. With the verified token's nonce (x-door-nonce), it also carries that token's CPU."""
         now = self.policy.clock()
         scored, counters, states, grant_rows = self.store.board_rows()
         front_ids = self._front_ids()
@@ -352,5 +371,15 @@ class Door:
                     "cpu_s_charged": round(charged, 6),
                     "cpu_s_remaining": round(max(0.0, grant.cpu_cap_s - reserved - charged), 6)},
                 "door": {"open": not closed, "codes": [item["code"] for item in closed]},
+                "terms": {"accepted_versions": list(self.policy.manifest["terms"]["accepted_versions"])
+                          if self.policy.manifest else []},
+                "accounting_stops": [{key: stop[key] for key in ("scope", "short_id", "grant", "reason")}
+                                     for stop in self.store.stops()],
                 "scorer": self.scorer_state.snapshot(), "top": top}
+        if nonce is not None:
+            if not isinstance(nonce, str) or not NONCE.match(nonce):
+                return 400, {"error": "token_required"}, {}
+            if grant is not None and self.policy.manifest_id is not None:
+                body["token"] = self.store.token_usage(principal=principal_for(nonce), grant=grant,
+                                                       manifest_id=self.policy.manifest_id, now=now)
         return 200, body, {}

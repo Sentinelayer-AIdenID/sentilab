@@ -10,8 +10,8 @@ import unittest
 from app.door import testkit as tk
 from app.door.legality import PinnedTapChecker
 from app.door.policy import principal_for
-from app.door.scorer import (EVALUATOR_BINARY_SHA256, METRIC, HttpScorer, ScorerError, parse_evaluation,
-                             parse_replay)
+from app.door.scorer import (EVALUATOR_BINARY_SHA256, METRIC, HttpScorer, ScorerError, judge_replay,
+                             parse_evaluation)
 from app.door.service import REFERENCES, front
 from app.test_door_dispatch import moved
 
@@ -239,11 +239,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 TOKEN = "scorer-bearer-for-loopback-test"
 FAKE_BINARY = EVALUATOR_BINARY_SHA256
+IMAGE = "sha256:" + "0" * 64
+GRANT = "slab-demo-20261101"
+RUN = "open-00000000-" + "0" * 32
+MANIFEST = "a" * 64
+GEOMETRY = "b" * 64
+EXPECTED = {"binary_sha256": FAKE_BINARY, "grant_id": GRANT, "image_digest": IMAGE, "manifest_id": MANIFEST,
+            "geometry_sha256": GEOMETRY}
 
 
-def receipt(cpu_s: float) -> dict:
-    return {"grant_id": "slab-demo-20261101", "image_digest": "sha256:" + "0" * 64, "binary_sha256": FAKE_BINARY,
-            "input_sha256": {}, "output_sha256": {}, "output_map_sha256": None, "cpu_s": cpu_s, "wall_s": 4.0}
+def receipt(cpu_s: float, **edits) -> dict:
+    """A receipt as door-scorer's solve() and request() build it (research/agent-door/scorer/service.py)."""
+    value = {"grant_id": GRANT, "image_digest": IMAGE, "binary_sha256": FAKE_BINARY,
+             "input_sha256": {"sample.flp": "1" * 64}, "output_sha256": {"sample.grid.steady": "2" * 64},
+             "output_map_sha256": "2" * 64, "cpu_s": cpu_s, "wall_s": 4.0, "started_at": "2026-11-01T03:00:00Z",
+             "ended_at": "2026-11-01T03:00:04Z", "worker_pid": 101, "engine_pid": 102, "workspace_id": "solve-aaaa",
+             "cleanup_pids": [], "geometry_sha256": GEOMETRY, "reservation_id": "res-1", "manifest_id": MANIFEST}
+    value.update(edits)
+    return value
 
 
 def evaluation(dies) -> dict:
@@ -252,7 +265,7 @@ def evaluation(dies) -> dict:
     means = checker.centre_means(dies, tk.grid_for(dies, -60.0))
     per_die = dict(zip(("C0", "C1", "C2", "C3", "D0", "D1", "D2", "D3"), means))
     centre, active, native = max(means), max(means) + 3.0, max(means) - 0.01
-    return {"run_id": "open-00000000-" + "0" * 32, "receipt": receipt(1.25), "state": "evaluated",
+    return {"run_id": RUN, "receipt": receipt(1.25), "state": "evaluated",
             "metric_id": "max_chiplet_centre_cell_mean_C",
             "metric_definition": "Maximum over Chiplet_0..7 of the mean of its 1, 2 or 4 central HotSpot 6 grid-64 "
                                  "cells.", "temperature_unit": "degC",
@@ -270,9 +283,10 @@ def evaluation(dies) -> dict:
 
 
 def replay(original: dict, state="reproduced", code=None) -> dict:
-    answer = {**original, "receipt": receipt(1.5), "state": state, "receipts": [original["receipt"], receipt(1.5)],
-              "codes": [] if code is None else [{"code": code}]}
-    return answer
+    """door-scorer's replay answer: a distinct execution (another reservation, workspace, worker and engine)."""
+    again = receipt(1.5, reservation_id="res-2", worker_pid=201, engine_pid=202, workspace_id="solve-bbbb")
+    return {**original, "receipt": again, "state": state, "receipts": [original["receipt"], again],
+            "codes": [] if code is None else [{"code": code}]}
 
 
 class HttpScorerTests(unittest.TestCase):
@@ -283,8 +297,8 @@ class HttpScorerTests(unittest.TestCase):
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.server.seen, self.server.stall = [], None
         good = evaluation(self.dies)
-        self.server.health = (200, {"ok": True, "binary_sha256": FAKE_BINARY, "grant_id": "slab-demo-20261101",
-                                    "image_digest": "sha256:" + "0" * 64, "budget_left_cpu_s": 3600})
+        self.server.health = (200, {"ok": True, "binary_sha256": FAKE_BINARY, "grant_id": GRANT,
+                                    "image_digest": IMAGE, "budget_left_cpu_s": 3600})
         self.server.answers = {"score": (200, good), "replay": (200, replay(good))}
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -296,12 +310,13 @@ class HttpScorerTests(unittest.TestCase):
         self.server.shutdown()
         self.server.server_close()
 
-    def scorer(self, **kwargs):
-        return HttpScorer(self.url, TOKEN, **kwargs)
+    def scorer(self, url=None, **kwargs):
+        return HttpScorer(url or self.url, TOKEN, **{"grant_id": GRANT, "image_digest": IMAGE, **kwargs})
 
     def request(self):
-        return {"run_id": "open-00000000-" + "0" * 32, "token_ref": "2" * 64,
-                "proposal": {"schema": "sentilab-open-proposal/1", "dies": self.dies}}
+        return {"run_id": RUN, "token_ref": "2" * 64,
+                "proposal": {"schema": "sentilab-open-proposal/1", "manifest_id": MANIFEST,
+                             "geometry_sha256": GEOMETRY, "dies": self.dies}}
 
     def test_a_score_and_its_replay_become_one_score_with_the_named_statistics(self):
         score = self.scorer().score(self.request())
@@ -310,8 +325,9 @@ class HttpScorerTests(unittest.TestCase):
                           score.native_all_block_max_C),
                          ("max_chiplet_centre_cell_mean_C", good["max_chiplet_centre_mean_c"],
                           good["active_layer_peak_C"], good["native_all_block_max_C"]))
-        self.assertEqual((score.replay_fresh_process, score.replay_match, score.replay_code), (True, True, None))
-        self.assertEqual(score.cpu_s, 2.75, "the score's and the replay's measured CPU")
+        self.assertEqual((score.replay_fresh_process, score.replay_match, score.replay_code, score.receipts_bound),
+                         (True, True, None, True))
+        self.assertEqual((score.cpu_s, score.cpu_known), (2.75, True), "the score's and the replay's measured CPU")
         self.assertEqual(score.per_die_C, good["per_die_c"])
         self.assertIsNone(score.grid64)
         posts = [entry for entry in self.server.seen if entry[0] == "POST"]
@@ -320,11 +336,12 @@ class HttpScorerTests(unittest.TestCase):
         self.assertEqual(posts[0][3], self.request())
         self.assertEqual(posts[1][3], self.request(), "the replay repeats the exact body")
 
-    def test_health_requires_the_pinned_binary_and_the_grant(self):
-        self.assertTrue(self.scorer(grant_id="slab-demo-20261101").health())
+    def test_health_requires_the_pinned_binary_image_and_grant(self):
+        self.assertTrue(self.scorer().health())
         self.assertEqual(self.server.seen[-1][:3], ("GET", "/scorer/v1/health", "Bearer " + TOKEN))
         self.assertFalse(self.scorer(grant_id="another-grant").health())
         self.assertFalse(self.scorer(binary_sha256="0" * 64).health())
+        self.assertFalse(self.scorer(image_digest="sha256:" + "9" * 64).health())
         self.server.health = (401, {"error": "unauthorized"})
         self.assertFalse(self.scorer().health())
 
@@ -332,77 +349,101 @@ class HttpScorerTests(unittest.TestCase):
         good = self.server.answers["score"][1]
         self.server.answers["replay"] = (200, replay(good, "not_reproduced", "reproduction_mismatch"))
         score = self.scorer().score(self.request())
-        self.assertEqual((score.replay_match, score.replay_code), (False, "reproduction_mismatch"))
+        self.assertEqual((score.replay_match, score.replay_code, score.cpu_known), (False, "reproduction_mismatch",
+                                                                                   True))
         self.server.answers["replay"] = (500, {"error": "oracle_error"})
+        with self.assertRaises(ScorerError) as caught:
+            self.scorer().score(self.request())
+        self.assertEqual((caught.exception.definitive, caught.exception.cpu_s), (False, 11.25),
+                         "a 5xx replay leaves the attempt open, at the score plus the replay's reservation")
+        self.server.answers["replay"] = (429, {"state": "rejected", "error": "busy",
+                                               "codes": [{"code": "rate_limited", "retry_after": 1}]})
+        with self.assertRaises(ScorerError) as caught:
+            self.scorer().score(self.request())
+        self.assertEqual((caught.exception.definitive, caught.exception.cpu_s), (False, 1.25),
+                         "a busy replay has not run: open, at the score's CPU")
+        self.server.answers["replay"] = (409, {"state": "rejected", "error": "unknown_proposal",
+                                               "codes": [{"code": "unknown_proposal"}]})
         score = self.scorer().score(self.request())
-        self.assertEqual((score.replay_fresh_process, score.replay_code, score.cpu_s),
-                         (False, "reproduction_failed", 11.25), "an ambiguous replay is charged its reservation")
-        self.server.answers["replay"] = (429, {"state": "rejected", "error": "busy", "codes": [{"code": "rate_limited",
-                                                                                             "retry_after": 1}]})
-        score = self.scorer().score(self.request())
-        self.assertEqual((score.replay_code, score.cpu_s), ("reproduction_failed", 1.25), "a refused replay costs 0")
+        self.assertEqual((score.replay_code, score.cpu_s, score.cpu_known), ("reproduction_failed", 1.25, True),
+                         "a refused replay ran nothing and costs nothing")
 
     def test_failures_split_never_began_from_ambiguous(self):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             closed_port = probe.getsockname()[1]
         with self.assertRaises(ScorerError) as caught:
-            HttpScorer(f"http://127.0.0.1:{closed_port}", TOKEN).score(self.request())
-        self.assertEqual((caught.exception.reason, caught.exception.began), ("scorer_down", False))
-        self.assertFalse(HttpScorer(f"http://127.0.0.1:{closed_port}", TOKEN).health())
+            self.scorer(f"http://127.0.0.1:{closed_port}").score(self.request())
+        self.assertEqual((caught.exception.reason, caught.exception.began, caught.exception.definitive),
+                         ("scorer_down", False, True))
+        self.assertFalse(self.scorer(f"http://127.0.0.1:{closed_port}").health())
         for status, code in ((401, None), (403, "budget_exhausted"), (409, "idempotency_conflict"),
                              (422, "not_open_yet"), (429, "rate_limited")):
             self.server.answers["score"] = (status, {"state": "rejected", "codes": [{"code": code}] if code else []})
             with self.assertRaises(ScorerError) as caught:
                 self.scorer().score(self.request())
             self.assertEqual((caught.exception.reason, caught.exception.began), ("scorer_refused", False), status)
+            self.assertEqual(caught.exception.definitive, status != 429, "busy is not an end")
         for code, reason in (("timeout", "scorer_timeout"), ("oracle_error", "scorer_error"),
                              ("interrupted", "interrupted")):
-            self.server.answers["score"] = (200, {"run_id": "x", "state": "failed", "codes": [{"code": code}],
+            self.server.answers["score"] = (200, {"run_id": RUN, "state": "failed", "codes": [{"code": code}],
                                                   "receipt": receipt(10.0)})
             with self.assertRaises(ScorerError) as caught:
                 self.scorer().score(self.request())
-            self.assertEqual((caught.exception.reason, caught.exception.began, caught.exception.cpu_s),
-                             (reason, True, 10.0), code)
+            self.assertEqual((caught.exception.reason, caught.exception.began, caught.exception.cpu_s,
+                              caught.exception.definitive), (reason, True, 10.0, True), code)
         self.server.stall = threading.Event()
         with self.assertRaises(ScorerError) as caught:
             self.scorer(timeout_s=0.3).score(self.request())
-        self.assertEqual((caught.exception.reason, caught.exception.began), ("scorer_timeout", True))
+        self.assertEqual((caught.exception.reason, caught.exception.began, caught.exception.definitive),
+                         ("scorer_timeout", True, False))
         self.server.stall.set()
         self.server.stall = None
         for answer in ((500, {"error": "oracle_error"}), (200, b"{not json"), (200, b'{"state": NaN}')):
             self.server.answers["score"] = answer
             with self.assertRaises(ScorerError) as caught:
                 self.scorer().score(self.request())
-            self.assertEqual((caught.exception.reason, caught.exception.began), ("scorer_error", True), answer)
+            self.assertEqual((caught.exception.reason, caught.exception.began, caught.exception.definitive),
+                             ("scorer_error", True, False), answer)
 
     def test_the_evaluation_parse_is_strict(self):
         good = self.server.answers["score"][1]
-        self.assertEqual(parse_evaluation(good)["metric"], good["max_chiplet_centre_mean_c"])
+        self.assertEqual(parse_evaluation(good, expected=EXPECTED, run_id=RUN)["metric"],
+                         good["max_chiplet_centre_mean_c"])
         dies = dict(good["per_die_c"])
         dies.pop("D3")
         broken = ({"metric_id": "peak_c"}, {"metric_precision": {"grid_resolution_K": 0.001}},
-                  {"references": {"raw": {"max_chiplet_centre_mean_c": 115.93}}},
-                  {"receipt": {**receipt(1.0), "binary_sha256": "0" * 64}}, {"receipt": {**receipt(1.0), "cpu_s": -1}},
-                  {"receipt": {**receipt(1.0), "pad": "y" * 20000}}, {"per_die_c": dies},
+                  {"references": {"raw": {"max_chiplet_centre_mean_c": 115.93}}}, {"run_id": "open-1-1"},
+                  {"receipt": receipt(1.0, binary_sha256="0" * 64)}, {"receipt": receipt(-1)},
+                  {"receipt": receipt(1.0, pad="y" * 20000)}, {"receipt": receipt(1.0, worker_pid=True)},
+                  {"receipt": receipt(1.0, output_sha256={})}, {"per_die_c": dies},
                   {"peak_c": good["peak_c"] + 1}, {"active_grid_max_c": good["active_layer_peak_C"] + 1},
                   {"native_all_block_max_c": float("inf")}, {"hotspot_ok": not good["hotspot_ok"]},
-                  {"grid64": [[50.0] * 64] * 63}, {"wire_proxy_mm": -1}, {"state": "failed"})
+                  {"grid64": [[50.0] * 64] * 63}, {"wire_proxy_mm": -1}, {"wire_proxy_mm": None},
+                  {"state": "failed"})
         for edit in broken:
             with self.assertRaises(ValueError, msg=str(list(edit))[:60]):
-                parse_evaluation({**good, **edit})
+                parse_evaluation({**good, **edit}, expected=EXPECTED, run_id=RUN)
+        evaluation_fields = parse_evaluation(good, expected=EXPECTED, run_id=RUN)
         with self.assertRaises(ValueError):
-            parse_replay({**replay(good), "codes": [{"code": "reproduction_mismatch"}]})
+            judge_replay({**replay(good), "codes": [{"code": "reproduction_mismatch"}]}, expected=EXPECTED,
+                         run_id=RUN, evaluation=evaluation_fields)
         with self.assertRaises(ValueError):
-            parse_replay({**replay(good, "not_reproduced"), "codes": []})
-        self.assertEqual(parse_replay(replay(good))[:2], (True, None))
+            judge_replay({**replay(good, "not_reproduced"), "codes": []}, expected=EXPECTED, run_id=RUN,
+                         evaluation=evaluation_fields)
+        finding = judge_replay(replay(good), expected=EXPECTED, run_id=RUN, evaluation=evaluation_fields)
+        self.assertEqual((finding["fresh"], finding["match"], finding["bound"], finding["code"]),
+                         (True, True, True, None))
 
-    def test_only_https_or_loopback_and_a_token(self):
-        for url, token in (("http://scorer.example", "t"), ("ftp://127.0.0.1", "t"), ("https://x.example", ""),
-                           ("https://x.example", "two words")):
+    def test_only_https_or_loopback_a_token_and_every_pin(self):
+        for url, token, pins in (("http://scorer.example", "t", {}), ("ftp://127.0.0.1", "t", {}),
+                                 ("https://x.example", "", {}), ("https://x.example", "two words", {}),
+                                 ("https://x.example", "t", {"image_digest": None}),
+                                 ("https://x.example", "t", {"grant_id": None}),
+                                 ("https://x.example", "t", {"image_digest": "latest"})):
             with self.assertRaises(ValueError):
-                HttpScorer(url, token)
-        HttpScorer("https://scorer.example", "t")
+                HttpScorer(url, token, **{"grant_id": GRANT, "image_digest": IMAGE, **pins})
+        HttpScorer("https://scorer.example", "t", grant_id=GRANT, image_digest=IMAGE)
 
 
 class CheckerPinTests(unittest.TestCase):

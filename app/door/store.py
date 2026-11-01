@@ -11,12 +11,21 @@ share.
 - CPU is reserved when a run is queued (the grant's run envelope, held against both the token's and the grant's
   budget), activated at dispatch and settled when the attempt ends. Used CPU = held + active envelopes + settled
   charges, so queued work can never promise more CPU than the grant has.
+- Activation rechecks the CPU in the same transaction (root's review, P1-3): a settlement may charge more than its
+  envelope (an overrun, or a conservative charge), so before a held envelope becomes active the token's and the
+  grant's used CPU must still be within their caps. When it is not, a stop is persisted (accounting_stops), the run
+  stays queued with its charges untouched, and nothing more is activated for that token, or at all for the grant.
+- One owner drives attempts (P1-2): the process holding an exclusive lock on <store>.owner. An attempt ends only on a
+  definitive outcome. One whose outcome is unknown (the owner restarted mid-call, or the scorer's answer was
+  ambiguous) stays `evaluating` with its envelope active, so its slot and CPU stay counted, until the scorer's
+  idempotent retry of the same request resolves it or an operator settles it at no less than its envelope.
 - Every state change goes through the contract's state machine (open_proposals.contract.states.transition) and writes
   one event; an event's seq is the feed cursor, and a run's version is the seq of its latest event.
 """
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 import uuid
@@ -50,6 +59,7 @@ CREATE TABLE IF NOT EXISTS runs (
   metric_c REAL,
   active_c REAL,
   binding_ok INTEGER,
+  token_exp INTEGER,
   created_at REAL NOT NULL,
   updated_at REAL NOT NULL,
   version INTEGER NOT NULL,
@@ -67,9 +77,13 @@ CREATE TABLE IF NOT EXISTS reservations (
   state TEXT NOT NULL CHECK (state IN ('held', 'active', 'settled', 'released')),
   charged_cpu_s REAL,
   usage TEXT,
+  lower_bound_cpu_s REAL,
+  owner TEXT,
   created_at REAL NOT NULL,
   settled_at REAL
 );
+CREATE TABLE IF NOT EXISTS accounting_stops (scope TEXT NOT NULL, key TEXT NOT NULL, short_id TEXT,
+                                             reason TEXT NOT NULL, at REAL NOT NULL, PRIMARY KEY (scope, key));
 CREATE INDEX IF NOT EXISTS reservations_by_principal ON reservations (grant_id, principal, state);
 CREATE TABLE IF NOT EXISTS requests (id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, principal TEXT);
 CREATE INDEX IF NOT EXISTS requests_by_time ON requests (at);
@@ -98,11 +112,38 @@ class Store:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self.pause_hook = None       # tests only: called inside admit's transaction, between decision and write
+        self.owner_id = None
+        self._owner_handle = None
         db = self._connect()
         try:
             db.executescript(SCHEMA)
         finally:
             db.close()
+
+    def acquire_owner(self) -> bool:
+        """The exclusive right to drive attempts and recover them: a non-blocking lock on <store>.owner, held until
+        release_owner or the process ends. Another Store on the same file, in this process or another, cannot take
+        it."""
+        import fcntl
+
+        if self._owner_handle is not None:
+            return True
+        handle = open(self.path + ".owner", "a+b")
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.close()
+            return False
+        self._owner_handle, self.owner_id = handle, f"{os.getpid()}-{uuid.uuid4().hex[:12]}"
+        return True
+
+    def release_owner(self) -> None:
+        import fcntl
+
+        if self._owner_handle is not None:
+            fcntl.flock(self._owner_handle.fileno(), fcntl.LOCK_UN)
+            self._owner_handle.close()
+            self._owner_handle, self.owner_id = None, None
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=30, isolation_level=None, check_same_thread=False)
@@ -255,11 +296,12 @@ class Store:
             seq = self._run_event(db, run, "queued", now)
             db.execute(
                 "INSERT INTO runs (run_id, arrival, manifest_id, principal, short_id, class, operator, case_id, "
-                "proposal_key, proposal_sha256, geometry_sha256, proposal, wire_proxy_mm, state, codes, created_at, "
-                "updated_at, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', '[]', ?, ?, ?)",
+                "proposal_key, proposal_sha256, geometry_sha256, proposal, wire_proxy_mm, state, codes, token_exp, "
+                "created_at, updated_at, version) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', '[]', ?, ?, ?, ?)",
                 (proposal.run_id, seq, manifest_id, proposal.principal, short, klass, operator, "cpu-dram",
                  item["proposal_key"], proposal.proposal_sha256, proposal.geometry_sha256, _json(item),
-                 wire_proxy_mm, now, now, seq))
+                 wire_proxy_mm, int(token_exp), now, now, seq))
             db.execute("INSERT INTO reservations (reservation_id, run_id, principal, grant_id, amount_cpu_s, state, "
                        "created_at) VALUES (?, ?, ?, ?, ?, 'held', ?)",
                        (str(uuid.uuid4()), proposal.run_id, proposal.principal, grant.grant,
@@ -281,37 +323,90 @@ class Store:
         db.execute("UPDATE runs SET state = ?, codes = ?, reason = ?, updated_at = ?, version = ? WHERE run_id = ?",
                    (entry.state, _json(codes), reason, now, seq, run["run_id"]))
 
-    def claim(self, *, check, parallel: int, now: float):
-        """Start the oldest queued run if fewer than `parallel` envelopes are active (across every worker and
-        process). check(run) returns None to start it, "wait" to leave it queued, or a verdict that ends it."""
+    def _stop(self, db, scope: str, key: str, short: str | None, reason: str, now: float) -> None:
+        db.execute("INSERT OR IGNORE INTO accounting_stops (scope, key, short_id, reason, at) VALUES (?, ?, ?, ?, ?)",
+                   (scope, key, short, reason, now))
+
+    def _over_cap(self, db, grant, principal: str, short: str, now: float):
+        """None when both the grant's and the token's used CPU (held and active envelopes plus settled charges) are
+        within their caps and no stop stands; otherwise "grant" or "token", with the stop persisted."""
+        stopped = {row[0] for row in db.execute(
+            "SELECT scope FROM accounting_stops WHERE (scope = 'grant' AND key = ?) OR (scope = 'token' AND key = ?)",
+            (grant.grant, principal))}
+        if "grant" in stopped or self._cpu_used(db, grant.grant) > grant.cpu_cap_s + EPSILON:
+            self._stop(db, "grant", grant.grant, None, "over_cap", now)
+            return "grant"
+        if "token" in stopped or self._cpu_used(db, grant.grant, principal) > grant.token_cpu_s + EPSILON:
+            self._stop(db, "token", principal, short, "over_cap", now)
+            return "token"
+        return None
+
+    def claim(self, *, check, parallel: int, now: float, grant, owner: str | None = None):
+        """Start the oldest queued run that may start, if fewer than `parallel` envelopes are active (across every
+        worker and process). check(run) returns None to start it, "wait" to leave it queued, or a verdict that ends
+        it. Within the same transaction the token's and the grant's CPU are rechecked: a token over its cap is skipped
+        (its runs stay queued), a grant over its cap stops every activation."""
         with self.tx() as db:
             active = db.execute("SELECT COUNT(*) FROM reservations WHERE state = 'active'").fetchone()[0]
             if active >= parallel:
                 return None
-            while True:
-                run = db.execute("SELECT * FROM runs WHERE state = 'queued' ORDER BY arrival LIMIT 1").fetchone()
-                if run is None:
-                    return None
+            for run in db.execute("SELECT * FROM runs WHERE state = 'queued' ORDER BY arrival LIMIT 256").fetchall():
                 verdict = check(run)
                 if verdict == "wait":
                     return None
                 if verdict is not None:
                     self._end_queued(db, run, verdict, now)
                     continue
+                over = self._over_cap(db, grant, run["principal"], run["short_id"], now)
+                if over == "grant":
+                    return None
+                if over == "token":
+                    continue
                 held = db.execute("SELECT * FROM reservations WHERE run_id = ? AND state = 'held'",
                                   (run["run_id"],)).fetchone()
                 if held is None:
                     raise RuntimeError("a queued run has no held reservation")
                 transition(Entry("queued"), "start", {"reservation_id": held["reservation_id"]})
-                db.execute("UPDATE reservations SET state = 'active' WHERE reservation_id = ? AND state = 'held'",
-                           (held["reservation_id"],))
+                db.execute("UPDATE reservations SET state = 'active', owner = ? WHERE reservation_id = ? "
+                           "AND state = 'held'", (owner, held["reservation_id"]))
                 seq = self._run_event(db, run, "evaluating", now)
                 db.execute("UPDATE runs SET state = 'evaluating', updated_at = ?, version = ? WHERE run_id = ?",
                            (now, seq, run["run_id"]))
-                return {"run_id": run["run_id"], "principal": run["principal"],
-                        "reservation_id": held["reservation_id"],
-                        "envelope_cpu_s": held["amount_cpu_s"], "proposal": json.loads(run["proposal"]),
-                        "geometry_sha256": run["geometry_sha256"], "manifest_id": run["manifest_id"]}
+                return self._claimed(run, held)
+            return None
+
+    @staticmethod
+    def _claimed(run, held) -> dict:
+        return {"run_id": run["run_id"], "principal": run["principal"], "reservation_id": held["reservation_id"],
+                "envelope_cpu_s": held["amount_cpu_s"], "proposal": json.loads(run["proposal"]),
+                "geometry_sha256": run["geometry_sha256"], "manifest_id": run["manifest_id"]}
+
+    def recovering(self) -> list:
+        """The open attempts whose outcome is unknown, oldest first, as claim() returns them."""
+        with self.read() as db:
+            rows = db.execute("SELECT runs.*, reservations.reservation_id AS held_id, reservations.amount_cpu_s "
+                              "FROM runs JOIN reservations ON reservations.run_id = runs.run_id "
+                              "WHERE runs.state = 'evaluating' AND reservations.state = 'active' "
+                              "AND reservations.usage = 'recovering' ORDER BY runs.arrival").fetchall()
+        return [self._claimed(row, {"reservation_id": row["held_id"], "amount_cpu_s": row["amount_cpu_s"]})
+                for row in rows]
+
+    def mark_recovering(self, *, run_id: str, reservation_id: str, lower_bound_cpu_s, now: float) -> None:
+        """An attempt whose outcome is unknown: it stays evaluating and active (slot and envelope still counted) and
+        keeps the largest CPU any answer reported as a lower bound for its settlement."""
+        with self.tx() as db:
+            held = db.execute("SELECT * FROM reservations WHERE reservation_id = ? AND run_id = ? AND state = 'active'",
+                              (reservation_id, run_id)).fetchone()
+            if held is None:
+                return
+            lower = max(held["lower_bound_cpu_s"] or 0.0, lower_bound_cpu_s or 0.0)
+            db.execute("UPDATE reservations SET usage = 'recovering', lower_bound_cpu_s = ? WHERE reservation_id = ?",
+                       (lower or None, reservation_id))
+            if held["usage"] != "recovering":
+                run = db.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+                seq = self._run_event(db, run, "evaluating", now, reason="unresolved")
+                db.execute("UPDATE runs SET reason = 'unresolved', updated_at = ?, version = ? WHERE run_id = ?",
+                           (now, seq, run_id))
 
     def end_all_queued(self, verdict: tuple, now: float) -> int:
         with self.tx() as db:
@@ -331,9 +426,11 @@ class Store:
             run = db.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
             if held is None or held["state"] != "active" or run is None or run["state"] != "evaluating":
                 return False
+            charged, usage = outcome["charged_cpu_s"], outcome["usage"]
+            if held["lower_bound_cpu_s"] is not None and held["lower_bound_cpu_s"] > charged:
+                charged, usage = held["lower_bound_cpu_s"], "reported_lower_bound"
             db.execute("UPDATE reservations SET state = 'settled', charged_cpu_s = ?, usage = ?, settled_at = ? "
-                       "WHERE reservation_id = ? AND state = 'active'",
-                       (outcome["charged_cpu_s"], outcome["usage"], now, reservation_id))
+                       "WHERE reservation_id = ? AND state = 'active'", (charged, usage, now, reservation_id))
             entry = Entry("evaluating")
             if outcome["kind"] == "failed":
                 entry = transition(entry, "fail", {"codes": [outcome["code"]], "settled": True})
@@ -357,27 +454,53 @@ class Store:
             codes = canonical_list([violation(code) for code in final])
             seq = self._run_event(db, run, entry.state, now, codes=[item["code"] for item in codes])
             result = outcome["result"]
-            db.execute("UPDATE runs SET state = ?, codes = ?, result = ?, metric_c = ?, active_c = ?, binding_ok = ?, "
-                       "updated_at = ?, version = ? WHERE run_id = ?",
+            db.execute("UPDATE runs SET state = ?, codes = ?, reason = NULL, result = ?, metric_c = ?, active_c = ?, "
+                       "binding_ok = ?, updated_at = ?, version = ? WHERE run_id = ?",
                        (entry.state, _json(codes), _json(result), outcome["metric_c"], result["active_layer_peak_C"],
                         int(result["binding"]["ok"]), now, seq, run_id))
             return True
 
     def recover(self, now: float) -> int:
-        """At startup: an attempt that was running when the process stopped will never finish. It fails with
-        interrupted and is charged its whole envelope (its usage is unknown)."""
+        """At startup, by the owner only: an attempt the previous owner left open has an unknown outcome (its remote
+        solve may still run, or may have finished with a charge the door has not seen). It is not declared ended: it
+        stays evaluating and active, marked recovering, until the scorer's idempotent retry resolves it."""
         with self.tx() as db:
-            runs = db.execute("SELECT * FROM runs WHERE state = 'evaluating'").fetchall()
-            for run in runs:
-                db.execute("UPDATE reservations SET state = 'settled', charged_cpu_s = amount_cpu_s, "
-                           "usage = 'interrupted', settled_at = ? WHERE run_id = ? AND state = 'active'",
-                           (now, run["run_id"]))
-                entry = transition(Entry("evaluating"), "fail", {"codes": ["interrupted"], "settled": True})
-                seq = self._run_event(db, run, entry.state, now, reason="interrupted", codes=["interrupted"])
-                db.execute("UPDATE runs SET state = ?, codes = ?, reason = 'interrupted', updated_at = ?, "
-                           "version = ? WHERE run_id = ?",
-                           (entry.state, _json([violation("interrupted")]), now, seq, run["run_id"]))
-            return len(runs)
+            rows = db.execute("SELECT reservations.reservation_id, reservations.usage, runs.* FROM runs "
+                              "JOIN reservations ON reservations.run_id = runs.run_id "
+                              "WHERE runs.state = 'evaluating' AND reservations.state = 'active'").fetchall()
+            for row in rows:
+                db.execute("UPDATE reservations SET usage = 'recovering' WHERE reservation_id = ?",
+                           (row["reservation_id"],))
+                if row["usage"] != "recovering":
+                    seq = self._run_event(db, row, "evaluating", now, reason="unresolved")
+                    db.execute("UPDATE runs SET reason = 'unresolved', updated_at = ?, version = ? WHERE run_id = ?",
+                               (now, seq, row["run_id"]))
+            return len(rows)
+
+    def resolve_interrupted(self, run_id: str, *, charged_cpu_s: float, now: float) -> bool:
+        """An operator's settlement of an open attempt, once the remote attempt is known to have ended: failed with
+        interrupted, charged no less than its envelope or any reported lower bound."""
+        with self.tx() as db:
+            held = db.execute("SELECT * FROM reservations WHERE run_id = ? AND state = 'active'",
+                              (run_id,)).fetchone()
+            run = db.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+            if held is None or run is None or run["state"] != "evaluating":
+                return False
+            if charged_cpu_s < max(held["amount_cpu_s"], held["lower_bound_cpu_s"] or 0.0):
+                raise ValueError("an operator settles an open attempt at no less than its envelope")
+            db.execute("UPDATE reservations SET state = 'settled', charged_cpu_s = ?, usage = 'operator_resolved', "
+                       "settled_at = ? WHERE reservation_id = ?", (charged_cpu_s, now, held["reservation_id"]))
+            entry = transition(Entry("evaluating"), "fail", {"codes": ["interrupted"], "settled": True})
+            seq = self._run_event(db, run, entry.state, now, reason="interrupted", codes=["interrupted"])
+            db.execute("UPDATE runs SET state = ?, codes = ?, reason = 'interrupted', updated_at = ?, version = ? "
+                       "WHERE run_id = ?", (entry.state, _json([violation("interrupted")]), now, seq, run_id))
+            return True
+
+    def stops(self) -> list:
+        with self.read() as db:
+            return [{"scope": row["scope"], "short_id": row["short_id"],
+                     "grant": row["key"] if row["scope"] == "grant" else None, "reason": row["reason"],
+                     "at": row["at"]} for row in db.execute("SELECT * FROM accounting_stops ORDER BY at")]
 
     def scorer_event(self, state: str, now: float) -> None:
         with self.tx() as db:

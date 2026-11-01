@@ -1,5 +1,13 @@
 """The door's workers: at most the grant's `parallel` attempts at once, across every worker and process (the claim
-counts active reservations under the write lock).
+counts active reservations under the write lock). Only the process holding the store's owner lock drives attempts
+(root's review, P1-2); a second process on the same file neither claims nor recovers.
+
+An attempt ends only on a definitive outcome (see scorer.py). An ambiguous one (a timeout or 5xx after the request was
+sent, an adapter fault, an owner that restarted mid-call) leaves the attempt open: evaluating, its envelope active and
+counted, its reported CPU kept as a lower bound. The owner re-drives open attempts first, with the same request:
+door-scorer answers a repeated request from its ledger without charging again, so the original outcome and its
+measured CPU come back. While the scorer cannot answer, the attempt stays open and its slot stays taken; an operator
+can settle it (Store.resolve_interrupted) once the remote attempt is known to have ended.
 
 Before each claim a worker asks whether the scorer is up (health, cached for a few seconds). While it is down nothing
 is claimed: queued runs stay queued and the feed says "scorer down". An attempt already sent when the scorer fails
@@ -26,6 +34,7 @@ FAILURE_CODE = {"scorer_down": "oracle_error", "scorer_timeout": "timeout", "sco
                 "interrupted": "interrupted"}
 DIE_NAMES = ("C0", "C1", "C2", "C3", "D0", "D1", "D2", "D3")
 WIRE_TOLERANCE_MM = 1e-5
+RECONCILE_RETRY_S = 10.0
 HEALTH_TTL_S = 5.0
 
 
@@ -73,7 +82,7 @@ def outcome_for(score, claimed: dict, checker) -> dict:
     """The settled outcome of a returned score: charged its measured CPU, its binding checked against the selector."""
     dies = claimed["proposal"]["dies"]
     bound = binding(score, dies, checker)
-    reproduced = score.replay_fresh_process and score.replay_match
+    reproduced = score.replay_fresh_process and score.replay_match and score.receipts_bound
     replay_code = None if reproduced else (score.replay_code or (
         "fresh_process_required" if not score.replay_fresh_process else "reproduction_mismatch"))
     envelope = claimed["envelope_cpu_s"]
@@ -81,12 +90,18 @@ def outcome_for(score, claimed: dict, checker) -> dict:
               "native_all_block_max_C": score.native_all_block_max_C,
               "active_layer_peak_C": score.active_layer_peak_C, "per_die_C": dict(score.per_die_C),
               "grid64": None if score.grid64 is None else [list(row) for row in score.grid64],
-              "replay": {"fresh_process": score.replay_fresh_process, "match": score.replay_match},
+              "replay": {"fresh_process": score.replay_fresh_process, "match": score.replay_match,
+                         "receipts_bound": score.receipts_bound, "code": replay_code},
+              "cpu_known": score.cpu_known,
               "binding": bound,
               "evaluator": {"binary_sha256": score.evaluator_binary_sha256, "grid": 64},
               "cpu_s": score.cpu_s, "overrun": score.cpu_s > envelope, "receipt": score.receipt}
-    return {"kind": "scored", "charged_cpu_s": score.cpu_s, "usage": "measured" if score.cpu_s <= envelope else
-            "measured_overrun", "qualifiers": [] if bound["ok"] else ["binding_mismatch"], "reproduced": reproduced,
+    if score.cpu_known:
+        usage = "measured" if score.cpu_s <= envelope else "measured_overrun"
+    else:
+        usage = "unknown_charged_conservatively"
+    return {"kind": "scored", "charged_cpu_s": score.cpu_s, "usage": usage,
+            "qualifiers": [] if bound["ok"] else ["binding_mismatch"], "reproduced": reproduced,
             "replay_code": replay_code, "result": result, "metric_c": score.max_chiplet_centre_cell_mean_C}
 
 
@@ -109,11 +124,21 @@ class Dispatcher:
         self._wake = threading.Condition()
         self._threads: list[threading.Thread] = []
         self._health_lock = threading.Lock()
+        self._driving: set = set()
+        self._driving_lock = threading.Lock()
+        self._retry_at: dict = {}
+        self.owner = False
 
-    def start(self) -> None:
+    def start(self, workers: bool = True) -> None:
+        """Take the store's owner lock, recover what a previous owner left open, and start the workers. Without the
+        lock this process drives nothing."""
         door = self.door
+        if not door.store.acquire_owner():
+            _logger.warning("another process owns this door store; this one drives no attempts")
+            return
+        self.owner = True
         door.store.recover(door.policy.clock())
-        if not door.policy.usable or door.scorer is None:
+        if not workers or not door.policy.usable or door.scorer is None:
             return
         for index in range(door.policy.grant.parallel):
             thread = threading.Thread(target=self._loop, name=f"door-worker-{index}", daemon=True)
@@ -126,6 +151,20 @@ class Dispatcher:
         for thread in self._threads:
             thread.join(timeout)
         self._threads = []
+        if self.owner:
+            self.door.store.release_owner()
+            self.owner = False
+
+    def _take(self, run_id: str) -> bool:
+        with self._driving_lock:
+            if run_id in self._driving:
+                return False
+            self._driving.add(run_id)
+            return True
+
+    def _drop(self, run_id: str) -> None:
+        with self._driving_lock:
+            self._driving.discard(run_id)
 
     def wake(self) -> None:
         with self._wake:
@@ -148,19 +187,39 @@ class Dispatcher:
             return healthy
 
     def run_once(self) -> bool:
-        """One claim and its attempt. Returns whether an attempt ran (the tests drive workers through this)."""
+        """Re-drive one open attempt, or else claim and drive one new one. Returns whether an attempt ended (the
+        tests drive workers through this). Only the owner does anything."""
+        if not self.owner:
+            return False
         door = self.door
         now = door.policy.clock()
         found, final = door.policy.admission(now)
-        if found:
-            if final:
-                door.store.end_all_queued(("expire", "window_closed"), now)
-            return False
+        if found and final:
+            door.store.end_all_queued(("expire", "window_closed"), now)
         if not self.scorer_up(now):
             return False
-        claimed = door.store.claim(check=door.launch_check, parallel=door.policy.grant.parallel, now=now)
+        for attempt in door.store.recovering():
+            if self._retry_at.get(attempt["run_id"], 0.0) <= now and self._take(attempt["run_id"]):
+                try:
+                    return self._drive(attempt, reconciling=True)
+                finally:
+                    self._drop(attempt["run_id"])
+        if found:
+            return False
+        grant = door.policy.grant
+        claimed = door.store.claim(check=door.launch_check, parallel=grant.parallel, now=now, grant=grant,
+                                   owner=door.store.owner_id)
         if claimed is None:
             return False
+        self._take(claimed["run_id"])
+        try:
+            return self._drive(claimed, reconciling=False)
+        finally:
+            self._drop(claimed["run_id"])
+
+    def _drive(self, claimed: dict, *, reconciling: bool) -> bool:
+        """One call to the scorer for this attempt. Settles on a definitive outcome; otherwise keeps it open."""
+        door = self.door
         request = {"run_id": claimed["run_id"], "token_ref": door.policy.participant_ref(claimed["principal"]),
                    "proposal": claimed["proposal"]}
         try:
@@ -168,16 +227,27 @@ class Dispatcher:
         except ScorerError as error:
             if error.reason == "scorer_down":
                 door.scorer_state.set("down", door.policy.clock(), door.store)
+            # A refusal or a closed connection ends a new attempt (nothing ran); for an open attempt it says nothing
+            # about how the original call ended.
+            if not error.definitive or (reconciling and not error.began):
+                return self._keep_open(claimed, error.cpu_s)
             outcome = failure_for(error, claimed["envelope_cpu_s"])
-        except Exception:  # noqa: BLE001 - a scorer adapter fault is a failed attempt, never a crashed worker
+        except Exception:  # noqa: BLE001 - an adapter fault leaves the outcome unknown: the attempt stays open
             _logger.exception("scorer adapter fault")
-            outcome = failure_for(ScorerError("scorer_error", began=True), claimed["envelope_cpu_s"])
+            return self._keep_open(claimed, None)
         else:
             door.scorer_state.set("up", door.policy.clock(), door.store)
             outcome = outcome_for(score, claimed, door.policy.checker)
-        door.store.settle(run_id=claimed["run_id"], reservation_id=claimed["reservation_id"], outcome=outcome,
-                          now=door.policy.clock())
-        return True
+        self._retry_at.pop(claimed["run_id"], None)
+        return door.store.settle(run_id=claimed["run_id"], reservation_id=claimed["reservation_id"],
+                                 outcome=outcome, now=door.policy.clock())
+
+    def _keep_open(self, claimed: dict, lower_bound) -> bool:
+        now = self.door.policy.clock()
+        self.door.store.mark_recovering(run_id=claimed["run_id"], reservation_id=claimed["reservation_id"],
+                                        lower_bound_cpu_s=lower_bound, now=now)
+        self._retry_at[claimed["run_id"]] = now + RECONCILE_RETRY_S
+        return False
 
     def _loop(self) -> None:
         while not self._stop.is_set():

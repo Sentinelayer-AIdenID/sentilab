@@ -82,7 +82,8 @@ def door_manifest(**edits) -> dict:
 
 def grant(**edits) -> dict:
     value = {"grant": GRANT_ID, "cpu_cap_s": 3600, "token_cpu_s": 30, "parallel": 4, "run_reserve_cpu_s": 10,
-             "not_before": OPENS, "not_after": CLOSES, "enforcement_evidence_sha256": fake("whole-container cutoff")}
+             "not_before": OPENS, "not_after": CLOSES, "enforcement_evidence_sha256": fake("whole-container cutoff"),
+             "scorer_image_digest": "sha256:" + fake("scorer image")}
     value.update(edits)
     return value
 
@@ -140,11 +141,13 @@ def grid_for(dies, offset: float = 0.0) -> list:
 
 class FakeScorer:
     """mode: ok | down | timeout | error | refused | cutoff | grant_expired | mismatch | not_fresh | replay_failed |
-    bad_binding | bad_die | bad_wire | raise."""
+    bad_binding | bad_die | bad_wire | raise | ambiguous. Every ScorerError here is definitive (the scorer's own
+    answer) except ambiguous, whose outcome is unknown."""
 
-    def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0, with_grid=False):
+    def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0, with_grid=False,
+                 cpu_known=True):
         self.checker, self.mode, self.healthy, self.cpu_s, self.delay_s = checker, mode, healthy, cpu_s, delay_s
-        self.offset, self.with_grid = offset, with_grid
+        self.offset, self.with_grid, self.cpu_known = offset, with_grid, cpu_known
         self.calls, self.health_calls = [], 0
         self.started = threading.Event()
         self.release = None          # a threading.Event a test may set to hold a score call open
@@ -174,6 +177,8 @@ class FakeScorer:
             raise ScorerError("scorer_refused", began=False)
         if self.mode == "raise":
             raise RuntimeError("adapter fault")
+        if self.mode == "ambiguous":
+            raise ScorerError("scorer_timeout", began=True, definitive=False, cpu_s=13.0)
         dies = request["proposal"]["dies"]
         grid = grid_for(dies, self.offset)
         means = self.checker.centre_means(dies, grid)
@@ -187,7 +192,8 @@ class FakeScorer:
         return Score(metric, metric - 0.01, max(max(row) for row in grid), per_die,
                      tuple(tuple(row) for row in grid) if self.with_grid else None, wire, fresh,
                      self.mode not in ("mismatch", "replay_failed"), code, self.cpu_s, EVALUATOR_BINARY_SHA256,
-                     {"score": {"run_id": request["run_id"], "fake": True}, "replay": None}, dict(METRIC))
+                     {"score": {"run_id": request["run_id"], "fake": True}, "replay": None}, dict(METRIC),
+                     cpu_known=self.cpu_known)
 
 
 NONCE = "0123456789abcdef"
@@ -220,6 +226,7 @@ class DoorCase:
         self.store = Store(Path(self.tmp.name) / "door.sqlite3")
         self.scorer = FakeScorer(self.policy.checker)
         self.door = Door(self.policy, self.store, self.scorer)
+        self.door.start(workers=False)          # the owner lock and recovery; tests drive attempts with drain()
         self.previous_door = configure(self.door)
         self.server = None
         if self.http:
