@@ -166,9 +166,12 @@ live-view author. No new proxy route is needed (see the top): the Worker already
 forwards `GET /api/open/v1/door/visitors`, and #90 passes it through its open-feed
 filter (no `operator` field, `nosniff`). The Worker's opt-in (`POST /agents/declare`,
 and the notice and form on a pass's page) ships off: `DOOR_DECLARATIONS` is `"off"` in
-`web/wrangler.jsonc` for production and staging until the paired deploy after root's
-#97, and anything but exactly `"on"` is off (`DOOR-PRESENCE-STATS.md` section 4). No
-full HTTP-traffic coverage is claimed. Until an API carrying this contract is deployed
+`web/wrangler.jsonc` for production and staging, and anything but exactly `"on"` is off
+(`DOOR-PRESENCE-STATS.md` section 4). It stays off until warden explicitly authorizes
+turning it on. That needs two things first, and comes after the production freeze for
+the talk: the operator's hide is confirmed on both public feeds on every serving
+revision, and one pass or one network prefix can be stopped from declaring. No full
+HTTP-traffic coverage is claimed. Until an API carrying this contract is deployed
 behind the proxy, the visitors GET gets that API's answer for a path it does not serve
 (404), or the proxy's 503 where no API origin is configured (staging). A 404, 403 or
 503, or a failed fetch, means the visitor source is unavailable, never zero visits or
