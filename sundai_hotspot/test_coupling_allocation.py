@@ -20,6 +20,25 @@ from sundai_hotspot import test_gate_zero as fixtures
 
 
 class CouplingManifestTests(unittest.TestCase):
+    def test_manifest_freezes_replay_files_and_outcome_presentation(self):
+        manifest, _ = reference_validation.load_manifest(selection="coupling")
+        evaluation = manifest["evaluation"]
+        self.assertEqual(evaluation["replay_identity"]["files"],
+                         ["sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt"])
+        self.assertEqual(evaluation["replay_identity"]["comparison"], "byte-for-byte")
+        self.assertIn("receipt.json", evaluation["replay_identity"]["excluded"])
+        self.assertEqual(evaluation["percentage_rounding"],
+                         "nearest whole percent from the exact rational; ties away from zero")
+        self.assertEqual(evaluation["percentage_references"],
+                         {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"})
+        self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "DOESN'T COMPLETE"})
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "manifest.json"
+            evaluation["replay_identity"]["files"].remove("stderr.txt")
+            path.write_bytes(slab049._dump(manifest))
+            with self.assertRaises(reference_validation.CallRefused):
+                reference_validation.load_manifest(path, selection="coupling")
+
     def test_explicit_selection_preserves_the_twelve_call_gate_manifest(self):
         gate, gate_hash = reference_validation.load_manifest()
         coupling, coupling_hash = reference_validation.load_manifest(selection="coupling")
@@ -115,7 +134,13 @@ class CouplingEntryTests(fixtures.EntryCase):
         first = self.run_pair(0, 82.671)
         second = self.run_pair(2, 133.441)
         self.assertIsNone(first["coupling"]["predicate"])
+        self.assertEqual(first["coupling"]["outcome"], "DOESN'T COMPLETE")
         self.assertTrue(second["coupling"]["predicate"])
+        self.assertEqual(second["coupling"]["outcome"], "MEETS")
+        self.assertEqual(second["coupling"]["wording"],
+            "With only that one link changed in 7.0, 85% and 85% of the difference to 6.0 goes away on the two "
+            "references. That localizes it to this term in this configured model. It doesn't tell us what the "
+            "authors intended, or which version matches hardware.")
         for entry in second["calls"]:
             evaluation = entry["coupling"]
             self.assertEqual(evaluation["fraction"], "0.85")
@@ -129,6 +154,77 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertTrue(all(row["replay_byte_identical"] for row in second["rows"]))
         self.assertEqual({p.name: p.read_bytes() for p in self.old_dir.glob("*.json")}, self.old_bytes)
         self.assertNotEqual(self.scenario.dir, self.old_dir)
+
+    def test_mixed_result_reports_each_reference_and_rounds_only_the_wording(self):
+        self.run_pair(0, 80.274)  # exactly 90% on Ascend
+        report = self.run_pair(2, 134.0247)  # exactly 84.5% on CPU-DRAM
+        self.assertEqual(report["coupling"]["verdict"], "FAIL")
+        self.assertEqual(report["coupling"]["outcome"], "MISSES")
+        self.assertEqual(report["coupling"]["wording"],
+            "That one change accounts for 90% and 85% of the difference, below the 85% we fixed. "
+            "Something else also contributes.")
+        self.assertEqual(report["coupling"]["percentage_rounding"],
+                         "nearest whole percent from the exact rational; ties away from zero")
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["MEETS", "MISSES"])
+        self.assertEqual([row["primary"]["fraction_exact"] for row in report["rows"]], ["9/10", "169/200"])
+        self.assertEqual([row["predicate"] for row in report["rows"]], [True, False])
+
+    def test_missing_call_takes_precedence_over_a_completed_threshold_miss(self):
+        report = self.run_pair(0, 90)
+        self.assertEqual(report["coupling"]["verdict"], "FAIL")
+        self.assertEqual(report["coupling"]["outcome"], "DOESN'T COMPLETE")
+        self.assertEqual(report["coupling"]["wording"],
+                         "The run didn't complete, so we make no claim from it.")
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "DOESN'T COMPLETE"])
+        self.assertEqual(len(self.scenario.api.launch_tags()), 2)
+
+    def test_unusable_call_makes_no_claim_and_is_not_retried(self):
+        self.run_pair(0, 82)
+        for name in list(self.calls)[2:]:
+            self.control_case(name, peak_c=133, truncate=True)
+            self.scenario.reserve(name)
+            receipt = self.call(name, name)
+            self.assertEqual(receipt["status"], "record_error")
+            self.scenario.settle(name)
+        report = reference_validation.report(ledger_root=self.scenario.root, tags=self.scenario.tags,
+                                             selection="coupling")
+        self.assertEqual(report["coupling"]["outcome"], "DOESN'T COMPLETE")
+        self.assertEqual(report["coupling"]["wording"],
+                         "The run didn't complete, so we make no claim from it.")
+        self.assertNotEqual(report["coupling"]["verdict"], "PASS")
+        self.assertEqual(len(self.scenario.api.launch_tags()), 4)
+
+    def check_stream_mismatch(self, stream):
+        # Each fresh process writes authentic but different stream bytes before its receipt is signed.
+        self.fake.write_text(self.fake.read_text() +
+            '\nprint(case.get("stream_text", "same"), file=sys.' + stream + ')\n')
+        self.write_provenance(self.fake, "material_only")
+        self.patch(coupling_allocation, "BINARY_SHA256", fixtures._sha256(self.fake))
+        self.manifest, self.manifest_sha256 = reference_validation.load_manifest(selection="coupling")
+        self.calls = {row["id"]: row for row in self.manifest["calls"]}
+        self.scenario = self.grant("stream", cap=234, grant_id="g49-stream")
+        for index, name in enumerate(self.calls):
+            self.control_case(name, peak_c=82 if index < 2 else 133,
+                              stream_text="different" if index == 1 else "same")
+            self.scenario.reserve(name)
+            self.assertEqual(self.call(name, name)["status"], "exited")
+            self.scenario.settle(name)
+        report = reference_validation.report(ledger_root=self.scenario.root, tags=self.scenario.tags,
+                                             selection="coupling")
+        self.assertTrue(all(entry["usable"] for entry in report["calls"]))
+        self.assertFalse(report["rows"][0]["replay_byte_identical"])
+        self.assertEqual(report["rows"][1]["outcome"], "MEETS")
+        self.assertFalse(report["coupling"]["predicate"])
+        self.assertEqual(report["coupling"]["outcome"], "DOESN'T COMPLETE")
+        self.assertEqual(report["coupling"]["wording"],
+                         "The run didn't complete, so we make no claim from it.")
+        self.assertEqual(len(self.scenario.api.launch_tags()), 4)
+
+    def test_stdout_mismatch_prevents_a_claim(self):
+        self.check_stream_mismatch("stdout")
+
+    def test_stderr_mismatch_prevents_a_claim(self):
+        self.check_stream_mismatch("stderr")
 
     def test_report_detects_different_replay_bytes_even_with_equal_maximum(self):
         # Changing a non-maximizing block keeps the selector unchanged but must fail replay identity.
@@ -181,6 +277,30 @@ class CouplingEntryTests(fixtures.EntryCase):
 
 
 class FrozenEvaluationTests(unittest.TestCase):
+    def test_percentage_rounding_uses_exact_rationals_without_clipping(self):
+        call = coupling_allocation.build_manifest()["calls"][0]
+        # Kelvin text, hand-computed fraction and nearest whole percent (ties away from zero).
+        cases = (("355.1019", "173/200", 87), ("356.0607", "169/200", 85),
+                 ("356.060700000000000000000000000001", None, 84),
+                 ("396.8097", "-1/200", -1), ("348.3903", "201/200", 101),
+                 ("380.59", "1/3", 33))
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp) / "run"
+            shutil.copytree(fixtures.REPO_ROOT / gate_zero.reference(call["reference"]).inputs, directory)
+            fixtures.write_outputs(directory, 70)
+            path = directory / "sample.steady"
+            original = path.read_text().splitlines()
+            for kelvin, exact, expected in cases:
+                with self.subTest(kelvin=kelvin):
+                    path.write_text("\n".join(f"inode_0\t{kelvin}" if line.startswith("inode_0\t") else line
+                                              for line in original) + "\n")
+                    result = coupling_allocation.evaluate_call(call, directory,
+                        slab049.summarize_evaluation(directory, grid_size=64),
+                        {"kind": "material_only", "binary_sha256": call["binary_sha256"]})
+                    if exact is not None:
+                        self.assertEqual(result["fraction_exact"], exact)
+                    self.assertEqual(result["fraction_percent"], expected)
+
     def test_both_sides_of_each_exact_threshold_use_the_native_maximum(self):
         calls = coupling_allocation.build_manifest()["calls"]
         # Kelvin text, exact hand-computed fraction, predicate: +/- 0.001 C around each boundary.

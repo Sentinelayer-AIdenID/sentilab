@@ -1,9 +1,8 @@
 # SLAB-049 coupling allocation
 
-Implementation status: allocation and numeric evaluation are implemented. The three exact scientific outcome
-wordings and their selection rules from contract #57399 are absent from the ticket and checkout and have been
-requested. The report currently contains the mechanical PASS/FAIL/INCOMPLETE verdict only. Signing and executing
-the experiment remain pending that contract input and the independent review below.
+Implementation status: allocation, exact numeric evaluation, the three pre-registered outcome wordings relayed
+by Warden from #57614/root, and the four-file replay policy are implemented. Signing and executing the experiment
+remain pending independent review and Warden's new allocation; this implementation makes no experimental claim.
 
 Ticket 01ac77ac adds the four calls from `coupling-call-list.json` as an explicitly selected allocation. The
 call list stays at SHA-256 `db32a692b749e08324c295e56250f96a9548796aae232ca63f24d2ad4ab3e577`.
@@ -52,13 +51,39 @@ diagnostics are retained separately. A grid peak or chiplet-only maximum never r
 Each successful call's signed receipt records `(T_hs7 - T_variant) / (T_hs7 - T_hs6)`, a decimal rendering and
 the exact rational value, its maximizing node, and diagnostics. The comparison uses the exact rational value
 against `17/20`, never a rounded temperature or fraction. The CPU-DRAM baseline is the frozen simulated gate
-output **115.93**, not the paper target 115.94. Replay identity compares both `sample.steady` and
-`sample.grid.steady` byte for byte. A replay whose primary is unavailable has no established replay identity.
+output **115.93**, not the paper target 115.94.
+
+The coupling manifest freezes replay identity to `sample.steady`, `sample.grid.steady`, `stdout.txt` and
+`stderr.txt`, compared byte for byte without normalization. Timestamped `receipt.json` is explicitly excluded.
+Inspection of `hotspot.c`'s steady-state path found progress/summary text and the LCF warning with the frozen
+relative input names (`samplelayers.lcf`, `sampleL4_ChipLayer.flp`), not wall-clock timestamps or per-run paths.
+The SuperLU steady solve in `temperature_grid.c` initializes and frees statistics without printing them.
+Thus both native streams are included. This is source inspection, not an additional thermal solve; any runtime
+stream mismatch still makes no claim and authorizes no extra call. The signed receipts already bind all four
+files. A replay whose primary is unavailable has no established replay identity. Gate zero retains its own
+unchanged two-file replay policy.
 
 `report` revalidates signed ledger entries, tags, receipts and raw output hashes through `gate_zero.verify_call`,
 then recomputes the evaluation from the raw files. Stored evaluation fields are not trusted. A missing or unusable
 call cannot produce PASS; a completed threshold miss or byte mismatch produces FAIL. No thermal solve is run by
 the generator or report.
+
+Alongside that mechanical verdict, each reference has its own outcome. Any missing or unusable call or any
+replay mismatch takes precedence for the overall **DOESN'T COMPLETE** wording, even when another reference
+misses the threshold. Otherwise both references meeting `17/20` selects **MEETS**, and any miss selects
+**MISSES**. There are no retries or automatic extra calls.
+
+The manifest freezes these wordings and the percentage mapping: `[x]` is Ascend Layout A and `[y]` is CPU-DRAM.
+Each signed evaluation retains `fraction_percent`, rounded directly from the exact rational to the nearest
+whole percent, with ties away from zero and no clipping to 0–100%. The report repeats that rounding rule.
+Display rounding does not affect the predicate: an exact 84.5% displays as 85% but still misses `17/20`.
+
+- **MEETS:** "With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the two
+  references. That localizes it to this term in this configured model. It doesn't tell us what the authors
+  intended, or which version matches hardware."
+- **MISSES:** "That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. Something
+  else also contributes."
+- **DOESN'T COMPLETE:** "The run didn't complete, so we make no claim from it."
 
 ## Operator review and execution
 
@@ -91,7 +116,7 @@ The surrogate executor used Python 3.12.3, GCC 13.3.0, glibc 2.39 and SuperLU 6.
 placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing fixtures never reached disk.
 These commands exited zero:
 
-- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 228 tests, no skips, including 14
+- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 235 tests, no skips, including 21
   coupling tests.
 - `(cd sundai_controller && ../.venv/bin/python -m unittest -v test_controller.py test_experiment.py)`: 55 tests.
 - `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: 2 tests.
@@ -107,8 +132,15 @@ threshold, rounding before comparison, skipped replay bytes, trusted stored eval
 ignored manifest selection, and shared CPU files. A separate import-shadow regression failed before replacing
 the hardcoded `/app` import root and passes with the checkout-derived import root.
 
+For the outcome/replay follow-up, all seven new tests and the extended exact-threshold test fail against
+pre-fix `b54569fe3d98592de8392bb832cf14550b6a2ff5` in a disposable worktree: the 21-test coupling file reports
+two failures and eleven errors (including rounding subcases). Both authentic stream-mismatch regressions
+fail with `AssertionError: True is not false`. With the fix, all 21 pass. They cover verbatim outcomes, missing
+or unusable calls, mixed results, exact rounding on both sides of a half-percent, and independent stdout/stderr
+mismatches, using the real validation/report paths and fake engines. No thermal solve is added.
+
 This tree generates coupling manifest SHA-256
-`e5dfb0fe7cc36a5b92d9e50d1674790c85f17feee2720dd9ed7621e1cafb4515`.
+`e2de4a6ab7a10602f7236bc8747ae65c5b66597fc7b65cd4c6de943fb5341f9f`.
 The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
 its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.
 Docker is unavailable in this box, so the pinned-image suites/build check remain Warden's independent proof.
