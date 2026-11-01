@@ -219,6 +219,33 @@ class TransitionTests(unittest.TestCase):
             self.assertEqual((result['allocation_id'], result['state']), ('offline-example', 'interrupted'))
             self.assertEqual(result['cpu']['charged_cpu_seconds'], 900)
 
+    def test_broker_uses_new_policy_interval_and_still_settles_after_expiry(self):
+        from scripts.ci_hotspot_gate import serve
+        from unittest.mock import Mock
+        f = OwnerFixture()
+        policy = grant_policy(f.grant, f.chosen)
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = Ledger(Path(temporary) / 'events.jsonl', IDENTITY, policy)
+            current = [LEGACY.expires_at + 1]
+            with patch('scripts.ci_hotspot_gate.Broker') as broker, patch('scripts.ci_hotspot_gate.threading.Thread'):
+                serve(ledger, now=lambda: current[0])
+            handler_type = broker.call_args.args[1]
+            def post(path, value):
+                raw = json.dumps(value).encode()
+                handler = object.__new__(handler_type)
+                handler.path, handler.headers = path, {'Content-Length': str(len(raw))}
+                handler.rfile, handler.wfile = io.BytesIO(raw), io.BytesIO()
+                handler.connection = Mock()
+                handler.send_response, handler.send_header, handler.end_headers = Mock(), Mock(), Mock()
+                handler.do_POST()
+                return handler.send_response.call_args.args[0], json.loads(handler.wfile.getvalue())
+            self.assertEqual(post('/reserve', {'binary': '0' * 64}), (200, {'slot': 1}))
+            for when in (0, policy.expires_at, policy.expires_at + 1):
+                current[0] = when
+                self.assertEqual(post('/reserve', {'binary': '0' * 64})[0], 409)
+            self.assertEqual(post('/settle', {'slot': 1, 'state': 'interrupted', 'returncode': 1})[0], 200)
+            self.assertEqual(ledger.summary()['launches_settled'], 1)
+
     def test_source_base_head_attempt_predecessor_and_ruleset_refuse_before_claim(self):
         mutations = [lambda f: f.pull['head'].update(sha='9' * 40),
             lambda f: f.run.update(run_attempt=2), lambda f: f.run.update(path='other.yml'),

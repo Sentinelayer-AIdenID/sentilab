@@ -6,9 +6,6 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from scripts.ci_allocation import EXPIRY
-
-
 class Broker(ThreadingHTTPServer):
     """Bounded drain of accepted handlers and the listener backlog before export."""
     daemon_threads = True  # a stuck handler cannot hang the runner indefinitely
@@ -108,7 +105,7 @@ def serve(ledger, port=47631, *, now=time.time):
                 self.connection.settimeout(2)
                 data = json.loads(self.rfile.read(size))
                 if self.path == '/reserve':
-                    if now() >= EXPIRY:
+                    if not ledger.policy.not_before <= now() < ledger.policy.expires_at:
                         raise RuntimeError('allocation expired')
                     binary = data['binary']
                     if not isinstance(binary, str) or len(binary) != 64:
