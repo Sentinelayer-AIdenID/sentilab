@@ -1192,13 +1192,14 @@ Checks before anything is drawn (PSEUDOCODE §9; refusals in AC-21, association 
    (`K`; `C` and `°C` to C) and compared before any conversion: a conflict is `unit_conflict` (a pointer saying C over
    an artifact in K is never converted), another unit is `unit_not_supported`, and a `null` on either side leaves the
    field unassociated (`unit_unbound`). Both declarations are kept; values convert exactly once.
-5. **Layer identity (C3).** Every layer record has an integer `index` in 0..15, unique and strictly ascending, a
-   name, finite positive `thickness_m`, `resistivity_mK_W` and `heat_capacity_J_m3K`, and a boolean `powered`; the
-   indices equal `producer.emitted_layer_ids` and their count the pointer's `layers`; `values[i]` belongs to
-   `layers[i].index`, which the field keeps (never the array position). A missing, duplicated, unexpected or
-   non-integer index is `layer_ids`, a bad record is `malformed`, and neither becomes an advisory difference. A
-   `null` `native_format` or `executable` leaves the field unassociated (`producer_unbound`), and a `null`
-   `emitted_layer_ids` too (`producer_layer_unbound`).
+5. **Layer identity (C3).** Every layer record has a name, finite positive `thickness_m`, `resistivity_mK_W` and
+   `heat_capacity_J_m3K`, and a boolean `powered`. When `producer.emitted_layer_ids` is bound, every `index` is an
+   integer in 0..15, unique and strictly ascending, and the set equals `emitted_layer_ids`; that is checked before the
+   count, so a missing layer is `layer_ids`, not `dims`, and the count then equals the pointer's `layers`. `values[i]`
+   belongs to `layers[i].index`, which the field keeps (never the array position). A missing, duplicated, unexpected
+   or non-integer index is `layer_ids`, a bad record is `malformed`, and neither becomes an advisory difference. When
+   `emitted_layer_ids` is `null` every `index` is `null` too and the field is unassociated (`producer_layer_unbound`);
+   a `null` `native_format` or `executable` leaves it unassociated as well (`producer_unbound`).
 6. **Grid (C4).** `rows` and `cols` are positive integers within the caps (at most 128 x 128, the worker's bound at
    tap_oracle_worker.py:283-287; at most 16 layers) and equal the pointer's; a same-count different shape is `dims`,
    and a `null` leaves the field unassociated (`grid_shape_unbound`). Every layer holds exactly rows x cols finite
@@ -1347,8 +1348,8 @@ Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 
 - **Renderer: D5, which warden resolves in this draft** (root votes for option B). Option A is our own WebGL2
   renderer, the 3D sibling of the hand-written Canvas 2D renderer (render.mjs:1-9); option B is a pinned, locally
   vendored three.js adapter. Both sit behind the same `render3d.mjs` contract with our own DOM labels, no build step
-  and no CSP change (L3:PSEUDOCODE Appendix A); their scopes are in section 6.10 and the measurement that informs the
-  choice in section 6.11.
+  and no CSP change (L3:PSEUDOCODE Appendix A); their scopes are in section 6.10 and the measurement that checks the
+  pick in section 6.11.
 - **CSP consequences** (main:web/src/csp.js:7; L3:ARCHITECTURE §2.1): same-origin module files only; no `eval` or
   `Function`; no WebAssembly (so no Draco, meshopt, KTX2, WASM CAD); no inline script, so no import map; module
   Workers only from our own files; images only from our origin or `data:`; no `<style>` or `style=""`; styles set per
@@ -1486,8 +1487,9 @@ D4's phone numbers are prospective targets to measure against, not limits (A#572
    and fully exploded with a section on; and a TEST-key results run with 8 layers at 64 x 64 once fields exist), the
    reference phone and its browser version (warden names them), and a desktop (Chromium on the build box). Every
    result is reported against a named workload, device and browser.
-2. **Both D5 options** are measured as spikes behind the same `render3d.mjs` contract on that workload (W9.5) before
-   W10 builds one.
+2. **The D5 pick** (warden resolves D5 in this draft) is measured first as a spike behind the `render3d.mjs`
+   contract on that workload (W9.5), before W10 builds it out; if it misses a target, the three owners revisit D5
+   with the numbers, and the other option's scope is already written out (section 6.10).
 3. **Size:** the transferred and parsed bytes of everything each option adds (raw, gzip, brotli).
 4. **Preparation, on its own:** fetch, verification, `buildRenderModel`, `displayBoxes` and the GPU upload, to the
    first frame ready.
@@ -1586,7 +1588,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
-| W9.5 | S | The section 6.11 measurement of both D5 options as spikes behind the `render3d.mjs` contract (no page integration); traces attached; warden resolves D5 from them. | AC-34 (measurement protocol) |
+| W9.5 | S | The section 6.11 measurement of the D5 pick as a spike behind the `render3d.mjs` contract (no page integration), against the D4 targets; traces attached; a miss returns D5 to the three owners with the numbers. | AC-34 (measurement protocol) |
 | W10 | L | The renderer warden picks under D5 (section 6.10: option A's `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, or option B's pinned vendored core), `render3d.mjs`, `labels.mjs`; picking, explode tween, section caps, overlays, lid and spreader outlines; context loss and restore; disposal; the `window.__package3d.facts()` test hook. | AC-12 (browser), AC-15, AC-27, AC-33, AC-35 |
 | W11 | S | The section 6.11 measurement of the built renderer on the named workload, phone, browser and desktop, against the D4 targets; traces attached. | AC-34 |
 
@@ -1670,7 +1672,7 @@ document's text is not that gate.**
 | D2 | Temperatures that are not results. | v0.1 recorded a contradiction: the four label states are result states, and none is truthful for a literature limit, a model input or a material condition (main:web/public/temperature-label.mjs:38-53). Lane 1 holds such values (L1:thermal_path.md §3; parts.json `silicon_85C` and others); PR #66 shows qualified policy temperatures (pr66:web/public/agents/math.md:168, :221-225). | Typed roles: a temperature quantity is a `model_input` (for example the ambient), a `material_condition` (the temperature a conductivity is stated at), a `published_limit` (for example a refresh trip point) or a `computed_result`; only computed results use the four result states. Until the role formatter and its tests land with the label-rule owner (P9), non-result temperatures stay unrendered and are listed in `omitted` with their role (PL-4). | root-proposed, forge-adopted, warden co-sign pending |
 | D3 | Signed chip-layer grids that already exist. | v0.1 recorded a contradiction: rule 5 says no signed record carries a field, but the served run-view replay holds signed 32 x 32 chip-layer grids from the withdrawn HotSpot-7 build, drawn by the run view (main:web/public/app.js:52, :63, :139). | The fact that these legacy withdrawn grids exist is retained (section 2). A 3D field is enabled only through an exact supported verifier and association path (section 5.7 with `run_inputs_verified`, section 5.6); the legacy grids have none, so the room does not draw them. | root-proposed, forge-adopted, warden co-sign pending |
 | D4 | Phone budgets, the reference phone, and how they are measured. | Lane 3: 300,000 triangles, 60 draw calls, 6,000 instances, p95 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction 33 ms on a named phone, unmeasured (A#57059). | Initial phone tier: 50,000 triangles, 60 draw calls, a 1-megapixel drawing buffer and a 2 MiB render derivative, as prospective measurement targets, not limits (A#57278). The workload, device and browser are named before measuring, and preparation is measured separately from end-to-present (section 6.11; AC-34). | root-proposed, forge-adopted, warden co-sign pending; warden names the phone |
-| D5 | Renderer. | Option A, our own WebGL2 renderer (lane 3's recommendation); option B, a pinned, locally vendored three.js adapter behind the RenderModel (root's vote). Both scopes are written out in section 6.10; neither size nor performance is measured yet. | Open: root votes option B, with a license inventory; warden resolves it in this draft, informed by the measurement plan (section 6.11). Nothing outside `render3d.mjs` depends on the choice. | root's vote recorded; warden resolves in this draft |
+| D5 | Renderer. | Option A, our own WebGL2 renderer (lane 3's recommendation); option B, a pinned, locally vendored three.js adapter behind the RenderModel (root's vote). Both scopes are written out in section 6.10; neither size nor performance is measured yet. | Open: root votes option B, with a license inventory; warden resolves it in this draft, with both scopes treated (section 6.10); the measurement plan (section 6.11) then checks the pick against the D4 targets. Nothing outside `render3d.mjs` depends on the choice. | root's vote recorded; warden resolves in this draft |
 | D6 | Thickness in Results without verified inputs. | Lane 3 fell back to the parts list (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate (A#57053). | The run's verified inputs (`run_inputs_verified`), else schematic; never anatomy, and never a newer family manifest (X3, X4; A#57218 item 6). | root-proposed, forge-adopted, warden co-sign pending |
 | D7 | SKETCH mode, and a label state for its numbers. | L3:ARCHITECTURE §6.3; rule 4. | Deferred: not built in this phase; the room ships verified playback only (section 4.9). | root-proposed, forge-adopted, warden co-sign pending |
 | D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on the reviewed 45 mm raw reference (`ascend910-45mm` raw), with the 0.5 mm variant and the other fixtures selectable; Results uses each run's recorded (signed) geometry, its family's manifest being reference context only (X3). | root-proposed, forge-adopted, warden co-sign pending |

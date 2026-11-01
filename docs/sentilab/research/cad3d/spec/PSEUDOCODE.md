@@ -633,14 +633,17 @@ export async function checkFieldArtifact(bytes, ref, { stack = null, domain = nu
   if (pu === undefined || au === undefined) return no("unit_not_supported");
   if (pu !== null && au !== null && pu !== au) return no("unit_conflict");                                      // compared BEFORE converting
   if (pu === null || au === null) unbound.push("unit_unbound");
-  const ids = doc.layers.map((l) => l.index);                                                                  // 5 layer identity (C3)
-  if (!ids.every((i) => Number.isInteger(i) && i >= 0 && i < FIELD_CAPS.max_layers) || ids.some((i, k) => k > 0 && i <= ids[k - 1])) return no("layer_ids");
+  const ids = doc.layers.map((l) => l.index), p = doc.producer;                                               // 5 layer identity (C3)
+  if (p.native_format === null || p.executable === null) unbound.push("producer_unbound");
+  if (p.emitted_layer_ids === null) {                                  // no bound layer branch: every index is null too
+    if (!ids.every((i) => i === null)) return no("layer_ids");
+    unbound.push("producer_layer_unbound");
+  } else {
+    if (!ids.every((i) => Number.isInteger(i) && i >= 0 && i < FIELD_CAPS.max_layers) || ids.some((i, k) => k > 0 && i <= ids[k - 1])) return no("layer_ids");
+    if (!sameIds(p.emitted_layer_ids, ids)) return no("layer_ids");   // the id set BEFORE the count: a missing layer 4 is layer_ids
+  }
   if (doc.layers.length !== ref.layers || doc.values.length !== doc.layers.length) return no("dims");
   if (!doc.layers.every(wellFormedLayer)) return no("malformed", "layer record");                             // name; finite positive t, r, c; boolean powered
-  const p = doc.producer;
-  if (p.native_format === null || p.executable === null) unbound.push("producer_unbound");
-  if (p.emitted_layer_ids === null) unbound.push("producer_layer_unbound");
-  else if (!sameIds(p.emitted_layer_ids, ids)) return no("layer_ids");
   const { rows, cols, row0, map_mode, extent_mm } = doc.grid;                                                  // 6 grid (C4)
   if (rows === null || cols === null) unbound.push("grid_shape_unbound");
   else if (!(posInt(rows) && posInt(cols)) || rows > FIELD_CAPS.max_rows || cols > FIELD_CAPS.max_cols || rows !== ref.rows || cols !== ref.cols) return no("dims");

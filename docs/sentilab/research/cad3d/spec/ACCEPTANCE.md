@@ -377,7 +377,7 @@ without glides and nothing pulses (L3:ACCEPTANCE A-16). Pass: all.
 **AC-34 Budgets, measured against targets** (device, browser traces). Measured by the plan of SPEC.md §6.11: the
 workload (the anatomy assembly with every array, and a results run with 8 layers at 64 x 64 once fields exist), the
 reference phone and its browser, and a desktop are named before measuring; preparation and end-to-present are
-reported separately; both D5 options are measured in W9.5 and the built renderer again in W11. The phone column is
+reported separately; the D5 pick is measured as a spike in W9.5 and as built in W11. The phone column is
 root's initial tier (D4): prospective targets, not limits.
 
 | Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4) | Desktop (lane 3) |
@@ -395,7 +395,7 @@ root's initial tier (D4): prospective targets, not limits.
 | first 3D frame after verification, cold, 4G | ≤ 2.5 s | not set | ≤ 2.5 s | ≤ 1 s |
 | GL objects after a mode switch | not set | explicit disposal | back to the baseline count | same |
 | preparation (fetch to first frame ready) and end-to-present (input or new result to presented frame) | not set | measured separately (A#57218) | reported, p50 and p95 | reported |
-| bytes the renderer adds (raw, gzip, brotli), per D5 option | not set | not set | reported | reported |
+| bytes the renderer adds (raw, gzip, brotli), for the D5 pick | not set | not set | reported | reported |
 
 The reference phone is named by warden before W9.5. Pass: every row measured and reported on both classes against a
 named workload, device and browser, with traces attached; a missed target is recorded with its cause and the three
