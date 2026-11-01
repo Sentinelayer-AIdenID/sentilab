@@ -41,10 +41,16 @@ export const SLIDE_BANNED = [
   [/\b(?:hours|money|time|costs?)\s+(?:saved|saving)\b|\bsav(?:e|es|ed|ing)\s+(?:engineers|hours|money|time)\b/i, "a savings claim with no baseline"],
   [/\b40\s*\+|\bforty\s+(?:users|people)\b|\b40\s+(?:users|people)\b/i, "\"40+ users\": the record shows 28 senders"],
   [/\b300\s+posts\b|\bnine\s+outside\s+teams\b/i, "the historical 300-post snapshot (aneta's count replaces it)"],
+  // Root, 07:52Z: 17 is member accounts, not people who took part; say posting identities.
+  [/\b17\s+people\b|\bseventeen\s+people\b/i, "\"17 people\": 17 is member accounts; say posting identities"],
+  // Root, 07:52Z: the 115.93 against 115.94 question is unresolved, so no solver library is named as its cause.
+  [/\bSuperLU\b|\bmulti-?grid\b/i, "a solver library named for the unresolved 115.93 against 115.94 question"],
   [/\b(?:Kiro|Jira|Slack|Facebook|GitHub)\b/i, "a product name (the Kiro/Jira/Slack line is spoken, not shown)"],
 ];
 // The spoken words may name those products (the joke), but never the vendor rules or the unbacked claims.
-const SAY_BANNED = SLIDE_BANNED.slice(0, 4);
+const SAY_BANNED = SLIDE_BANNED.filter(([, why]) => !why.startsWith("a product name"));
+// Money stays off the main slides: the two cost scopes are a backup page, Carter's call (the coordinator, 07:51Z).
+const MONEY = [/\$\s?\d|\bUSD\b|\bdollars?\b/i, "money on a main slide (cost is a backup page)"];
 // The two citations may name their publisher, on the sources page only.
 const CITATIONS = ["blog.cloudflare.com/rethinking-cache-ai-humans/", "blog.cloudflare.com/agentic-web"];
 
@@ -58,21 +64,50 @@ function claimRules(text, where, rules) {
 // A digit-bearing token, trimmed of the punctuation around it ("(2026)," -> "2026", "1,700%" -> "1,700", "0.01°" -> "0.01").
 const numberTokens = (text) => String(text).split(/\s+/).map((t) => t.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")).filter((t) => /\d/.test(t));
 
-// METRICS.json, from the metrics pass: { "metrics": [ { "id", "value", "display"?, "definition", "scope", "window", "source" } ] }
-// or the same records keyed by id. A metric counts only with every one of those fields.
+// A count as the slides print it: 1496 -> "1,496"; other values as they are.
+export const fmt = (v) => (typeof v === "number" && Number.isInteger(v) ? v.toLocaleString("en-US") : String(v));
+// METRICS.json, from the metrics pass (C:/tmp/metrics, copied here byte for byte): { "items": [ { "key", "value", "unit",
+// "definition", "scope", "window_start", "window_end", "source", ... } ], "could_not_measure": [...] }. A value of null is
+// not measured, so its slide keeps "measuring…". Every measured item must carry its definition, scope, window and source.
 export function loadMetrics(path = FOUNDER_METRICS) {
   if (!existsSync(path)) return { sha256: null, byId: new Map() };
   const bytes = readFileSync(path);
   const raw = JSON.parse(bytes.toString("utf8"));
-  const list = Array.isArray(raw.metrics) ? raw.metrics : Object.entries(raw.metrics ?? raw).map(([id, m]) => ({ id, ...m }));
+  const list = Array.isArray(raw.items) ? raw.items : Array.isArray(raw.metrics) ? raw.metrics : [];
   const byId = new Map();
   for (const m of list) {
-    for (const k of ["id", "value", "definition", "scope", "window", "source"]) {
-      if (m[k] === undefined || m[k] === null || m[k] === "") throw new FounderError(`METRICS.json: ${m.id ?? "a metric"} has no ${k}`);
+    const id = m.key ?? m.id;
+    if (m.value === null || m.value === undefined) continue;
+    const window = m.window ?? (m.window_end ? `${m.window_start ?? "?"} to ${m.window_end}` : null);
+    for (const [k, v] of [["key", id], ["definition", m.definition], ["scope", m.scope], ["window", window], ["source", m.source]]) {
+      if (v === undefined || v === null || v === "") throw new FounderError(`METRICS.json: ${id ?? "an item"} has no ${k}`);
     }
-    byId.set(m.id, { ...m, display: String(m.display ?? m.value) });
+    byId.set(id, { ...m, id, window, display: String(m.display ?? fmt(m.value)) });
   }
   return { sha256: sha256(bytes), byId };
+}
+// A fact tied to the metrics file: the number the slide shows must be the file's value, or a stated derivation of it.
+export function metricValue(fact, metrics, where) {
+  const get = (key) => {
+    const m = metrics.byId.get(key);
+    if (!m) throw new FounderError(`${where}: METRICS.json has no measured ${key}`);
+    return m.value;
+  };
+  switch (fact.derive ?? "value") {
+    case "value": return fmt(get(fact.metric));
+    case "minus": return fmt(get(fact.metric[0]) - get(fact.metric[1]));
+    case "median-seconds": {
+      const v = Object.values(get(fact.metric)).map(Number).sort((a, b) => a - b);
+      const mid = v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+      return (mid / 1000).toFixed(1);
+    }
+    case "range-seconds": {
+      const v = Object.values(get(fact.metric)).map(Number);
+      return `${(Math.min(...v) / 1000).toFixed(1)}–${(Math.max(...v) / 1000).toFixed(1)}`;
+    }
+    case "tokens-from-bytes": return fmt(Math.round(get(fact.metric) / 400) * 100);
+    default: throw new FounderError(`${where}: unknown derivation ${fact.derive}`);
+  }
 }
 
 export function loadFounder() {
@@ -90,7 +125,7 @@ function shownText(c) {
   const parts = [c.title, c.caption, c.footer, c.line, c.apps, c.punch, c.text, c.label, c.still?.label];
   for (const k of ["chips", "points", "flow", "items"]) parts.push(...(c[k] ?? []));
   for (const s of c.steps ?? []) parts.push(s.verb, s.what);
-  for (const t of c.tiles ?? []) parts.push(t.value, t.label, t.head, t.body);
+  for (const t of [...(c.tiles ?? []), ...(c.stats ?? [])]) parts.push(t.value, t.label, t.head, t.body);
   for (const b of c.bars ?? []) parts.push(b.show, b.label);
   for (const t of c.times ?? []) parts.push(t.show, t.what);
   return parts.filter((x) => x !== undefined && x !== null && x !== "").join(" \n ");
@@ -112,9 +147,11 @@ export function buildFounderData({ v4, sourceSha256, metrics }) {
   const wanted = v4.metrics.wanted;
   const named = v4.teams.named;
   const placeholders = [];
+  // The metrics file the deck was reviewed with: a different file is a different set of numbers.
+  if (metrics.sha256 && v4.metrics.sha256 !== metrics.sha256) throw new FounderError(`METRICS.json is not the file V4.json pins (${String(v4.metrics.sha256).slice(0, 8)}…)`);
   const metric = (id, where) => {
     if (!Object.hasOwn(wanted, id)) throw new FounderError(`${where}: metric ${id} is not one the deck asks for`);
-    const m = metrics.byId.get(id);
+    const m = metrics.byId.get(wanted[id].key ?? id);
     if (!m) placeholders.push({ id, where, label: wanted[id].label, need: wanted[id].need });
     return m ? { value: m.display, label: wanted[id].label, metric: id, measuring: false, window: m.window } : { value: v4.metrics.placeholder, label: wanted[id].label, metric: id, measuring: true };
   };
@@ -126,7 +163,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }) {
     if (!LAYOUTS.has(s.layout)) throw new FounderError(`${s.id}: unknown layout ${s.layout}`);
     const where = `slide ${s.id}`;
     const content = { layout: s.layout };
-    for (const k of ["title", "caption", "footer", "line", "apps", "punch", "text", "label", "chips", "points", "flow", "steps", "bars", "times", "items"]) if (s[k] !== undefined) content[k] = s[k];
+    for (const k of ["title", "caption", "footer", "line", "apps", "punch", "text", "label", "chips", "points", "flow", "steps", "bars", "times", "items", "stats"]) if (s[k] !== undefined) content[k] = s[k];
     if (s.tiles) content.tiles = s.tiles.map((t, k) => (t.metric ? metric(t.metric, `${where} tile ${k + 1}`) : { ...t }));
     if (s.picture?.still) {
       const st = v4.stills[s.picture.still];
@@ -159,7 +196,14 @@ export function buildFounderData({ v4, sourceSha256, metrics }) {
     if (/\bDelfie\b(?!\s+\(delphisci team\))/.test(shown)) throw new FounderError(`${where} names Delfie without the form the team asked for: "${named.Delfie}"`);
     if (SCIENCE.has(s.id) && !/simulated/i.test(shown)) throw new FounderError(`${where} shows simulated science without saying "simulated"`);
     if (s.main) {
-      const declared = new Set((s.facts ?? []).flatMap((f) => (f.source ? f.shows : [])));
+      claimRules(shown, where, [MONEY]);
+      // A fact tied to METRICS.json shows exactly the file's value (or its stated derivation) first.
+      for (const f of s.facts ?? []) {
+        if (!f.metric) continue;
+        const v = metricValue(f, metrics, where);
+        if (f.shows[0] !== v) throw new FounderError(`${where} shows ${f.shows[0]} for ${[].concat(f.metric).join(" - ")}, but METRICS.json gives ${v}`);
+      }
+      const declared = new Set((s.facts ?? []).flatMap((f) => (f.source || f.metric ? f.shows : [])));
       const measured = new Set((content.tiles ?? []).filter((t) => t.metric && !t.measuring).flatMap((t) => numberTokens(t.value)));
       for (const n of numberTokens(shown)) if (!declared.has(n) && !measured.has(n)) throw new FounderError(`${where} shows ${n}, which none of its facts declares`);
     }
@@ -180,7 +224,12 @@ export function buildFounderData({ v4, sourceSha256, metrics }) {
       notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: s.cue ?? null };
     }
     const main = v4.slides.length;
-    return { id: s.id, main: s.main, label: s.main ? `${i + 1} / ${main}` : `B${i - main + 1}`, kicker: s.kicker, content, notes, facts: s.facts ?? [] };
+    // For SOURCES.md: a metrics fact is described by the file's own definition, window and scope.
+    const facts = (s.facts ?? []).map((f) => (f.metric ? {
+      shows: f.shows,
+      source: `METRICS.json ${[].concat(f.metric).map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
+    } : f));
+    return { id: s.id, main: s.main, label: s.main ? `${i + 1} / ${main}` : `B${i - main + 1}`, kicker: s.kicker, content, notes, facts };
   });
   const talk = slides.filter((s) => s.main);
   const words = talk.reduce((a, s) => a + s.notes.words, 0);

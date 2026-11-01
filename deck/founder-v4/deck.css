@@ -153,3 +153,11 @@ h1.big { font-size: 72px; }
 .tiles.with-pic { grid-template-columns: repeat(2, 1fr); }
 .npic .still { margin: 0; }
 .npic .still img { border-radius: 16px; background: #fff; }
+
+/* 3: six tiles in two rows; 2: the measured stats under the flow */
+.tiles.n6 { grid-template-columns: repeat(3, 1fr); }
+.tiles.n6 .tile { min-height: 200px; }
+.fstats { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.fstat { display: flex; align-items: baseline; gap: 22px; padding: 18px 26px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
+.fstat b { flex: none; font: 800 60px/1 var(--display); color: var(--cyan); }
+.fstat span { font-size: 28px; color: var(--body); }

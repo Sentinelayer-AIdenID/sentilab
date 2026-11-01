@@ -35,7 +35,7 @@ test("the founder deck is built from V4.json, and the committed deck, script, fi
   assert.equal(serialize(data).json, readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
   assert.ok(outputsMatch(data, loaded.v4), "deck/founder-v4 and SCRIPT/FILL-IN/SOURCES are the build's");
   assert.deepEqual(data.slides.filter((s) => s.main).map((s) => s.id), MAIN);
-  assert.deepEqual(data.slides.filter((s) => !s.main).map((s) => s.id), ["sources"]);
+  assert.deepEqual(data.slides.filter((s) => !s.main).map((s) => s.id), ["sources", "cost", "solvers"]);
   assert.match(html(data), /<section class="slide main" id="s-chips"/);
 });
 
@@ -43,7 +43,7 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   const u = data.budget;
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 180, `${u.totalSeconds} s`);
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [403, 161.2, 15, 176.2]);
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [404, 161.6, 15, 176.6]);
   assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(5); }), (e) => e instanceof FounderError && /over the 180 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
   assert.equal(slide(data, "invite").notes.words, countWords("We invited agents on Moltbook: N votes, N visits, N passed."));
@@ -64,6 +64,11 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.ok(say("chips").endsWith("All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design."));
   for (const w of ["recognizes agents", "sets them up", "collaborate", "serves what they need", "records everything they did and everywhere they went", "Delegation is scoped", "handled gracefully", "only gets what it's allowed to touch", "Shopping, security, and today, science."]) assert.ok(say("senti").includes(w), w);
   for (const w of ["didn't know how to get their agents talking to other labs' agents", "people watched every agent work", "agents geared each other up and guarded the room", "plain messages became engineering-grade tickets"]) assert.ok(say("room").includes(w), w);
+  // Root's participants line (07:52Z), with the metrics pass's numbers.
+  assert.ok(say("room").endsWith("422 messages from 28 posting identities: 5 human and 23 agent identities."));
+  assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
+  assert.match(shown(data, "room"), /at least 8 outside teams/);
+  assert.match(shown(data, "room"), /rated helpful by our intent model \(model-rated, not confirmed\)/);
   assert.match(say("closer"), /^My ambition\? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub\. Okay, not GitHub\. Yet\./);
   assert.match(slide(data, "closer").notes.cue, /"Okay, not GitHub\. Yet\." is the quiet aside\. Carter may say the network's name out loud: his call/);
   // The closer's slide text, exactly as the coordinator gave it.
@@ -100,22 +105,28 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
   refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].tiles[0].value = "512"; });
   refuses("a duration its records don't give", /is not its records'/, (v) => { v.slides[4].times[0].show = "30 min"; });
   refuses("a bar not its value", /is not 119.07 rounded/, (v) => { v.slides[3].bars[0].show = "120 °C"; });
+  refuses("17 people", /17 is member accounts/, (v) => { v.slides[2].say += " 17 people took part."; });
+  refuses("a solver library named", /unresolved 115.93 against 115.94/, (v) => { v.slides[6].footer += " SuperLU explains it."; });
+  refuses("money on a main slide", /money on a main slide/, (v) => { v.slides[2].footer += " It cost USD 8,232.41."; });
+  refuses("a number that is not the metrics file's", /but METRICS.json gives 422/, (v) => { v.slides[2].tiles[0].value = "421"; v.slides[2].facts[0].shows = ["421"]; });
+  refuses("a different metrics file", /is not the file V4.json pins/, (v) => { v.metrics.sha256 = "0".repeat(64); });
 });
 
 test("a number not measured yet shows \"measuring…\" and is listed to fill in; METRICS.json fills it", () => {
-  const want = ["intent.helpful_messages", "cost.weekend_total", "moltbook.post_votes", "door.visits", "door.agents_passed", "view.agent_bytes"];
+  const want = ["moltbook.post_votes", "door.visits", "door.agents_passed", "view.agent_bytes"];
   assert.deepEqual(data.placeholders.map((p) => p.id).sort(), [...want].sort());
-  assert.equal((html(data).match(/class="measuring"/g) ?? []).length, 6, "six measuring tiles");
+  assert.equal((html(data).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
   assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data));
   for (const id of want) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${id}\``), id);
   assert.match(slide(data, "invite").notes.text, /\[votes on our Moltbook post: measuring\]/);
   assert.ok(data.deck.measuring && founderPdfName(data).endsWith("-draft.pdf"));
   // With the metrics on file, the tiles carry them and the words read them out.
-  const byId = new Map(want.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }]));
-  const filled = variant(() => {}, { sha256: "f".repeat(64), byId });
+  const keys = ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"];
+  const byId = new Map([...loaded.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
+  const filled = variant(() => {}, { sha256: loaded.metrics.sha256, byId });
   assert.equal(filled.placeholders.length, 0);
   assert.doesNotMatch(html(filled), /class="measuring"/);
-  assert.match(slide(filled, "invite").notes.text, /^We invited agents on Moltbook: 102 votes, 103 visits, 104 passed\.$/);
+  assert.match(slide(filled, "invite").notes.text, /^We invited agents on Moltbook: 100 votes, 101 visits, 102 passed\.$/);
   assert.ok(founderPdfName(filled).endsWith("-review.pdf"));
 });
 
@@ -139,4 +150,18 @@ test("founder deck files are LF-only, with no control bytes", () => {
     // eslint-disable-next-line no-control-regex
     assert.doesNotMatch(b.toString("utf8"), /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/, `${f} has a control byte`);
   }
+});
+
+test("cost and the other solvers are backup pages, each with its scope, never on a main slide", () => {
+  const cost = shown(data, "cost");
+  assert.match(cost, /whole subscription, not final: USD 8,232\.41/);
+  assert.match(cost, /never added/);
+  for (const id of MAIN) assert.doesNotMatch(shown(data, id), /\$\s?\d|\bUSD\b/, id);
+  // Root's solvers line (07:52Z), as written, with what is compared and whose implementations they are.
+  const solvers = shown(data, "solvers");
+  assert.ok(solvers.includes("Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate."));
+  assert.match(solvers, /die-centre readings from those implementations against HotSpot's selector values/);
+  assert.match(solvers, /one finite-element implementation is ours/);
+  assert.match(solvers, /unnamed until it consents/);
+  assert.doesNotMatch(solvers, /three outside teams|within 0\.01 K in both cases/i);
 });

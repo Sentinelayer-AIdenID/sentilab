@@ -34,7 +34,7 @@
     },
     flow(c) {
       const steps = c.steps.map((s, i) => `<li class="fstep"><span class="fn">${i + 1}</span><b>${esc(s.verb)}</b><span>${esc(s.what)}</span></li>`).join("");
-      return `${h1(c)}<ol class="fsteps">${steps}</ol><div class="fchips">${c.chips.map((x) => pill(x, "cy")).join("")}</div><p class="fapps">${esc(c.apps)}</p>`;
+      return `${h1(c)}<ol class="fsteps">${steps}</ol><div class="fchips">${c.chips.map((x) => pill(x, "cy")).join("")}</div><p class="fapps">${esc(c.apps)}</p>${c.stats ? `<div class="fstats">${c.stats.map((x) => `<div class="fstat"><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join("")}</div>` : ""}`;
     },
     numbers(c) {
       const tiles = `<div class="tiles n${c.tiles.length}${c.still ? " with-pic" : ""}">${c.tiles.map(tile).join("")}</div>`;

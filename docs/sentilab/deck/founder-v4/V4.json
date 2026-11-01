@@ -3,7 +3,7 @@
   "title": "SentiLab",
   "event": "ScienceClaw hackathon",
   "talk": "Founder pitch, three minutes (v4)",
-  "cutoff": "2026-11-01T07:09:00Z",
+  "cutoff": "2026-11-01T07:47:00Z",
   "clock": {
     "talkCapSeconds": 180,
     "transitionSeconds": 15,
@@ -17,7 +17,9 @@
     "Aneta's finding beat, tile and footer, team room 57816 (07:09Z); root's spoken wording, reply to 57816 at 07:14Z.",
     "Aneta's help-room counts, team room 57818 (07:10Z), counted at 07:09 UTC.",
     "Chatgpt's continuity review, reply to 57809 at 07:02Z: the market sources and the three-minute maximum.",
-    "The coordinator's brief for v4 (07:00Z) and its follow-ups (07:13Z, 07:16Z, 07:20Z)."
+    "The coordinator's brief for v4 (07:00Z) and its follow-ups (07:13Z, 07:16Z, 07:20Z).",
+    "The metrics pass: METRICS.json and METRICS.md (generated 07:47:57Z), with the coordinator's binding rules for v4 (07:51Z).",
+    "Root's binding corrections to the numbers and the solvers line (07:52Z, relayed by the coordinator)."
   ],
   "teams": {
     "named": {
@@ -42,14 +44,6 @@
     "file": "METRICS.json",
     "placeholder": "measuring…",
     "wanted": {
-      "intent.helpful_messages": {
-        "label": "helpful messages, by our intent model",
-        "need": "the intent model's count of helpful help-room messages, with its definition, scope and time window"
-      },
-      "cost.weekend_total": {
-        "label": "what the weekend's collaboration cost",
-        "need": "the cost of the whole interaction, with what it includes, its scope and window"
-      },
       "moltbook.post_votes": {
         "label": "votes on our Moltbook post",
         "need": "the post's vote count once the post exists, with the time it was read"
@@ -64,9 +58,11 @@
       },
       "view.agent_bytes": {
         "label": "what an agent is served, per view",
-        "need": "the agent view's measured size against the human page, with the method"
+        "need": "the agent view's measured size against the human page, with the method",
+        "key": "door.view_size"
       }
-    }
+    },
+    "sha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "stills": {
     "render": {
@@ -141,9 +137,43 @@
         "Drift and rogue agents handled gracefully"
       ],
       "apps": "Shopping · Security · Today: scientific discovery",
-      "footer": "What Senti does for every agent in the room.",
+      "footer": "Local proof run: the door's code on one machine, a fake scorer, 5 scripted bots making 14 requests each. No baseline time was measured, so no speed-up is claimed.",
       "say": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and records everything they did and everywhere they went. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
-      "facts": []
+      "facts": [
+        {
+          "shows": [
+            "3.8"
+          ],
+          "metric": "door.dogfood.wall_to_checked_legal_layout",
+          "derive": "median-seconds"
+        },
+        {
+          "shows": [
+            "22,900"
+          ],
+          "metric": "docs.baseline_context",
+          "derive": "tokens-from-bytes"
+        },
+        {
+          "shows": [
+            "8",
+            "5",
+            "14"
+          ],
+          "source": "METRICS.json: docs.baseline_context counts 8 files; door.dogfood.wall_to_checked_legal_layout ran 5 scripted bots, each making 14 requests before its check (its caveats)."
+        }
+      ],
+      "stats": [
+        {
+          "value": "3.8 s",
+          "label": "median from an agent's first page to a checked layout: local test, scripted bots, fake scorer"
+        },
+        {
+          "value": "22,900",
+          "label": "tokens of docs an agent would read without the door, across 8 files"
+        }
+      ],
+      "cue": "If there's time: \"In a local test, an agent got from the first page to a checked layout in a median 3.8 seconds.\""
     },
     {
       "id": "room",
@@ -152,49 +182,106 @@
       "title": "Many labs' agents, one room, overnight.",
       "tiles": [
         {
-          "value": "418",
-          "label": "messages"
+          "value": "422",
+          "label": "messages in the help room"
         },
         {
           "value": "28",
-          "label": "senders"
+          "label": "posting identities: 5 human, 23 agent"
         },
         {
-          "value": "17",
-          "label": "senders from outside our team"
+          "value": "16",
+          "label": "of them outside our team: 4 human, 12 agent"
         },
         {
-          "metric": "intent.helpful_messages"
+          "value": "at least 8",
+          "label": "outside teams"
         },
         {
-          "metric": "cost.weekend_total"
+          "value": "281",
+          "label": "of 399 messages rated helpful by our intent model (model-rated, not confirmed)"
+        },
+        {
+          "value": "20",
+          "label": "tickets written from plain room messages"
         }
       ],
       "points": [
         "People watched every agent work",
         "Agents geared each other up",
-        "Agents guarded the room",
-        "Plain messages became engineering-grade tickets"
+        "Agents guarded the room"
       ],
-      "footer": "Help-room record, 31 Oct 13:46 to 1 Nov 07:09 UTC, about 17 hours: 193 messages and 225 replies. Senders are handles, not people; 5 are people's accounts.",
-      "say": "This weekend, teams didn't know how to get their agents talking to other labs' agents. Overnight, it worked in one room: people watched every agent work, agents geared each other up and guarded the room, and plain messages became engineering-grade tickets. 418 messages; 17 senders outside our team.",
+      "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC. Identities are posting handles, not people. \"Helpful\" is our intent model's rating (at least 1 on its 0–4 scale), not confirmed usefulness; 76 of the 281 came from outside participants.",
+      "say": "This weekend, teams didn't know how to get their agents talking to other labs' agents. Overnight, one room did it: people watched every agent work, agents geared each other up and guarded the room, and plain messages became engineering-grade tickets. 422 messages from 28 posting identities: 5 human and 23 agent identities.",
       "facts": [
         {
           "shows": [
-            "418",
-            "28",
-            "17",
-            "13:46",
-            "07:09",
-            "193",
-            "225",
-            "5",
-            "31",
-            "1"
+            "422"
           ],
-          "source": "Aneta's count of the help room's own record at 07:09 UTC, 1 Nov (team room 57818): 418 messages (193 top-level and 225 replies), 28 distinct senders, 5 of them people's accounts, 17 senders outside our crew; first message 31 Oct 13:46 UTC."
+          "metric": "crosscheck.help.messages"
+        },
+        {
+          "shows": [
+            "28"
+          ],
+          "metric": "crosscheck.help.posting_identities"
+        },
+        {
+          "shows": [
+            "23"
+          ],
+          "metric": [
+            "crosscheck.help.members_plus_posting_agents",
+            "crosscheck.help.members"
+          ],
+          "derive": "minus"
+        },
+        {
+          "shows": [
+            "5",
+            "16",
+            "4",
+            "12"
+          ],
+          "source": "Root's correction (07:52Z) from the metrics pass's help-room counts: 28 posting identities = 5 human + 23 agent; outside our team, 16 posting identities = 4 human + 12 agent."
+        },
+        {
+          "shows": [
+            "8"
+          ],
+          "source": "METRICS.json crosscheck.help.outside_groups: 8 teams posted through agents and 3 people posted only as themselves, so at least 8 and at most 11 outside teams (root, 07:52Z: say \"at least 8\")."
+        },
+        {
+          "shows": [
+            "281"
+          ],
+          "metric": "helpful.messages"
+        },
+        {
+          "shows": [
+            "399"
+          ],
+          "metric": "helpful.scored_messages"
+        },
+        {
+          "shows": [
+            "20"
+          ],
+          "metric": "tickets.filed_from_room_messages"
+        },
+        {
+          "shows": [
+            "31",
+            "13:46",
+            "1",
+            "07:39",
+            "0–4",
+            "76"
+          ],
+          "source": "METRICS.json: the help-room window, 2026-10-31T13:46:10Z to 2026-11-01T07:39:30Z; helpful means at least 1 point on the 0–4 scale, and 76 of the 281 came from outside participants (helpful.messages, its scope)."
         }
-      ]
+      ],
+      "cue": "Optional, Carter's call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
     },
     {
       "id": "hook",
@@ -397,7 +484,7 @@
       "text": "One of the largest internet networks reports over 10 billion AI-bot requests a week (April 2026), and AI-agent requests grew more than 1,700% in a year (Sept 2026).",
       "punch": "Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
       "footer": "Sources: the backup page.",
-      "say": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. Bring your agent. One of the largest internet networks reports over ten billion AI-bot requests a week. Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
+      "say": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
       "cue": "\"Okay, not GitHub. Yet.\" is the quiet aside. Carter may say the network's name out loud: his call; the slides don't name it.",
       "facts": [
         {
@@ -420,15 +507,43 @@
       "items": [
         "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
         "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
-        "418 messages from 28 senders, 17 of them outside our team: the help room's own record, 31 Oct 13:46 to 1 Nov 07:09 UTC, counted at 07:09 UTC. Senders are handles, not people.",
+        "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent) in at least 8 and at most 11 teams. An earlier count at 07:09 UTC: 418.",
+        "Helpful: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale. That is a model rating, not confirmed usefulness; 76 of the 281 came from outside participants, and our own agents wrote 205.",
+        "Tickets: 20 written from plain room messages, 16 of them by the ticket keeper.",
+        "Speed, local proof run with 5 scripted bots and a fake scorer: a median 3.8 s (2.4–6.7 s) from the first page to a checked legal layout, 14 requests each. Without the door, about 22,900 tokens of docs across 8 files. No baseline time, so no speed-up claim.",
         "Elapsed times: the team-room and help-room records, 31 Oct into 1 Nov, UTC.",
         "119 °C and 241 °C: hottest modeled grid cells (119.07 and 240.53), CPU-DRAM reference layout, detailed 3D mode, byte-identical inputs, re-parsed independently.",
-        "Reproduction: native block maxima 75.48 against the published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance.",
-        "More heat out than in: saved 45 mm, 64×64 cases of 6.0, 1.39% on CPU-DRAM and 0.63% on Layout A; the matching saved 7.0 cases balance within rounding.",
-        "Delfie (delphisci team) and ScienceClaw: their own reports of changing the modeled link, separate from our reference reproduction.",
-        "The technical deck (v3.1, 43 pages) is the backup for detail."
+        "Reproduction: native block maxima 75.48 against the published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance. More heat out than in: saved 45 mm, 64×64 cases of 6.0, 1.39% on CPU-DRAM and 0.63% on Layout A; the matching saved 7.0 cases balance within rounding.",
+        "Delfie (delphisci team) and ScienceClaw: their own reports of changing the modeled link, separate from our reference reproduction. The technical deck (v3.1, 43 pages) is the backup for detail."
       ],
       "footer": "Every temperature here is simulated, not measured on silicon.",
+      "facts": []
+    },
+    {
+      "id": "cost",
+      "kicker": "Backup · cost",
+      "layout": "sources",
+      "title": "What it cost: two scopes, never added together.",
+      "items": [
+        "Cloud bill for 31 Oct (UTC), whole subscription, not final: USD 8,232.41, of which agent model calls 8,212.47.",
+        "The minted-agent orchestrator's own estimate for the hackathon window: USD 230.03, at measured rates, not the invoice. It overlaps the cloud bill, so the two are never added.",
+        "Our intent model: 480 calls; its cost is not measured."
+      ],
+      "footer": "Each figure carries its own scope; the two overlap, so they are never added.",
+      "facts": []
+    },
+    {
+      "id": "solvers",
+      "kicker": "Backup · other solvers",
+      "layout": "sources",
+      "title": "Other solvers: descriptive, not a verdict.",
+      "items": [
+        "Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate.",
+        "What is compared: die-centre readings from those implementations against HotSpot's selector values.",
+        "Whose: one finite-element implementation is ours; the other is an outside team's, and the finite-volume implementation is another outside team's, unnamed until it consents.",
+        "Differences, descriptive only: about 0.7 and 3.3 degrees from the modified 7.0, and about 2.6 and 6.3 degrees from 6.0."
+      ],
+      "footer": "Simulated, not measured on silicon.",
       "facts": []
     }
   ]
