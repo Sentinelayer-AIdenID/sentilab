@@ -1,0 +1,213 @@
+{
+ "schema": "coupling-call-list/1",
+ "contract": "#57399",
+ "statistic": "maximum native block output under centre mapping, the frozen gate statistic",
+ "fraction": "(T_hs7 - T_variant) / (T_hs7 - T_hs6)",
+ "predicate": "fraction >= 0.85 on each reference, and each replay's outputs byte-identical to its primary",
+ "binary": "the existing guarded hotspot-material-only target; sha256 recorded by the operator before the grant is signed",
+ "calls": [
+  {
+   "call": "p-hs7material-ascend910-tap25d-fig6a-raw-g64",
+   "role": "primary",
+   "replay_of": null,
+   "reference": "ascend910-tap25d-fig6a-raw",
+   "layout_identity": "raw",
+   "raw_layout_sha256": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
+   "grid": 64,
+   "argv_after_binary": [
+    "-c",
+    "new_hotspot.config",
+    "-f",
+    "sampleL4_ChipLayer.flp",
+    "-p",
+    "sample.ptrace",
+    "-steady_file",
+    "sample.steady",
+    "-grid_steady_file",
+    "sample.grid.steady",
+    "-model_type",
+    "grid",
+    "-detailed_3D",
+    "on",
+    "-grid_layer_file",
+    "samplelayers.lcf"
+   ],
+   "inputs_sha256": {
+    "new_hotspot.config": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+    "sample.ptrace": "9691bf095ed9f55ceb61c2605aa87a593c5a893de5ccbcb4b170a4c70d171fe0",
+    "sampleL0_Substrate.flp": "b0dea1d76f7fdebcb82193ec632caa8df3ca08548f34b663831501bad2464697",
+    "sampleL1_C4Layer.flp": "a54cd6d3d758ce3fda51f85cb6889549630ee5e379df5d70d34339c090f3357a",
+    "sampleL2_Interposer.flp": "8790535cdf25d343fcae623503323ea348ff03917382c9ae71dc431c319c7690",
+    "sampleL3_UbumpLayer.flp": "fa0fd3770f449209e41e4a72594a04589937b483e8691a2985c16cf4acec264a",
+    "sampleL4_ChipLayer.flp": "1174771e429dff9811723d62a8f5a9a62614121401a3dd91b8de9a86e55c0749",
+    "sampleL5_TIM.flp": "f63692bffd14fa556517b71ab52601db5a37f384c9bda4ac954ed782bb80ba11",
+    "samplelayers.lcf": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881"
+   },
+   "cpu_limit_s": 50,
+   "envelope_cpu_s": 58.5,
+   "same_inputs_as_gate_calls": [
+    "p-hs7-ascend910-tap25d-fig6a-raw-g64",
+    "p-hs6-ascend910-tap25d-fig6a-raw-g64"
+   ]
+  },
+  {
+   "call": "r-hs7material-ascend910-tap25d-fig6a-raw-g64",
+   "role": "replay",
+   "replay_of": "p-hs7material-ascend910-tap25d-fig6a-raw-g64",
+   "reference": "ascend910-tap25d-fig6a-raw",
+   "layout_identity": "raw",
+   "raw_layout_sha256": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
+   "grid": 64,
+   "argv_after_binary": [
+    "-c",
+    "new_hotspot.config",
+    "-f",
+    "sampleL4_ChipLayer.flp",
+    "-p",
+    "sample.ptrace",
+    "-steady_file",
+    "sample.steady",
+    "-grid_steady_file",
+    "sample.grid.steady",
+    "-model_type",
+    "grid",
+    "-detailed_3D",
+    "on",
+    "-grid_layer_file",
+    "samplelayers.lcf"
+   ],
+   "inputs_sha256": {
+    "new_hotspot.config": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+    "sample.ptrace": "9691bf095ed9f55ceb61c2605aa87a593c5a893de5ccbcb4b170a4c70d171fe0",
+    "sampleL0_Substrate.flp": "b0dea1d76f7fdebcb82193ec632caa8df3ca08548f34b663831501bad2464697",
+    "sampleL1_C4Layer.flp": "a54cd6d3d758ce3fda51f85cb6889549630ee5e379df5d70d34339c090f3357a",
+    "sampleL2_Interposer.flp": "8790535cdf25d343fcae623503323ea348ff03917382c9ae71dc431c319c7690",
+    "sampleL3_UbumpLayer.flp": "fa0fd3770f449209e41e4a72594a04589937b483e8691a2985c16cf4acec264a",
+    "sampleL4_ChipLayer.flp": "1174771e429dff9811723d62a8f5a9a62614121401a3dd91b8de9a86e55c0749",
+    "sampleL5_TIM.flp": "f63692bffd14fa556517b71ab52601db5a37f384c9bda4ac954ed782bb80ba11",
+    "samplelayers.lcf": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881"
+   },
+   "cpu_limit_s": 50,
+   "envelope_cpu_s": 58.5,
+   "same_inputs_as_gate_calls": [
+    "p-hs7-ascend910-tap25d-fig6a-raw-g64",
+    "p-hs6-ascend910-tap25d-fig6a-raw-g64"
+   ]
+  },
+  {
+   "call": "p-hs7material-micro150-tap25d-fig5a-raw-g64",
+   "role": "primary",
+   "replay_of": null,
+   "reference": "micro150-tap25d-fig5a-raw",
+   "layout_identity": "raw",
+   "raw_layout_sha256": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+   "grid": 64,
+   "argv_after_binary": [
+    "-c",
+    "new_hotspot.config",
+    "-f",
+    "sampleL4_ChipLayer.flp",
+    "-p",
+    "sample.ptrace",
+    "-steady_file",
+    "sample.steady",
+    "-grid_steady_file",
+    "sample.grid.steady",
+    "-model_type",
+    "grid",
+    "-detailed_3D",
+    "on",
+    "-grid_layer_file",
+    "samplelayers.lcf"
+   ],
+   "inputs_sha256": {
+    "new_hotspot.config": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+    "sample.ptrace": "ddf1086fb58524072576b4624b4c94780080f4eb63e383d4aceac8f292532ece",
+    "sampleL0_Substrate.flp": "b0dea1d76f7fdebcb82193ec632caa8df3ca08548f34b663831501bad2464697",
+    "sampleL1_C4Layer.flp": "a54cd6d3d758ce3fda51f85cb6889549630ee5e379df5d70d34339c090f3357a",
+    "sampleL2_Interposer.flp": "8790535cdf25d343fcae623503323ea348ff03917382c9ae71dc431c319c7690",
+    "sampleL3_UbumpLayer.flp": "8c25fdbbc6907c2b11d78fbc2b601fa0afa44660c059759f3c1677160ec195e7",
+    "sampleL4_ChipLayer.flp": "2ea583e91c18aedf383bebe449adcd594c74dcc44a978e0af7e3962d65ea4f0e",
+    "sampleL5_TIM.flp": "f63692bffd14fa556517b71ab52601db5a37f384c9bda4ac954ed782bb80ba11",
+    "samplelayers.lcf": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881"
+   },
+   "cpu_limit_s": 50,
+   "envelope_cpu_s": 58.5,
+   "same_inputs_as_gate_calls": [
+    "p-hs7-micro150-tap25d-fig5a-raw-g64",
+    "p-hs6-micro150-tap25d-fig5a-raw-g64"
+   ]
+  },
+  {
+   "call": "r-hs7material-micro150-tap25d-fig5a-raw-g64",
+   "role": "replay",
+   "replay_of": "p-hs7material-micro150-tap25d-fig5a-raw-g64",
+   "reference": "micro150-tap25d-fig5a-raw",
+   "layout_identity": "raw",
+   "raw_layout_sha256": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+   "grid": 64,
+   "argv_after_binary": [
+    "-c",
+    "new_hotspot.config",
+    "-f",
+    "sampleL4_ChipLayer.flp",
+    "-p",
+    "sample.ptrace",
+    "-steady_file",
+    "sample.steady",
+    "-grid_steady_file",
+    "sample.grid.steady",
+    "-model_type",
+    "grid",
+    "-detailed_3D",
+    "on",
+    "-grid_layer_file",
+    "samplelayers.lcf"
+   ],
+   "inputs_sha256": {
+    "new_hotspot.config": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+    "sample.ptrace": "ddf1086fb58524072576b4624b4c94780080f4eb63e383d4aceac8f292532ece",
+    "sampleL0_Substrate.flp": "b0dea1d76f7fdebcb82193ec632caa8df3ca08548f34b663831501bad2464697",
+    "sampleL1_C4Layer.flp": "a54cd6d3d758ce3fda51f85cb6889549630ee5e379df5d70d34339c090f3357a",
+    "sampleL2_Interposer.flp": "8790535cdf25d343fcae623503323ea348ff03917382c9ae71dc431c319c7690",
+    "sampleL3_UbumpLayer.flp": "8c25fdbbc6907c2b11d78fbc2b601fa0afa44660c059759f3c1677160ec195e7",
+    "sampleL4_ChipLayer.flp": "2ea583e91c18aedf383bebe449adcd594c74dcc44a978e0af7e3962d65ea4f0e",
+    "sampleL5_TIM.flp": "f63692bffd14fa556517b71ab52601db5a37f384c9bda4ac954ed782bb80ba11",
+    "samplelayers.lcf": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881"
+   },
+   "cpu_limit_s": 50,
+   "envelope_cpu_s": 58.5,
+   "same_inputs_as_gate_calls": [
+    "p-hs7-micro150-tap25d-fig5a-raw-g64",
+    "p-hs6-micro150-tap25d-fig5a-raw-g64"
+   ]
+  }
+ ],
+ "references": [
+  {
+   "reference": "ascend910-tap25d-fig6a",
+   "T_hs7_C": 123.42,
+   "T_hs6_C": 75.48,
+   "T_variant_max_for_threshold_C": 82.671,
+   "gate_hs7_binary_sha256": "9f971da7370a59afb425ed1c8754e12bc67a6a95e8333c3b4a9d537fd30a77f6",
+   "gate_hs6_binary_sha256": "751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6",
+   "gate_hs7_charged_cpu_s": [
+    3.431,
+    3.486
+   ]
+  },
+  {
+   "reference": "micro150-tap25d-fig5a",
+   "T_hs7_C": 232.67,
+   "T_hs6_C": 115.93,
+   "T_variant_max_for_threshold_C": 133.441,
+   "gate_hs7_binary_sha256": "9f971da7370a59afb425ed1c8754e12bc67a6a95e8333c3b4a9d537fd30a77f6",
+   "gate_hs6_binary_sha256": "751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6",
+   "gate_hs7_charged_cpu_s": [
+    3.391,
+    3.592
+   ]
+  }
+ ],
+ "total_envelope_cpu_s": 234.0
+}
