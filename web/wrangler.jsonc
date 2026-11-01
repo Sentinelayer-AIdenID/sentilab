@@ -13,7 +13,10 @@
   // Keep observation off until the aquarium accepts and retains SentiLab site/path attribution (EDGE.md).
   // DOOR_DECLARATIONS: visitors' opt-in declarations (AGENT-DOOR Amendment 4: POST /agents/declare and the opt-in on a
   // pass's page). Off ships, in both environments: no declare route (404), no page mentions declaring, nothing reaches
-  // the intake's declaration fields. The paired deploy after root's #97 turns it on; anything but exactly "on" is off.
+  // the intake's declaration fields; anything but exactly "on" is off. It stays off until warden explicitly authorizes
+  // turning it on. That needs two things first, and comes after the production freeze for the talk: (1) the operator's
+  // hide is confirmed on both public feeds on every serving revision; (2) one pass or one network prefix can be stopped
+  // from declaring.
   "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off",
     "DOOR_DECLARATIONS": "off" },
   // The agent door (src/door/door.js). DOOR_TOKEN_KEY is a Worker secret (wrangler secret put DOOR_TOKEN_KEY, at least
@@ -41,7 +44,7 @@
       "name": "sentilab-web-staging",
       "routes": [{ "pattern": "staging.sentilab.aidenid.com", "custom_domain": true }],
       "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
-      // DOOR_DECLARATIONS off, as in production, until the paired deploy after root's #97.
+      // DOOR_DECLARATIONS off, as in production, until warden explicitly authorizes turning it on (see the top).
       "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },
       "ratelimits": [
         { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },

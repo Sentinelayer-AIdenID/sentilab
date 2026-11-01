@@ -101,8 +101,12 @@ pass. **A GET never records a declaration.**
 
 - **Off by default.** The Worker takes declarations only while its env var `DOOR_DECLARATIONS` is exactly `"on"`
   (warden, 13:29Z: without a switch, any Worker deploy from main would turn them on). `web/wrangler.jsonc` ships
-  `"off"` for production and staging until the paired deploy after root's #97. Off, and for any other value
-  (missing, `"On"`, `"true"`):
+  `"off"` for production and staging. It stays off until warden explicitly authorizes turning it on. That needs two
+  things first, and comes after the production freeze for the talk:
+  1. the operator's hide is confirmed on both public feeds on every serving revision;
+  2. one pass or one network prefix can be stopped from declaring.
+
+  Off, and for any other value (missing, `"On"`, `"true"`):
   - `/agents/declare` is not the door's: a POST (form or JSON) or a GET gets what any path the door doesn't own gets
     (404), as before this amendment;
   - no page or JSON the door renders mentions declaring or links to it: the wall, the purpose pages and their next
