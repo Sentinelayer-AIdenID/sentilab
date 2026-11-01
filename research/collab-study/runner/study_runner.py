@@ -2,16 +2,19 @@
 """Fixed, text-only collaboration study runner (protocol v2)."""
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+import argparse
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import os
+import queue
 import re
 import socket
 import ssl
+import sys
 import threading
 import time
 from urllib.parse import urlsplit
@@ -234,6 +237,26 @@ class HTTPModel:
         return cls(os.environ.get("STUDY_ENDPOINT", ""), os.environ.get("STUDY_API_KEY", ""))
 
     def complete(self, messages: list[dict], *, max_tokens: int, timeout: float) -> Reply:
+        # requests' timeout limits socket inactivity, not total elapsed time.
+        # A daemon owns the transport only: a late result cannot mutate receipts.
+        result = queue.Queue(maxsize=1)
+
+        def call():
+            try:
+                result.put((self._complete(messages, max_tokens=max_tokens, timeout=timeout), None))
+            except BaseException as error:
+                result.put((None, error))
+
+        threading.Thread(target=call, daemon=True).start()
+        try:
+            reply, error = result.get(timeout=timeout)
+        except queue.Empty:
+            raise CallFailure("deadline_unknown") from None
+        if error is not None:
+            raise error
+        return reply
+
+    def _complete(self, messages: list[dict], *, max_tokens: int, timeout: float) -> Reply:
         payload = {"model": "deepseek-v4-pro", "messages": messages, "temperature": 0.3,
                    "top_p": 1, "max_tokens": max_tokens, "stream": False}
         if contains_credential(payload, self._credential):
@@ -363,6 +386,7 @@ class Ledger:
                                  "attempts": len(attempts), "unknown_usage_attempts": sum(item["unknown_usage"] for item in attempts)}
             result = {"max_usd": decimal_text(self.max_usd), "grand_total_usd": decimal_text(self._spent),
                       "reserved_usd": decimal_text(self._reserved), "overshoot_usd": decimal_text(max(Decimal(0), self._spent - self.max_usd)),
+                      "unknown_usage": any(row.get("unknown_usage", False) for row in self._attempts),
                       "stop_reason": self.stop_reason, "scopes": scopes, "attempts": self._attempts}
             return json.loads(canonical(result))
 
@@ -509,7 +533,8 @@ class JobOutputs:
     def finish(self, agents: list[AgentState], findings, ledger: Ledger) -> None:
         if self.closed:
             raise InputError("job output is already closed")
-        attempts = [row for row in ledger.report()["attempts"] if row["job_id"] == self.job["job_id"]]
+        accounting = ledger.report()
+        attempts = [row for row in accounting["attempts"] if row["job_id"] == self.job["job_id"]]
         if any(row["state"] == "pending" for row in attempts):
             raise InputError("cannot finish job with unfinished requests")
         per_agent = {}
@@ -527,6 +552,9 @@ class JobOutputs:
                "provider_request_ids": [row["request_id"] for row in attempts if row["request_id"] is not None],
                "failures": [row for row in attempts if row["state"] == "failed"],
                "unknown_usage": any(row["unknown_usage"] for row in attempts),
+               "charged_usd": decimal_text(sum((Decimal(row["charged_usd"]) for row in attempts), Decimal(0))),
+               "run_overshoot_usd_at_end": accounting["overshoot_usd"],
+               "run_stop_reason": accounting["stop_reason"],
                "overspend_tokens": sum(agent["overspend_tokens"] for agent in per_agent.values()),
                "overspend_limit_exceeded": any(row["overspend_limit_exceeded"] for row in attempts)}
         self._stream.flush()
@@ -538,7 +566,8 @@ class JobOutputs:
 
 def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: str,
             packet_message: str, continue_prompt: str, initial_prompt_bounds: dict[int, int],
-            c_turn_prompts: dict[int, str] | None = None, scope: str = "study") -> None:
+            c_turn_prompts: dict[int, str] | None = None, scope: str = "study",
+            writer: JobOutputs | None = None) -> None:
     """Run fixed arm rules; the caller supplies sealed prompts and initial bounds.
 
     B agents run concurrently with independent histories and one arm deadline.
@@ -554,7 +583,7 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                        any(not isinstance(c_turn_prompts.get(n), str) for n in numbers)):
         raise InputError("C requires sealed turn prompts for all three agents")
     agents = [AgentState(n, 120000 if arm == "A" else 40000, initial_prompt_bounds[n]) for n in numbers]
-    writer = JobOutputs(output, job, clock=engine.clock)
+    writer = writer or JobOutputs(output, job, clock=engine.clock)
     deadline = writer.start_time + 900
     base = [{"role": "system", "content": system_prompt}, {"role": "user", "content": packet_message}]
 
@@ -632,3 +661,186 @@ def finish_run(output: Path, ledger: Ledger) -> dict:
     write_json_exclusive(output / "RUN-MANIFEST.json", manifest)
     (output / ".running").unlink()
     return manifest
+
+
+FIXED_RULES = {
+    "model": "deepseek-v4-pro", "caps": {"A": 120000, "B": 40000, "C": 40000},
+    "wall_seconds": 900, "turn_order": [1, 2, 3], "writer": 1,
+    "findings": {"fields": ["file", "location", "defect", "evidence"], "max_findings": 20, "marker": "FINAL"},
+}
+
+
+def validate_inputs(inputs: Inputs, prompt_paths: dict[str, Path], *, dry_run: bool, pilot: bool) -> None:
+    protocol = inputs.protocol
+    required = set(FIXED_RULES) | {"deployment", "max_tokens_per_reply", "max_usd", "prices_per_million",
+                                   "prompt_files", "initial_prompt_tokens", "pilot_arms"}
+    if set(protocol) != required or any(protocol[name] != value for name, value in FIXED_RULES.items()):
+        raise InputError("protocol must declare the fixed study rules and all required fields")
+    if not isinstance(protocol["deployment"], str) or not protocol["deployment"].strip():
+        raise InputError("protocol deployment must be explicit")
+    if type(protocol["max_tokens_per_reply"]) is not int or protocol["max_tokens_per_reply"] <= 0:
+        raise InputError("max_tokens_per_reply must be a positive integer")
+    prices = protocol["prices_per_million"]
+    if not isinstance(prices, dict) or set(prices) != {"input", "cached_input", "output"}:
+        raise InputError("sealed input, cached input and output prices are required")
+    Ledger(protocol["max_usd"], prices)
+    if set(prompt_paths) != {"system", "continue", "c1", "c2", "c3"} or protocol["prompt_files"] != {name: path.name for name, path in prompt_paths.items()}:
+        raise InputError("all five prompt files must match the sealed protocol names")
+    arms = protocol["pilot_arms"]
+    if not isinstance(arms, list) or any(not isinstance(arm, str) or arm not in {"A", "B", "C"} for arm in arms) or len(set(arms)) != len(arms) or (pilot and not arms):
+        raise InputError("pilot arms must be explicitly selected without duplicates")
+    if not inputs.order:
+        raise InputError("order must contain study jobs")
+    seen, packet_set = set(), set()
+    for job in inputs.order:
+        if not isinstance(job, dict) or set(job) != {"job_id", "arm", "packet", "repeat"}:
+            raise InputError("order jobs must contain job_id, arm, packet and repeat")
+        job_id = job["job_id"]
+        if not isinstance(job_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", job_id):
+            raise InputError("order contains an unsafe job id")
+        if job_id.casefold() in seen or job_id.casefold().startswith("pilot-"):
+            raise InputError("order contains a duplicate or reserved job id")
+        seen.add(job_id.casefold())
+        if not isinstance(job["arm"], str) or job["arm"] not in {"A", "B", "C"} or not isinstance(job["packet"], str) or job["packet"] not in inputs.packets or type(job["repeat"]) is not int or job["repeat"] < 1:
+            raise InputError("order contains an invalid arm, packet or repeat")
+        packet_set.add(job["packet"])
+    if packet_set != set(inputs.packets) or (not dry_run and len(packet_set) != 10):
+        raise InputError("live study requires exactly ten packets; order must cover the packet directory")
+    jobs = inputs.order + ([{"job_id": "pilot-" + arm, "arm": arm} for arm in arms] if pilot else [])
+    bounds = protocol["initial_prompt_tokens"]
+    if not isinstance(bounds, dict):
+        raise InputError("initial prompt bounds must be supplied for each job and agent")
+    for job in jobs:
+        initial = bounds.get(job["job_id"])
+        numbers = [1] if job["arm"] == "A" else [1, 2, 3]
+        if not isinstance(initial, dict) or any(type(initial.get(str(n))) is not int or initial[str(n)] <= 0 for n in numbers):
+            raise InputError("initial prompt bounds must be supplied for each job and agent")
+
+
+class DryRunModel:
+    """Deterministic offline provider; usage is synthetic and labelled in the freeze."""
+
+    def complete(self, messages, *, max_tokens, timeout):
+        history = [message for message in messages if message["role"] == "assistant"]
+        shared = any(message["content"].startswith("Agent ") for message in history)
+        if len(history) >= (3 if shared else 1):
+            finding = {"file": "README.md", "location": "1", "defect": "synthetic dry-run finding",
+                       "evidence": "Offline fixture; not a participant result."}
+            content = "FINAL\n" + canonical(finding).decode("utf-8")
+        else:
+            content = "Synthetic review in progress."
+        identity = sha256(canonical(messages))
+        usage = {"prompt_tokens": 100, "completion_tokens": min(20, max_tokens),
+                 "prompt_tokens_details": {"cached_tokens": 0},
+                 "completion_tokens_details": {"reasoning_tokens": 0}}
+        return Reply(content, usage, "dry-request-" + identity, "dry-response-" + identity)
+
+
+def run_jobs(inputs: Inputs, *, output: Path, engine: RequestEngine, parallel: int,
+             pilot_message: str | None = None) -> None:
+    """Start jobs in sealed order, with at most six arm workers in flight."""
+    if type(parallel) is not int or not 1 <= parallel <= 6:
+        raise InputError("parallel must be between one and six")
+    prompts = inputs.prompts
+
+    def arguments(job, packet_message, scope):
+        return {"output": output, "engine": engine, "system_prompt": prompts["system"],
+                "packet_message": packet_message, "continue_prompt": prompts["continue"],
+                "initial_prompt_bounds": {n: inputs.protocol["initial_prompt_tokens"][job["job_id"]][str(n)]
+                                          for n in ([1] if job["arm"] == "A" else [1, 2, 3])},
+                "c_turn_prompts": {n: prompts[f"c{n}"] for n in (1, 2, 3)}, "scope": scope}
+
+    if pilot_message is not None:
+        for arm in inputs.protocol["pilot_arms"]:
+            job = {"job_id": "pilot-" + arm, "arm": arm, "packet": "pilot", "repeat": 1}
+            run_arm(job, **arguments(job, pilot_message, "pilot"))
+    active = set()
+    with ThreadPoolExecutor(max_workers=parallel) as pool:
+        for job in inputs.order:
+            if len(active) == parallel:
+                completed, active = wait(active, return_when=FIRST_COMPLETED)
+                for future in completed:
+                    future.result()
+            # The coordinator creates the receipt synchronously, so the recorded
+            # job starts follow order.json even when worker scheduling differs.
+            writer = JobOutputs(output, job, clock=engine.clock)
+            active.add(pool.submit(run_arm, job, writer=writer,
+                                   **arguments(job, inputs.packets[job["packet"]], "study")))
+        for future in active:
+            future.result()
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--protocol", type=Path, required=True)
+    parser.add_argument("--prompt", action="append", default=[], metavar="NAME=PATH")
+    parser.add_argument("--order", type=Path, required=True)
+    parser.add_argument("--packets", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--pilot-packet", type=Path)
+    parser.add_argument("--parallel", type=int, default=6)
+    parser.add_argument("--freeze", type=Path)
+    parser.add_argument("--print-freeze", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args(argv)
+    try:
+        if not 1 <= args.parallel <= 6:
+            raise InputError("parallel must be between one and six")
+        prompts = {}
+        for argument in args.prompt:
+            name, separator, path = argument.partition("=")
+            if not separator or not path or name in prompts:
+                raise InputError("prompts must be distinct NAME=PATH arguments")
+            prompts[name] = Path(path)
+        inputs = snapshot_inputs(args.protocol, prompts, args.order, args.packets)
+        validate_inputs(inputs, prompts, dry_run=args.dry_run, pilot=args.pilot_packet is not None)
+        pilot_message, pilot_freeze = None, None
+        if args.pilot_packet is not None:
+            sealed = [inputs.packet_hashes[job["packet"]] for job in inputs.order]
+            pilot_message, hashes = validate_pilot(args.pilot_packet, sealed)
+            pilot_freeze = {"packet_sha256": sha256(canonical(hashes)), "files": hashes,
+                            "arms": inputs.protocol["pilot_arms"]}
+        endpoint = os.environ.get("STUDY_ENDPOINT", "")
+        if not args.dry_run and not endpoint:
+            raise InputError("STUDY_ENDPOINT must be set for a live freeze")
+        descriptor = {**inputs.freeze,
+                      "request_settings": {"model": "deepseek-v4-pro", "deployment": inputs.protocol["deployment"],
+                                           "temperature": 0.3, "top_p": 1, "max_tokens_per_reply": inputs.protocol["max_tokens_per_reply"],
+                                           "stream": False, "allow_redirects": False, "timeout": "remaining arm wall time"},
+                      "endpoint_sha256": None if args.dry_run else sha256(endpoint.encode("utf-8")),
+                      "caps": {"tokens_per_agent": inputs.protocol["caps"], "wall_seconds": 900,
+                               "max_usd": inputs.protocol["max_usd"], "parallel_arms": args.parallel},
+                      "turn_rule": {"order": [1, 2, 3], "writer": 1, "skip_stopped_agents": True},
+                      "retry_rule": {"limit": 1, "delay_seconds": 10, "before_first_success_only": True,
+                                     "evidenced_presend_only": True},
+                      "dry_run": args.dry_run, "pilot": pilot_freeze}
+        credential = os.environ.get("STUDY_API_KEY", "")
+        if credential and contains_credential([descriptor, inputs.prompts, inputs.packets, pilot_message], credential):
+            raise InputError("credential found in study inputs")
+        if args.freeze:
+            verify_freeze(args.freeze, descriptor)
+        if args.print_freeze:
+            print(canonical(descriptor).decode("utf-8"))
+            return 0
+        if args.freeze is None:
+            raise InputError("a matching --freeze file is required to run")
+        if args.output is None:
+            raise InputError("--output is required to run")
+        model = DryRunModel() if args.dry_run else HTTPModel.from_env()
+        claim_output(args.output)
+        write_json_exclusive(args.output / "FREEZE.json", descriptor)
+        ledger = Ledger(inputs.protocol["max_usd"], inputs.protocol["prices_per_million"])
+        engine = RequestEngine(model, ledger, max_tokens_per_reply=inputs.protocol["max_tokens_per_reply"])
+        run_jobs(inputs, output=args.output, engine=engine, parallel=args.parallel, pilot_message=pilot_message)
+        finish_run(args.output, ledger)
+        return 0
+    except InputError as error:
+        print(str(error), file=sys.stderr)
+        return 2
+    except OSError:
+        print("study input or output could not be accessed", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
