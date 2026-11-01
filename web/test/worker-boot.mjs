@@ -12,7 +12,8 @@
 //        the Worker's types; a browser's Accept at / (GET and HEAD) gets the human version of /, a 302 to the Live Lab,
 //        with Vary, private caching and the Link header, and followed it ends there; /sentilab/live without its slash is
 //        the asset layer's redirect, as /sentilab/package is;
-//      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
+//      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added, and
+//        two quick GETs of /api/open/v1/door/board both answer that 503 (the micro-cache keeps only the API's 200s);
 //      - a write to /api is refused (405 read_only) with no CSP added;
 //      - the agent door (src/door/door.js), opened with a boot-only DOOR_TOKEN_KEY: a classified agent's wall on /, a
 //        token for a purpose, the ENGRAM view, the preview check, the tap-link confirm page, submit answering honestly
@@ -142,6 +143,15 @@ if (ready) {
   const api = await fetch(`${BASE}/api/view/runs`);
   const apiText = await api.text();
   check("GET /api/view/runs reaches the proxy (upstream off: 503) with no CSP added", api.status === 503 && apiText === "API origin not configured" && api.headers.get("content-security-policy") === null, `${api.status} ${apiText}`);
+  // The /api micro-cache keeps only the API's own 200 answers: with the upstream off, two quick GETs of the board both
+  // answer the proxy's 503, never a kept 200.
+  const boards = [];
+  for (let i = 0; i < 2; i += 1) {
+    const r = await fetch(`${BASE}/api/open/v1/door/board`);
+    boards.push(`${r.status} ${await r.text()}`);
+  }
+  check("two quick GETs of /api/open/v1/door/board with the upstream off: both 503, never a cached 200",
+    boards.every((b) => b === "503 API origin not configured"), boards.join(" · "));
   const write = await fetch(`${BASE}/api/runs`, { method: "POST", body: "{}" });
   const writeJson = await write.json().catch(() => null);
   check("POST /api/runs is refused read-only (405) with no CSP added", write.status === 405 && writeJson?.error === "read_only" && write.headers.get("content-security-policy") === null, String(write.status));

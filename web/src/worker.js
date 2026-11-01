@@ -55,7 +55,7 @@ async function humanVersion(request, env) {
   return env.ASSETS.fetch(new Request(url, request));
 }
 
-async function proxy(request, env) {
+async function proxy(request, env, ctx) {
   const origin = String(env.API_ORIGIN || "").replace(/\/+$/, "");
   if (!origin.startsWith("https://")) return new Response("API origin not configured", { status: 503 });
   const url = new URL(request.url);
@@ -65,6 +65,9 @@ async function proxy(request, env) {
   if (path === null) {
     return new Response(JSON.stringify({ error: "bad_path" }), { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } });
   }
+  const cache = microCache(request, url);
+  const cached = await cache.read(ctx);
+  if (cached) return cached;
   const headers = new Headers(request.headers);
   for (const h of HOP) headers.delete(h);
   // The agent door's token claims reach the API only from the door's own calls (door/door.js), never from a visitor.
@@ -77,10 +80,11 @@ async function proxy(request, env) {
   else headers.delete("x-origin-token");
   const init = { method: request.method, headers, redirect: "manual" };
   if (!["GET", "HEAD"].includes(request.method)) init.body = request.body;
+  const made = Date.now();
   const upstream = await fetch(origin + url.pathname + url.search, init);
   const out = new Headers(upstream.headers);
   if (!out.has("cache-control")) out.set("cache-control", "no-store");
-  if (request.method === "GET" && DOOR_FEEDS.test(path)) return doorFeed(upstream, out);
+  if (request.method === "GET" && DOOR_FEEDS.test(path)) return cache.keep(await doorFeed(upstream, out), made, ctx);
   return new Response(upstream.body, { status: upstream.status, headers: out });
 }
 
@@ -97,6 +101,81 @@ async function doorFeed(upstream, headers) {
   // The visitors feed carries visitors' own declared text: never sniffed as anything but JSON.
   headers.set("x-content-type-options", "nosniff");
   return new Response(JSON.stringify(withoutOperators(value)), { status: upstream.status, headers });
+}
+
+// The micro-cache (warden P1-2(a)): a QR code in a live talk brings ~200 viewers within ~30 s, each polling results and
+// events every 3 s, and one API replica serves them all. So a GET of exactly /api/open/v1/door/results, /events or
+// /board whose doorFeed answer is a 200 is kept for 2 s in this data center's Cache API, keyed by its full URL (?after=0
+// and ?after=88 are two entries). The URL is the whole key because nothing else changes the answer: for these routes the
+// API reads only the query's after and limit (app/door/routes.py; the board's x-door-nonce never gets past this proxy),
+// never Accept, cookies or credentials, and doorFeed re-serializes the body, so Accept-Encoding cannot change it either
+// (should the API ever answer them per caller, this key is wrong). The client's own Cache-Control is not consulted: the
+// Live Lab fetches with cache: "no-store", so every viewer's poll carries Cache-Control: no-cache. Never read or
+// written: HEAD (its answer is the API's own, not doorFeed's), any other spelling of the three paths (the feed filter
+// still applies to it), a request carrying X-Door-Nonce or Range, and a URL that can carry a door token (never a stored
+// copy of one, as protectToken). Never kept: an answer that is not a 200, or that sets a cookie.
+// The copy is stored public, max-age=2, so the Cache API keeps it, with two private headers no browser ever gets: MADE,
+// when its API request started (at 2 s the entry is a miss and is deleted, whatever the cache does with max-age), and
+// SENT, the browser's headers, which a hit replays exactly (no-store, as before), so nothing the cache adds goes out.
+// Without caches.default (node tests, some runtimes) nothing is cached; a cache that fails is a miss.
+const MICRO_CACHED = new Set(["/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board"]);
+const MICRO_CACHE_MS = 2000;
+const MADE = "x-microcache-made";
+const SENT = "x-microcache-headers";
+const NOT_CACHED = Object.freeze({ read: async () => null, keep: (answer) => answer });
+
+function microCache(request, url) {
+  const store = typeof caches === "undefined" ? undefined : caches.default;
+  if (typeof store?.match !== "function" || typeof store.put !== "function" || typeof store.delete !== "function") return NOT_CACHED;
+  if (request.method !== "GET" || !MICRO_CACHED.has(url.pathname) || request.headers.has("x-door-nonce") || request.headers.has("range")
+    || carriesToken(url)) return NOT_CACHED;
+  const key = url.origin + url.pathname + url.search;
+  let cleared = Promise.resolve();
+  return {
+    // A fresh entry's answer, as the browser got it when it was kept; otherwise null (a miss), and a stale entry deleted.
+    async read(ctx) {
+      try {
+        const hit = await store.match(key);
+        if (!hit) return null;
+        const age = Date.now() - Number(hit.headers.get(MADE));
+        const headers = sentHeaders(hit.headers.get(SENT));
+        if (headers && age >= 0 && age < MICRO_CACHE_MS) return new Response(await hit.arrayBuffer(), { status: 200, headers });
+        hit.body?.cancel().catch(() => {});
+        cleared = later(ctx, () => store.delete(key));
+      } catch { /* a cache that fails is a miss */ }
+      return null;
+    },
+    // The answer goes out as it is; a 200 that sets no cookie is also kept, after this request's delete if it made one.
+    keep(answer, made, ctx) {
+      if (answer.status !== 200 || answer.headers.has("set-cookie")) return answer;
+      const sent = JSON.stringify([...answer.headers]);
+      const copy = answer.clone();
+      later(ctx, async () => {
+        const body = await copy.arrayBuffer();
+        await cleared;
+        await store.put(key, new Response(body, { status: 200,
+          headers: { "cache-control": `public, max-age=${MICRO_CACHE_MS / 1000}`, [MADE]: String(made), [SENT]: sent } }));
+      });
+      return answer;
+    },
+  };
+}
+
+// The browser's headers a kept copy carries (SENT), or null when it carries none this code wrote.
+function sentHeaders(value) {
+  try {
+    const list = JSON.parse(value);
+    return Array.isArray(list) ? new Headers(list) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Cache work after the answer, on ctx.waitUntil when there is a ctx; a failure is ignored.
+function later(ctx, work) {
+  const done = Promise.resolve().then(work).catch(() => {});
+  if (typeof ctx?.waitUntil === "function") ctx.waitUntil(done);
+  return done;
 }
 
 // Starting a run spends simulator time, so POST /api/runs is limited per client IP at the edge (the API also
@@ -126,7 +205,7 @@ export default {
       return new Response(JSON.stringify({ error: "rate_limited", detail: "Too many runs started; wait a minute." }),
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
-    if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
+    if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env, ctx);
     // The agent door (door/door.js): its own routes, and the wall in place of the mapped pages' agent version.
     const door = doorRoute(pathname, env);
     const response = door ? await handleDoor(door, request, env, ctx)

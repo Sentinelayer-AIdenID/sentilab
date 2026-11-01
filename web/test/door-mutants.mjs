@@ -117,7 +117,7 @@ const groups = {
     ["cross-site forms accepted", DOOR, '  if (form && !sameSiteForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });\n', ""],
     ["same-site forms accepted", DOOR, 'if (site !== null) return site === "same-origin" || site === "none";', 'if (site !== null) return site !== "cross-site";'],
     ["minting unlimited", DOOR, '  if (!(await allow(env, "DOOR_MINT_LIMITER", `mint:${prefixOf(request)}`))) return limited(request, kind === "json" ? "json" : "html");\n', ""],
-    ["proxy passes the declared operator", WORKER, '  if (request.method === "GET" && DOOR_FEEDS.test(path)) return doorFeed(upstream, out);\n', ""],
+    ["proxy passes the declared operator", WORKER, '  if (request.method === "GET" && DOOR_FEEDS.test(path)) return cache.keep(await doorFeed(upstream, out), made, ctx);\n', ""],
     ["operator stripped only at the top level", DOOR, ".map(([key, item]) => [key, withoutOperators(item)])", ".map(([key, item]) => [key, item])"],
   ],
   "warden P3-4, the seven survivors": [
