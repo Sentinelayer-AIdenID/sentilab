@@ -127,7 +127,8 @@ function installPage(t, answer) {
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   });
   t.after(() => { for (const [name, desc] of saved) { if (desc) Object.defineProperty(globalThis, name, desc); else delete globalThis[name]; } });
-  return { page: () => { const out = { text: [], attrs: [], html: [] }; for (const el of ids.values()) dump(el, out); return out; } };
+  return { page: () => { const out = { text: [], attrs: [], html: [] }; for (const el of ids.values()) dump(el, out); return out; },
+    part: (id) => (ids.has(id) ? dump(ids.get(id)) : { text: [], attrs: [], html: [] }) };
 }
 const settle = async () => { for (let i = 0; i < 25; i += 1) await new Promise((r) => setImmediate(r)); };
 
@@ -180,4 +181,24 @@ test("an open tab shows the declarations as inert text, and a hide reaches it on
   assert.equal(after.includes("Testing whether spreading the DRAM out cools the CPUs"), false, "and its reason");
   assert.equal(after.includes("An older name"), false, "and the older declaration does not take its place");
   assert.ok(page.text.filter((s) => s.includes(HIDDEN)).length >= 2, "the run now reads hidden by the operator");
+});
+
+// Root's P2 (17:21Z): a row without a declaration must not print the word "null" (native append turns null into text).
+test("no run row, card or list prints a literal null", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:26:00Z") });
+  const results = doc("results.json"), events = doc("events.json"), board = doc("board.json"), visitors = doc("visitors-declarations.json");
+  const dom = installPage(t, (url) => {
+    const after = Number(url.searchParams.get("after") ?? 0);
+    if (url.pathname === "/api/open/v1/door/results") return after >= results.next_after ? { ...results, items: [], has_more: false } : results;
+    if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
+    if (url.pathname === "/api/open/v1/door/board") return board;
+    if (url.pathname === "/api/open/v1/door/visitors") return after >= visitors.next_after ? { ...visitors, items: [], has_more: false } : visitors;
+    return null;
+  });
+  await import(`${LIVE}?declarations=nonull`);
+  for (let k = 0; k < 6; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  for (const id of ["runList", "mobileRuns", "visitorList", "declList", "modelTitle", "modelSub", "metricValue", "metricDescription", "eventTitle"]) {
+    const bad = dom.part(id).text.filter((s) => /\bnull\b|\bundefined\b/.test(s));
+    assert.deepEqual(bad, [], `#${id} has no literal null or undefined`);
+  }
 });

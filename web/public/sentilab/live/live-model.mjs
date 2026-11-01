@@ -114,25 +114,51 @@ function abortableSleep(ms, signal) {
   });
 }
 export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date.now(), random = cryptoRandom, sleep = abortableSleep } = {}) {
-  let nextAt = -Infinity, failures = 0;
+  // Two deadlines, kept apart so neither can shorten the other: nextAt, the spacing slot the last launch reserved, and
+  // embargoUntil, the backoff a 429/503 (its Retry-After) or a failure set. Only a later, longer embargo replaces one.
+  let nextAt = -Infinity, embargoUntil = -Infinity, embargoSetAt = -Infinity, failures = 0;
+  // Slots are taken one caller at a time (a promise chain): a caller waits for the one before it to launch, then
+  // sleeps and rechecks both deadlines until they have passed (a 429 may arrive while it sleeps), and reserves its
+  // slot before it launches. An aborted caller gives its turn up at once.
+  let turn = Promise.resolve();
+  async function acquire(signal) {
+    const before = turn;
+    let release;
+    turn = new Promise((resolve) => { release = resolve; });
+    try {
+      await before;
+      for (;;) {
+        if (signal?.aborted) throw signal.reason ?? new Error("aborted");
+        const wait = Math.max(nextAt, embargoUntil) - now();
+        if (wait <= 0) break;
+        await sleep(wait, signal);
+      }
+      const startedAt = now();
+      nextAt = startedAt + GATE.GAP_MS + random() * GATE.GAP_JITTER_MS;
+      return startedAt;
+    } finally {
+      release();
+    }
+  }
   const backoff = (retryMs) => {
     failures += 1;
     const base = Math.max(retryMs ?? 0, Math.min(GATE.BACKOFF_MAX_MS, GATE.BACKOFF_BASE_MS * 2 ** (failures - 1)));
-    nextAt = now() + base * (1 + random() * GATE.JITTER);
+    const until = now() + base * (1 + random() * GATE.JITTER);
+    if (until > embargoUntil) embargoUntil = until;
+    embargoSetAt = now();
   };
   async function gated(url, init = {}) {
-    const wait = nextAt - now();
-    if (wait > 0) await sleep(wait, init.signal);
-    if (init.signal?.aborted) throw init.signal.reason ?? new Error("aborted");
-    nextAt = now() + GATE.GAP_MS + random() * GATE.GAP_JITTER_MS;
+    const startedAt = await acquire(init.signal);
     let r;
     try { r = await fetchImpl(url, init); } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
     if (r.status === 429 || r.status === 503) backoff(retryAfterMs(r.headers?.get?.("retry-after"), now()));
     else if (r.status === 500 || r.status === 502 || r.status === 504) backoff(null);
-    else if (r.status === 200) failures = 0;
+    // A success resets the backoff count only when it started after the last embargo was set; it never lifts an
+    // embargo (that ends only with time), so an earlier request answering late cannot undo a 429.
+    else if (r.status === 200 && startedAt >= embargoSetAt) failures = 0;
     return r;
   }
-  return { fetch: gated, get failures() { return failures; }, get nextAt() { return nextAt; } };
+  return { fetch: gated, get failures() { return failures; }, get nextAt() { return Math.max(nextAt, embargoUntil); } };
 }
 
 // ── self-declared visitor text: the door's /visitors feed (docs/sentilab/DOOR-VISITORS.md) ──────────────────────────

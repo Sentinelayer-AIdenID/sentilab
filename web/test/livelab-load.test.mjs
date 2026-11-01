@@ -166,3 +166,25 @@ test("P1-2(b): a backlog is spaced out, and a 503 with Retry-After silences the 
   for (let k = 0; k < 300; k += 1) { t.mock.timers.tick(100); await settle(); }       // 30 s more: it resumes
   assert.ok(requests.slice(n).some((r) => r.path === "/api/open/v1/door/results" && !r.down), "polling resumes after Retry-After");
 });
+
+// Root's P1, the Back case: after a back/forward-cache restore the feed, the board and the visitors poll all start
+// at once; the gate must still keep the minimum gap between consecutive requests.
+test("root's P1: after pageshow, consecutive requests keep the minimum gap", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:25:00Z") });
+  const requests = [];
+  const page = installPage(t, requests);
+  const real = globalThis.fetch;
+  globalThis.fetch = async (input, init) => { const r = await real(input, init); requests.at(-1).at = Date.now(); return r; };
+  await import(`${LIVE}?load=gap`);
+  for (let k = 0; k < 60; k += 1) { t.mock.timers.tick(100); await settle(); }
+  page.fire("window", "pagehide", { persisted: true });
+  await settle();
+  for (let k = 0; k < 100; k += 1) { t.mock.timers.tick(100); await settle(); }
+  const n = requests.length;
+  page.fire("window", "pageshow", { persisted: true });
+  for (let k = 0; k < 60; k += 1) { t.mock.timers.tick(100); await settle(); }
+  const times = requests.slice(n).map((r) => r.at);
+  assert.ok(times.length >= 4, `requests after pageshow: ${times.length}`);
+  const gaps = times.slice(1).map((v, i) => v - times[i]);
+  assert.ok(gaps.every((g) => g >= 300), `every gap at least 300 ms after pageshow: ${gaps}`);
+});

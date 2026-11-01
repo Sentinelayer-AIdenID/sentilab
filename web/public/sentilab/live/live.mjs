@@ -192,7 +192,7 @@ function runCard(L, selected, { mobile = false } = {}) {
       h("small", { class: "vt" }, M.visitorType(L.cls)));
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)), selected ? declBlock(declarationFor(L)) : null,
+      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)), ...(selected ? [declBlock(declarationFor(L))].filter(Boolean) : []),
       h("small", null, v.metric ? [v.metric.text, " ", h("em", null, v.metric.qualifier)] : v.none),
       h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), `arrival ${L.arrival ?? "?"} · record ${L.seq ?? "?"}`));
   }

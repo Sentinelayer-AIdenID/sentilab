@@ -420,3 +420,50 @@ test("P2-1: a paused replay cursor stays on its record's seq when new records ar
   assert.equal(M.cursorIndex([], 66), null);
   assert.equal(M.cursorIndex(after, null), null);
 });
+
+// Root's P1 on the shared gate (17:21Z): queued callers must recheck the deadline after every sleep and reserve their
+// slot before they launch, and a success that started before a 429 must never clear that 429's embargo.
+test("root's P1: the gate holds a 429's Retry-After against queued and in-flight callers", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  const flush = async () => { for (let i = 0; i < 20; i += 1) await Promise.resolve(); };
+  const run = async (ms) => { for (let k = 0; k < ms / 10; k += 1) { await flush(); t.mock.timers.tick(10); } await flush(); };
+  // Witness 1: results launches at 0; board and visitors queue for their 300 ms slots; results answers 429,
+  // Retry-After: 60, at 100 ms. Neither queued caller may launch before 60.1 s, and they stay spaced.
+  const launched = [];
+  const pending = new Map();
+  const fetchImpl = (url) => { launched.push({ url, at: Date.now() }); return new Promise((resolve) => pending.set(url, resolve)); };
+  const g = M.createGate({ fetchImpl, random: () => 0 });
+  const a = g.fetch("results"), b = g.fetch("board"), c = g.fetch("visitors");
+  await run(100);
+  pending.get("results")(new Response("{}", { status: 429, headers: { "retry-after": "60" } }));
+  await a;
+  await run(61000);
+  for (const u of ["board", "visitors"]) pending.get(u)?.(new Response("{}", { status: 200 }));
+  await Promise.all([b, c]);
+  const at = Object.fromEntries(launched.map((l) => [l.url, l.at]));
+  assert.equal(at.results, 0);
+  assert.ok(at.board >= 60100, `board waited out Retry-After: launched at ${at.board}`);
+  assert.ok(at.visitors >= 60100 && at.visitors - at.board >= M.GATE.GAP_MS, `visitors too, a gap after board: ${at.visitors}`);
+  // Witness 2: an in-flight success that started before a 429 and finishes after it keeps the embargo.
+  launched.length = 0;
+  pending.clear();
+  const g2 = M.createGate({ fetchImpl, random: () => 0 });
+  const slow = g2.fetch("slow");                         // launches at T, answers 200 only at T+500
+  await run(10);
+  const quick = g2.fetch("quick");                       // launches at T+300, answers 429 (Retry-After: 60) at T+400
+  await run(400);
+  pending.get("quick")(new Response("{}", { status: 429, headers: { "retry-after": "60" } }));
+  await quick;
+  await run(100);
+  pending.get("slow")(new Response("{}", { status: 200 }));
+  await slow;
+  const t429 = Date.now();
+  const next = g2.fetch("next");
+  await run(61000);
+  pending.get("next")?.(new Response("{}", { status: 200 }));
+  await next;
+  const nextAt = launched.find((l) => l.url === "next").at;
+  const quickAt = launched.find((l) => l.url === "quick").at;
+  assert.ok(nextAt >= quickAt + 100 + 60000, `the 429's embargo held through the earlier success: next at ${nextAt}, 429 at ~${quickAt + 100}`);
+  assert.ok(t429 > 0);
+});
