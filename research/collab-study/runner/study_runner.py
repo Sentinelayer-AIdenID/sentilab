@@ -650,6 +650,7 @@ class JobOutputs:
         self._first_request_time = None
         self._set_indices = {}
         self._finals = {}
+        self._final_indices = {}
         self._parsed_attempts = set()
         self._history_complete = not recover
         self.closed = False
@@ -670,15 +671,18 @@ class JobOutputs:
                 self._parsed_attempts.add(value["attempt"])
                 agent = value["agent"]
                 emitted_bytes = b""
-                for emitted in sets:
+                last_final = max((n for n, emitted in enumerate(sets) if emitted["kind"] == "FINAL"), default=-1)
+                for n, emitted in enumerate(sets):
                     index = self._set_indices.get(agent, 0)
                     row = {"job_id": self.job["job_id"], "arm": self.job["arm"], "agent": agent,
                            "set_index": index, "elapsed_s": elapsed, **emitted,
+                           "selected_final": n == last_final,
                            "malformed": [{**line, "malformed": True} for line in emitted["malformed"]]}
                     emitted_bytes += canonical(row) + b"\n"
                     self._set_indices[agent] = index + 1
                     if emitted["kind"] == "FINAL":
                         self._finals[agent] = {key: emitted[key] for key in ("findings", "malformed", "discarded")}
+                        self._final_indices[agent] = index
                 if emitted_bytes:
                     write_bytes_atomic(self._emitted, self._emitted.read_bytes() + emitted_bytes)
             write_bytes_atomic(self._stream, self._stream.read_bytes() + canonical(value) + b"\n")
@@ -706,6 +710,7 @@ class JobOutputs:
                 "unknown_usage_attempts": agent.unknown_usage_attempts,
                 "overspend_tokens": max(0, agent.charged_tokens - agent.cap),
                 "stop_reason": agent.stop_reason,
+                "final_set_index": self._final_indices.get(agent.number),
                 "usage": [row["usage"] for row in rows],
             }
         job = {**self.job, "schema": "collab-study-job-v3", "start_utc": self.start_utc, "end_utc": utc_now(),

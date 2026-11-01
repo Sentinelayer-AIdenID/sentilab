@@ -141,6 +141,10 @@ Each job contains:
   model-written timestamps have no effect. Multiple sets in one reply share its
   parsing-completion time. Interim sets do not stop the agent. Late replies are
   retained for analysis even when they cannot supply the final arm result.
+  When a reply has multiple FINALs, all remain recorded; `selected_final` marks
+  the last FINAL in that reply, which supplies that agent's final set. Its
+  `set_index` is reported as `final_set_index` in the agent's job metadata.
+  C still uses only the designated writer's final set for the arm result.
 * `findings.json`: `{findings, malformed, discarded}` for A/C; a map from agent
   number to that structure for B. No B merging is performed. At most 20 valid
   `{file, location, defect, evidence}` objects are kept. Malformed lines after

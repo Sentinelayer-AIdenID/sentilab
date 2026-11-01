@@ -140,3 +140,13 @@ def test_unicode_line_separators_stay_inside_one_finding_line(tmp_path):
     assert emitted[0]['findings'] == [finding]
     assert emitted[0]['malformed'] == []
     assert len((output / 'job-one/emitted_sets.jsonl').read_text().splitlines()) == 1
+
+
+def test_every_final_in_one_reply_is_recorded_and_last_is_explicitly_selected(tmp_path):
+    text = final('first candidate') + '\n' + final('last candidate')
+    emitted, job, model, output = execute(tmp_path, 'A', [response(text)])
+    assert [row['findings'][0]['evidence'] for row in emitted] == ['first candidate', 'last candidate']
+    assert [row['selected_final'] for row in emitted] == [False, True]
+    assert job['agents']['1']['final_set_index'] == 1
+    assert json.loads((output / 'job-one/findings.json').read_text())['findings'][0]['evidence'] == 'last candidate'
+    assert len(model.calls) == 1
