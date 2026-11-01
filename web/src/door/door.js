@@ -8,6 +8,8 @@
 //   GET  /s?t=&l=                       the tap-link confirm page: one button that POSTs; a GET never submits
 //   GET  /agents/status/<run_id>?t=     one run's state, bound to the token's principal   place-chiplets token
 //   GET  /agents/board                  the top 10: class, short id and scores
+//   GET  /agents/terms                  the text of the terms a submission accepts (the board's pinned version)
+//   GET  /sentilab/open/terms/<n>@<sha256>.md   one terms version at the contract's canonical path, by its own name
 // Any other method on these paths is 405 read_only; POST /agents/submit is the only new write. Classified agents get
 // the wall in place of the agent version of the three mapped pages until they hold a valid token. Without a usable
 // DOOR_TOKEN_KEY the door is closed: its routes answer 503 door_closed and the mapped pages keep their agent versions.
@@ -42,7 +44,7 @@ import { CSP } from "../csp.js";
 import { identityFor } from "../edge.js";
 import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
-import { agentView, gateZeroFrom } from "./engram.js";
+import { agentView, gateZeroFrom, knownLimitFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
 import { confirmHtml, notConfirmedHtml, pressRefusedHtml, problemHtml, referrerPolicyFor, resultHtml, termsChangedHtml, tokenHtml, tokenJson, tokenMarkdown,
   wallHtml, wallJson, wallMarkdown } from "./render.js";
@@ -177,6 +179,50 @@ function termsFrom(value) {
   return { terms: valid.reduce((best, v) => (best === null || number(v) > number(best) ? v : best), null), accepted: valid };
 }
 
+// ── the terms text ────────────────────────────────────────────────────────────────────────────────────────────────
+// A terms version names its text by hash: sentilab-open-terms/<n>@<sha256 of the exact bytes>. This site's copy of each
+// version is at the contract's canonical path (open_proposals/contract/canonical.py terms_path), and is served only
+// when its bytes hash to that pin. /agents/terms is the version the intake's board names (the signed manifest's highest
+// accepted version); the canonical path is the version its own name names. A copy that is missing or whose bytes
+// differ, no board, or no accepted version: 503 terms_unavailable. Never another text.
+const TERMS_PATH = /^\/sentilab\/open\/terms\/([1-9][0-9]{0,5}@[0-9a-f]{64})\.md$/;
+const MAX_TERMS_BYTES = 65536;
+const termsPath = (version) => (typeof version === "string" && TERMS_VERSION.test(version)
+  ? `/sentilab/open/terms/${version.slice("sentilab-open-terms/".length)}.md` : null);
+const hexOf = (buffer) => Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+// This site's copy of a version's text when its bytes hash to the version's pin, else null.
+async function boundTerms(env, url, version) {
+  const path = termsPath(version);
+  if (!path) return null;
+  try {
+    const res = await env.ASSETS.fetch(new Request(new URL(path, url), { method: "GET" }));
+    if (res.status !== 200) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.byteLength === 0 || bytes.byteLength > MAX_TERMS_BYTES) return null;
+    const pin = version.slice(version.indexOf("@") + 1);
+    return hexOf(await crypto.subtle.digest("SHA-256", bytes)) === pin ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
+async function serveTerms(request, env, url, version) {
+  const bytes = await boundTerms(env, url, version);
+  if (!bytes) return json(request, 503, { error: "terms_unavailable" });
+  return respond(request, 200, bytes, "text/markdown; charset=utf-8", { "x-terms-version": version });
+}
+
+// GET /agents/terms: the terms a submission accepts now, as the intake's board names them.
+async function currentTerms(request, env, ctx, url) {
+  return serveTerms(request, env, url, (await sharedBoard(env, url)).terms);
+}
+
+// GET /sentilab/open/terms/<n>@<sha256>.md: one version, by the hash in its own name.
+async function termsVersion(request, env, ctx, url) {
+  return serveTerms(request, env, url, `sentilab-open-terms/${TERMS_PATH.exec(url.pathname)[1]}`);
+}
+
 // ── rate limits ───────────────────────────────────────────────────────────────────────────────────────────────────
 const windows = new Map();
 function memoryAllow(key, { limit, periodMs }, now) {
@@ -289,13 +335,15 @@ export function resetDoorState() {
   windows.clear();
 }
 
-// Root's saved gate-zero record, read through the asset layer (never copied into this Worker).
-async function gateZero(request, env, url) {
+// Root's saved gate-zero record and the scoring build's known limit, read through the asset layer (never copied into
+// this Worker): { gate, knownLimit }, each null when unreadable.
+async function evidenceRecord(request, env, url) {
   try {
     const res = await env.ASSETS.fetch(new Request(new URL("/agents/evidence.json", url), { method: "GET" }));
-    return res.ok ? gateZeroFrom(await res.json()) : null;
+    const record = res.ok ? await res.json() : null;
+    return { gate: gateZeroFrom(record), knownLimit: knownLimitFrom(record) };
   } catch {
-    return null;
+    return { gate: null, knownLimit: null };
   }
 }
 
@@ -394,11 +442,11 @@ async function engram(request, env, ctx, url) {
   if (auth instanceof Response) return auth;
   if (request.method === "HEAD") return json(request, 200, null);
   const reading = await allow(env, "DOOR_READ_LIMITER", `engram:${prefixOf(request)}`);
-  const [live, gate] = await Promise.all([
+  const [live, record] = await Promise.all([
     reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null, terms: null },
-    gateZero(request, env, url)]);
+    evidenceRecord(request, env, url)]);
   return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: live.terms,
-    gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft }));
+    gateZero: record.gate, knownLimit: record.knownLimit, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft }));
 }
 
 function layoutFrom(values) {
@@ -651,13 +699,16 @@ const ROUTES = Object.freeze({
   "/agents/check": { methods: ["GET", "HEAD"], handler: check },
   "/agents/submit": { methods: ["POST"], handler: submit },
   "/agents/board": { methods: ["GET", "HEAD"], handler: board },
+  "/agents/terms": { methods: ["GET", "HEAD"], handler: currentTerms },
   "/s": { methods: ["GET", "HEAD"], handler: confirm },
 });
 const STATUS_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: status });
+const TERMS_VERSION_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: termsVersion });
 
 // The door route for a path, or null when the path is not the door's.
 export function doorRoute(pathname) {
   if (Object.hasOwn(ROUTES, pathname)) return ROUTES[pathname];
+  if (TERMS_PATH.test(pathname)) return TERMS_VERSION_ROUTE;
   return pathname.startsWith(STATUS_PREFIX) ? STATUS_ROUTE : null;
 }
 
