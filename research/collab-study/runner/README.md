@@ -95,8 +95,8 @@ overwrite mode exists.
 
 A has one 120,000-token agent. B runs three isolated 40,000-token agents
 concurrently, with independent findings. C rotates agents 1, 2, 3, skipping
-stopped agents; a nonwriter's `FINAL` stops that agent's turns, while only writer
-1's `FINAL` ends the arm with findings. Each arm has one
+stopped agents; a nonwriter's `FINAL` is recorded and that agent keeps taking
+turns. Only writer 1's `FINAL` ends the arm with findings. Each arm has one
 900-second deadline. Jobs start in order with at most `--parallel` arm workers
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
