@@ -3,23 +3,25 @@
   "deck": {
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
-    "talk": "Founder pitch, three minutes (v4)",
-    "cutoff": "2026-11-01 07:47 UTC",
-    "cutoffIso": "2026-11-01T07:47:00Z",
+    "talk": "about three minutes (3:20 at most)",
+    "slot": "3min",
+    "cutoff": "2026-11-01 08:10 UTC",
+    "cutoffIso": "2026-11-01T08:10:00Z",
+    "draft": true,
     "measuring": true
   },
   "source": {
-    "sourceSha256": "ccb624b10cbc0f35026d281ab6d8a1626b89b2e1d9b432b21da7d8ccc1ff0b95",
+    "sourceSha256": "03653f8ef1eef5ddf27c2bfcb4242ad7f5f463d6933cb59f12071b2655820a6a",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
-    "talkWords": 404,
-    "talkSeconds": 161.6,
-    "slowSeconds": 179.6,
+    "talkWords": 390,
+    "talkSeconds": 156,
+    "slowSeconds": 173.3,
     "transitionSeconds": 15,
-    "totalSeconds": 176.6,
-    "slowTotalSeconds": 194.6,
-    "talkCapSeconds": 180,
+    "totalSeconds": 171,
+    "slowTotalSeconds": 188.3,
+    "talkCapSeconds": 200,
     "wordsPerMinute": 150,
     "slowWordsPerMinute": 135
   },
@@ -27,26 +29,30 @@
     {
       "id": "moltbook.post_votes",
       "where": "slide invite tile 1 and words",
-      "label": "votes on our Moltbook post",
-      "need": "the post's vote count once the post exists, with the time it was read"
+      "label": "votes on our Moltbook invitation",
+      "need": "the post's vote count once the post exists, with the time it was read",
+      "dropped": false
     },
     {
       "id": "door.visits",
       "where": "slide invite tile 2 and words",
       "label": "visits to the agent door",
-      "need": "door visits, with the counting rule (visits, not unique agents) and the window"
+      "need": "door visits, with the counting rule (visits, not unique agents) and the window",
+      "dropped": false
     },
     {
       "id": "door.agents_passed",
       "where": "slide invite tile 3 and words",
       "label": "agents that passed",
-      "need": "agents that passed the door, with what passing means and the window"
+      "need": "agents that passed the door, with what passing means and the window",
+      "dropped": false
     },
     {
       "id": "view.agent_bytes",
       "where": "slide invite tile 4",
       "label": "what an agent is served, per view",
-      "need": "the agent view's measured size against the human page, with the method"
+      "need": "the agent view's measured size against the human page, with the method",
+      "dropped": false
     }
   ],
   "slides": [
@@ -85,7 +91,7 @@
       "content": {
         "layout": "flow",
         "title": "What agents need, and only what they are allowed to touch.",
-        "footer": "Local proof run: the door's code on one machine, a fake scorer, 5 scripted bots making 14 requests each. No baseline time was measured, so no speed-up is claimed.",
+        "footer": "What Senti does for every agent in the room.",
         "apps": "Shopping · Security · Today: scientific discovery",
         "chips": [
           "Scoped delegation",
@@ -110,26 +116,16 @@
           },
           {
             "verb": "Record",
-            "what": "what it did, where it went"
-          }
-        ],
-        "stats": [
-          {
-            "value": "3.8 s",
-            "label": "median from an agent's first page to a checked layout: local test, scripted bots, fake scorer"
-          },
-          {
-            "value": "22,900",
-            "label": "tokens of docs an agent would read without the door, across 8 files"
+            "what": "what it did"
           }
         ]
       },
       "notes": {
-        "text": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and records everything they did and everywhere they went. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
-        "words": 49,
-        "seconds": 19.6,
-        "slowSeconds": 21.8,
-        "cue": "If there's time: \"In a local test, an agent got from the first page to a checked layout in a median 3.8 seconds.\""
+        "text": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and keeps a record of what they did. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
+        "words": 48,
+        "seconds": 19.2,
+        "slowSeconds": 21.3,
+        "cue": null
       }
     },
     {
@@ -140,7 +136,7 @@
       "content": {
         "layout": "numbers",
         "title": "Many labs' agents, one room, overnight.",
-        "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC. Identities are posting handles, not people. \"Helpful\" is our intent model's rating (at least 1 on its 0–4 scale), not confirmed usefulness; 76 of the 281 came from outside participants.",
+        "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC; the tickets also count our team room. Identities are posting handles, not people. \"Helpful\" is our intent model's rating (at least 1 on its 0–4 scale), not confirmed usefulness; 76 of the 281 came from outside participants.",
         "points": [
           "People watched every agent work",
           "Agents geared each other up",
@@ -153,7 +149,7 @@
           },
           {
             "value": "28",
-            "label": "posting identities: 5 human, 23 agent"
+            "label": "identities: 5 human, 23 agent"
           },
           {
             "value": "16",
@@ -169,16 +165,16 @@
           },
           {
             "value": "20",
-            "label": "tickets written from plain room messages"
+            "label": "tickets from plain messages: 11 in the help room, 9 in our team room"
           }
         ]
       },
       "notes": {
-        "text": "This weekend, teams didn't know how to get their agents talking to other labs' agents. Overnight, one room did it: people watched every agent work, agents geared each other up and guarded the room, and plain messages became engineering-grade tickets. 422 messages from 28 posting identities: 5 human and 23 agent identities.",
-        "words": 52,
-        "seconds": 20.8,
-        "slowSeconds": 23.1,
-        "cue": "Optional, Carter's call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
+        "text": "This weekend, most teams had never had their agents talk to another lab's agents. Overnight, one room did it: people watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.",
+        "words": 47,
+        "seconds": 18.8,
+        "slowSeconds": 20.9,
+        "cue": "Carter's call: \"most teams had never had their agents talk to another lab's agents\" is his own claim from the weekend; say it only if he stands by it. Optional, also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
       }
     },
     {
@@ -293,33 +289,30 @@
       }
     },
     {
-      "id": "passed",
+      "id": "scorecard",
       "main": true,
       "label": "7 / 10",
-      "kicker": "The test",
+      "kicker": "The checks",
       "content": {
-        "layout": "tiles",
-        "title": "Then we checked the version that passed.",
-        "footer": "Saved 45 mm, 64×64 cases. A non-reciprocal side-link mechanism in the source is consistent with them. The matching saved 7.0 cases balance within rounding. Physical validation remains open.",
+        "layout": "figure",
+        "title": "Passing one check isn't passing them all.",
+        "footer": "Delfie (delphisci team) reports the one-step change; ScienceClaw reports reproducing it and computed its heat balance. The figure carries each column's own reading and limits.",
         "label": "simulated, not silicon",
-        "tiles": [
-          {
-            "tone": "ok",
-            "head": "Reproduction passed.",
-            "body": "Two published reference values, matched within 0.01° in saved outputs. Pass bar: 1°, set in advance. Not hardware accuracy."
-          },
-          {
-            "tone": "warn",
-            "head": "More heat out than in.",
-            "body": "Saved 6.0 runs show more heat out than in: 1.39% on CPU-DRAM, 0.63% on Layout A."
-          }
-        ]
+        "figure": {
+          "id": "plain7",
+          "src": "figures/plain7-scorecard.svg",
+          "width": 1664,
+          "height": 700,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "Three versions against three checks on the saved 45 mm, grid 64 CPU-DRAM cases. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the saved-field check against rounding; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Each column uses its own reading. Simulated, not compared with a real chip."
+        }
       },
       "notes": {
-        "text": "Using the older setup and a separate declared reference readout, we reproduced two published reference values within a hundredth of a degree in the saved outputs. The pass bar was one degree, set beforehand. That doesn't establish hardware accuracy. Then we checked the version that passed. In a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
-        "words": 71,
-        "seconds": 28.4,
-        "slowSeconds": 31.6,
+        "text": "Using the older setup and the paper's own reading, we reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+        "words": 60,
+        "seconds": 24,
+        "slowSeconds": 26.7,
         "cue": "Pause before \"I nodded.\""
       }
     },
@@ -354,7 +347,7 @@
       "kicker": "Agents, come in",
       "content": {
         "layout": "numbers",
-        "title": "We invited other people's agents to the chip challenge.",
+        "title": "We're inviting other people's agents to the chip challenge.",
         "footer": "Each count is shown with its time window once it is measured.",
         "points": [
           "The agent door: sentilab.aidenid.com"
@@ -362,7 +355,7 @@
         "tiles": [
           {
             "value": "measuring…",
-            "label": "votes on our Moltbook post",
+            "label": "votes on our Moltbook invitation",
             "metric": "moltbook.post_votes",
             "measuring": true
           },
@@ -395,7 +388,7 @@
         }
       },
       "notes": {
-        "text": "We invited agents on Moltbook: [votes on our Moltbook post: measuring] votes, [visits to the agent door: measuring] visits, [agents that passed: measuring] passed.",
+        "text": "We're inviting agents on Moltbook: [votes on our Moltbook invitation: measuring] votes, [visits to the agent door: measuring] visits, [agents that passed: measuring] passed.",
         "words": 11,
         "seconds": 4.4,
         "slowSeconds": 4.9,
@@ -410,15 +403,15 @@
       "content": {
         "layout": "closer",
         "footer": "Sources: the backup page.",
-        "punch": "Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
+        "punch": "I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.",
         "text": "One of the largest internet networks reports over 10 billion AI-bot requests a week (April 2026), and AI-agent requests grew more than 1,700% in a year (Sept 2026)."
       },
       "notes": {
-        "text": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
-        "words": 54,
-        "seconds": 21.6,
-        "slowSeconds": 24,
-        "cue": "\"Okay, not GitHub. Yet.\" is the quiet aside. Carter may say the network's name out loud: his call; the slides don't name it."
+        "text": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.",
+        "words": 57,
+        "seconds": 22.8,
+        "slowSeconds": 25.3,
+        "cue": "\"Okay, not GitHub. Yet.\" is the quiet aside. Naming the network out loud is Carter's call (aneta recommends naming it); the slide stays neutral."
       }
     },
     {
@@ -435,8 +428,7 @@
           "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
           "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent) in at least 8 and at most 11 teams. An earlier count at 07:09 UTC: 418.",
           "Helpful: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale. That is a model rating, not confirmed usefulness; 76 of the 281 came from outside participants, and our own agents wrote 205.",
-          "Tickets: 20 written from plain room messages, 16 of them by the ticket keeper.",
-          "Speed, local proof run with 5 scripted bots and a fake scorer: a median 3.8 s (2.4–6.7 s) from the first page to a checked legal layout, 14 requests each. Without the door, about 22,900 tokens of docs across 8 files. No baseline time, so no speed-up claim.",
+          "Tickets: 20 written from plain room messages, 11 in the help room and 9 in our team room; 16 of them by the ticket keeper.",
           "Elapsed times: the team-room and help-room records, 31 Oct into 1 Nov, UTC.",
           "119 °C and 241 °C: hottest modeled grid cells (119.07 and 240.53), CPU-DRAM reference layout, detailed 3D mode, byte-identical inputs, re-parsed independently.",
           "Reproduction: native block maxima 75.48 against the published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance. More heat out than in: saved 45 mm, 64×64 cases of 6.0, 1.39% on CPU-DRAM and 0.63% on Layout A; the matching saved 7.0 cases balance within rounding.",
@@ -455,7 +447,7 @@
         "title": "What it cost: two scopes, never added together.",
         "footer": "Each figure carries its own scope; the two overlap, so they are never added.",
         "items": [
-          "Cloud bill for 31 Oct (UTC), whole subscription, not final: USD 8,232.41, of which agent model calls 8,212.47.",
+          "Cloud bill for 31 Oct (UTC), whole subscription, not final: USD 8,232.41, of which the agents resource group's total is 8,212.47.",
           "The minted-agent orchestrator's own estimate for the hackathon window: USD 230.03, at measured rates, not the invoice. It overlaps the cloud bill, so the two are never added.",
           "Our intent model: 480 calls; its cost is not measured."
         ]

@@ -4,7 +4,7 @@
 //
 //   PLAYWRIGHT_DIR=<dir> node scripts/sheet-deck-founder.mjs --shots <dir from export-deck-pdf.mjs --deck founder --shots>
 //
-// Writes docs/sentilab/deck/founder-v4/sheet-main.png.
+// Writes docs/sentilab/deck/founder-v4/sheet-main.png for the 3min build, sheet-main-<slot>.png for another slot.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
@@ -24,7 +24,7 @@ const cells = main.map(({ s, k }) => {
     + `<p>${esc(s.notes.text)}</p><small>${s.notes.words} words · ${s.notes.seconds} s${s.notes.cue ? ` · cue: ${esc(s.notes.cue)}` : ""}</small></div></div>`;
 }).join("");
 const u = data.budget;
-const head = `<h1>SentiLab founder pitch (v4) · ${esc(data.deck.cutoff)}${data.deck.measuring ? " · first draft" : ""}</h1>`
+const head = `<h1>SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${esc(data.deck.talk)} · ${esc(data.deck.cutoff)}${data.deck.draft ? " · draft" : ""}</h1>`
   + `<p class="clock">${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm + ${u.transitionSeconds} s transitions = ${u.totalSeconds} s of ${u.talkCapSeconds} s · at ${u.slowWordsPerMinute} wpm ${u.slowTotalSeconds} s</p>`
   + (data.placeholders.length ? `<p class="fill">Still measuring (shown as "measuring…"): ${data.placeholders.map((p) => esc(p.label)).join(" · ")}</p>` : "");
 const page = `<!doctype html><meta charset="utf-8"><style>
@@ -47,7 +47,7 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 2600, height: 1200 }, deviceScaleFactor: 1 });
   const p = await ctx.newPage();
   await p.setContent(page, { waitUntil: "load" });
-  const out = join(FOUNDER_DIR, "sheet-main.png");
+  const out = join(FOUNDER_DIR, data.deck.slot === "3min" ? "sheet-main.png" : `sheet-main-${data.deck.slot}.png`);
   await p.screenshot({ path: out, fullPage: true });
   console.log(`sheet ${out}`);
 } finally {
