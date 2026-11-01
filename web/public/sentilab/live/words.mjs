@@ -122,13 +122,14 @@ export const PROPOSALS = Object.freeze({
   fresh: "New proposal",
   none: "No proposals yet. The first one appears here as it arrives.",
 });
-// Whether the agent behind the selected proposal is still around (Carter, 20:13Z): its last RECORDED activity,
-// through exact links only; not presence detection, and the tooltip says so.
+// The selected proposal's linked records (Carter, 20:13Z): the newest record on its exact links (visit, declarations,
+// linked runs). That is not presence: the scorer writes a run's records after the agent may have gone and there is
+// no heartbeat, so the words never say the agent is here or gone (review, 20:37Z).
 export const PRESENCE = Object.freeze({
-  here: (t) => `Agent still here \u00b7 last active ${t}`,
-  gone: (t) => `Agent no longer present \u00b7 last active ${t}`,
+  here: (t) => `Recent linked activity \u00b7 last record ${t}`,
+  gone: (t) => `No recent linked activity \u00b7 last record ${t}`,
   runOnly: (t) => `This run\u2019s last record: ${t}`,
-  title: "Last recorded activity, not presence detection",
+  title: "Linked visit/run events; not proof the agent remains connected",
 });
 export const YOUR_PICK = "your pick";
 

@@ -201,7 +201,8 @@ function markSvg(kind) {
   el.append(path);
   return el;
 }
-// The selected proposal's agent: still here, or no longer present, by its last recorded activity (exact links only),
+// The selected proposal's linked activity: recent or not, by the newest record on its exact links (never a claim that
+// the agent is still here),
 // or only this run's last record when the run carries no visit_arrival. Shown on the model and on its timeline row.
 function presenceText(L, now = Date.now()) {
   const decl = S.decl.ok === true && S.decl.at && now - S.decl.at <= M.VISITORS_FRESH_MS ? S.decl.items ?? [] : [];

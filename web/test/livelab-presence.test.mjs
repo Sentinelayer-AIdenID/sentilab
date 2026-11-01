@@ -162,7 +162,7 @@ const text = (el) => el.textContent;
 
 const presence = () => document.getElementById("modelPresence");
 const selectedRow = () => rows().find((el) => /\bselected\b/.test(el.className));
-const TITLE = "Last recorded activity, not presence detection";
+const TITLE = "Linked visit/run events; not proof the agent remains connected";
 const FIVE = ["queued", "evaluating", "evaluated", "replaying", "reproduced"];
 
 test("presence: through visit_arrival, the selected proposal's agent is still here while its last activity is under 10 minutes old, then no longer present", async (t) => {
@@ -171,14 +171,14 @@ test("presence: through visit_arrival, the selected proposal's agent is still he
   d.declare(arrival, "Visitor Gamma", "9f8c");
   d.add("9f8c", FIVE, { at: Date.now(), visitArrival: arrival });
   await settleFor(t, 6000);
-  assert.match(presence().textContent, /^Agent still here · last active just now$/);
+  assert.match(presence().textContent, /^Recent linked activity · last record just now$/);
   assert.equal(presence().getAttribute("title"), TITLE, "the tooltip says what it is");
-  assert.match(selectedRow().textContent, /Agent still here · last active just now/, "on the selected timeline row too");
+  assert.match(selectedRow().textContent, /Recent linked activity · last record just now/, "on the selected timeline row too");
   await settleFor(t, 9 * 60000, 1000);
-  assert.match(presence().textContent, /^Agent still here · last active 9 min ago$/);
+  assert.match(presence().textContent, /^Recent linked activity · last record 9 min ago$/);
   await settleFor(t, 2 * 60000, 1000);
-  assert.match(presence().textContent, /^Agent no longer present · last active 11 min ago$/);
-  assert.match(selectedRow().textContent, /Agent no longer present · last active 11 min ago/);
+  assert.match(presence().textContent, /^No recent linked activity · last record 11 min ago$/);
+  assert.match(selectedRow().textContent, /No recent linked activity · last record 11 min ago/);
 });
 
 test("presence: a later run of the same pass (same visit_arrival) is that agent's activity too", async (t) => {
@@ -189,10 +189,10 @@ test("presence: a later run of the same pass (same visit_arrival) is that agent'
   const first = rows()[0];
   first.click();
   await settleFor(t, 12 * 60000, 1000);
-  assert.match(presence().textContent, /^Agent no longer present · last active 12 min ago$/);
+  assert.match(presence().textContent, /^No recent linked activity · last record 12 min ago$/);
   d.add("9f8d", FIVE, { at: Date.now(), visitArrival: arrival });
   await settleFor(t, 6000);
-  assert.match(presence().textContent, /^Agent still here · last active just now$/, "the same pass proposed again just now");
+  assert.match(presence().textContent, /^Recent linked activity · last record just now$/, "the same pass proposed again just now");
 });
 
 test("presence: without visit_arrival only the run's own records count, worded as such", async (t) => {
@@ -203,6 +203,20 @@ test("presence: without visit_arrival only the run's own records count, worded a
   assert.match(presence().textContent, /^This run’s last record: just now$/);
   await settleFor(t, 3 * 60000, 1000);
   assert.match(presence().textContent, /^This run’s last record: 3 min ago$/);
-  assert.equal(/Agent (still here|no longer present)/.test(presence().textContent + selectedRow().textContent), false, "no claim about an agent without the exact link");
+  assert.equal(/linked activity/.test(presence().textContent + selectedRow().textContent), false, "no claim about an agent without the exact link");
   assert.equal(presence().getAttribute("title"), TITLE);
+});
+
+// chatgpt (20:36Z): a linked run whose records the scorer writes after the agent has gone must never read as the agent
+// being here. The words say what the signal is, a recent linked record, and nothing about presence, at any step.
+test("presence: a linked run finishing after the agent left never says the agent is here or gone", async (t) => {
+  const d = await open(t, "after-left");
+  const arrival = d.arrive("9f8c", Date.now() - 30 * 60000);
+  d.add("9f8c", FIVE, { at: Date.now(), visitArrival: arrival });
+  for (let k = 0; k < 12; k += 1) {
+    await settleFor(t, 1000);
+    const said = (presence().textContent ?? "") + (selectedRow()?.textContent ?? "");
+    assert.equal(/still here|no longer present|is here|has left|agent present/i.test(said), false, `step ${k}: no presence claim`);
+  }
+  assert.match(presence().textContent, /^Recent linked activity · last record (just now|\d+ min ago)$/);
 });
