@@ -83,7 +83,7 @@ These are counted from the events the feeds serve, up to and including `through_
 
 | Field | Count of |
 |---|---|
-| `passes` | arrival events that carry a purpose. Each purpose choice mints one pass. |
+| `passes` | arrival events that carry a purpose and no declaration. Each purpose choice mints one pass and sends one such arrival. A declaration is a later arrival of the same pass (section 4), so it is never counted as another pass. |
 | `submissions` | `attempt` events plus runs: every submission the intake recorded. |
 | `results.evaluated` | runs with a `run` event in state `evaluated` |
 | `results.reproduced` | runs with a `run` event in state `reproduced` |
@@ -118,6 +118,12 @@ pass. **A GET never records a declaration.**
     venue's network). Both go through the door's existing `allow`, as submit's limits do: the platform binding, or the
     isolate's own window if a binding is missing. Only the heartbeat's limiter has no such fallback.
   - The pass itself is never changed.
+- **What the intake receives.** The pick's GET sends the pass's arrival as before, never with a declaration. A
+  declaration is a later arrival of the same pass: same class rules, purpose and nonce, plus `declaration`. A pass
+  may declare again within its limits, and each declaration is another arrival.
+  - #89's `/visitors` counts are arrival counts, so a pass that declared appears there more than once: once plain,
+    then once per declaration, all with the same `short_id`.
+  - `/stats` counts the pass once (section 3).
 - **The fields.** They follow root's shared character policy, judged on the original input:
   - any code point in the general categories Cc, Cf, Co, Cs, Cn, Zl or Zp is refused. That covers controls, format and
     bidi characters, zero-width characters, tag characters, the BOM, private use, surrogates, unassigned code points,

@@ -92,7 +92,9 @@ MUTANTS = [
      '        return 204, None, {}\n\n    def stats(self)',
      '        self.store.scorer_event("here", self.policy.clock())\n        return 204, None, {}\n\n    def stats(self)'),
     # the run totals
-    ("passes-walls", "passes count wall views", S, "\"AND json_extract(body, '$.purpose') IS NOT NULL\"", "\"AND 1 = 1\""),
+    ("passes-walls", "passes count wall views", S, "\"AND json_extract(body, '$.purpose') IS NOT NULL \"", "\"AND 1 = 1 \""),
+    ("passes-declarations", "a declaration counted as another pass", S, "\"AND json_extract(body, '$.declaration') IS NULL\"",
+     "\"AND 1 = 1\""),
     ("runs-by-event", "runs counted by event", S, "runs = db.execute(\"SELECT COUNT(DISTINCT run_id) FROM events",
      "runs = db.execute(\"SELECT COUNT(*) FROM events"),
     ("short-id-key", "the short id as the run key", S,

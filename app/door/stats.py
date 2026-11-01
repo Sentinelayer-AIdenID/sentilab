@@ -2,7 +2,9 @@
 
 Counted from the events the feeds serve (GET /events), up to and including through_seq, in one read snapshot:
 
-    passes              arrival events that carry a purpose (each purpose choice mints one pass)
+    passes              arrival events that carry a purpose and no declaration: each purpose choice mints one pass and
+                        sends one such arrival. A declaration is a later arrival of the same pass (POST /agents/declare;
+                        the pick's own arrival never carries one), so it is never counted as another pass.
     submissions         attempt events plus runs: every submission the intake recorded
     results.evaluated   runs with a run event in state evaluated
     results.reproduced  runs with a run event in state reproduced
@@ -25,7 +27,8 @@ def totals(store) -> dict:
     with store.read() as db:
         through = db.execute("SELECT COALESCE(MAX(seq), 0) FROM events").fetchone()[0]
         passes = db.execute("SELECT COUNT(*) FROM events WHERE kind = 'arrival' AND seq <= ? "
-                            "AND json_extract(body, '$.purpose') IS NOT NULL", (through,)).fetchone()[0]
+                            "AND json_extract(body, '$.purpose') IS NOT NULL "
+                            "AND json_extract(body, '$.declaration') IS NULL", (through,)).fetchone()[0]
         attempts = db.execute("SELECT COUNT(*) FROM events WHERE kind = 'attempt' AND seq <= ?",
                               (through,)).fetchone()[0]
         runs = db.execute("SELECT COUNT(DISTINCT run_id) FROM events WHERE kind = 'run' AND seq <= ?",

@@ -31,7 +31,8 @@ def recount(door) -> dict:
     runs = {e["run_id"] for e in events if e["kind"] == "run"}
     reached = lambda state: len({e["run_id"] for e in events if e["kind"] == "run" and e["state"] == state})
     return {"schema": "sentilab-door-stats/1", "through_seq": max((e["seq"] for e in events), default=0),
-            "passes": sum(1 for e in events if e["kind"] == "arrival" and e["purpose"] is not None),
+            "passes": sum(1 for e in events if e["kind"] == "arrival" and e["purpose"] is not None
+                          and e.get("declaration") is None),
             "submissions": len(attempts) + len(runs),
             "results": {"evaluated": reached("evaluated"), "reproduced": reached("reproduced"),
                         "rejected": len(attempts), "failed": reached("failed")}}
@@ -47,6 +48,9 @@ class StatsTests(tk.DoorCase, unittest.TestCase):
     def history(self):
         """Every kind of record the feeds serve, through the door's own code paths."""
         self.arrive(**{"class": "automation"})                                          # a wall view: no pass
+        # A pass, then its declaration: since warden's hold, POST /agents/declare sends it as a later arrival of the same
+        # pass, and the pick's own arrival never carries one.
+        self.arrive(**{"class": "declared_agent", "purpose": "place-chiplets", "nonce": COLLIDING[0]})
         self.arrive(**{"class": "declared_agent", "purpose": "place-chiplets", "nonce": COLLIDING[0],
                        "declaration": {"notice_version": intake.VISITOR_NOTICE, "name": "<b>x</b>", "source": "moltbook"}})
         self.arrive(**{"class": "likely_human", "purpose": "read", "nonce": COLLIDING[1]})
@@ -101,6 +105,16 @@ class StatsTests(tk.DoorCase, unittest.TestCase):
         shorts = [e["short_id"] for e in self.door.events(None, None)[1]["events"]]
         self.assertEqual(shorts, ["0f62", "0f62"])
         self.assertEqual(self.door.stats()[1]["passes"], 2)
+
+    def test_a_declaration_is_never_counted_as_another_pass(self):
+        """POST /agents/declare sends a declaration as a later arrival of the same pass (the pick's arrival never carries
+        one), and a pass may declare again: a pass is counted once, from its pick."""
+        self.arrive(**{"class": "likely_human", "purpose": "read", "nonce": tk.nonce(7)})
+        for name in ("first", "again"):
+            self.arrive(**{"class": "likely_human", "purpose": "read", "nonce": tk.nonce(7),
+                           "declaration": {"notice_version": intake.VISITOR_NOTICE, "name": name}})
+        self.assertEqual(self.door.stats()[1]["passes"], 1)
+        self.assertEqual(self.door.stats()[1], recount(self.door))
 
     def test_only_these_fields_and_no_visitor_counts(self):
         self.history()
