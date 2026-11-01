@@ -18,7 +18,10 @@
   // hide is confirmed on both public feeds on every serving revision; (2) one pass or one network prefix can be stopped
   // from declaring.
   "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off",
-    "DOOR_DECLARATIONS": "off" },
+    "DOOR_DECLARATIONS": "off",
+    // operator stop for one pass or prefix: edit these lists, commit and redeploy.
+    // A --var override lasts only until the next deploy.
+    "DOOR_DECLARE_DENY_IDS": "", "DOOR_DECLARE_DENY_PREFIXES": "" },
   // The agent door (src/door/door.js). DOOR_TOKEN_KEY is a Worker secret (wrangler secret put DOOR_TOKEN_KEY, at least
   // 32 characters, its own per environment); without it the door stays closed. The terms a submission accepts come
   // from the intake's board (the signed manifest's accepted versions). Rate limits per token (nonce) and per client IP
@@ -45,7 +48,10 @@
       "routes": [{ "pattern": "staging.sentilab.aidenid.com", "custom_domain": true }],
       "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
       // DOOR_DECLARATIONS off, as in production, until warden explicitly authorizes turning it on (see the top).
-      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },
+      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off",
+        // operator stop for one pass or prefix: edit these lists, commit and redeploy.
+        // A --var override lasts only until the next deploy.
+        "DOOR_DECLARE_DENY_IDS": "", "DOOR_DECLARE_DENY_PREFIXES": "" },
       "ratelimits": [
         { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },
         { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110112", "simple": { "limit": 60, "period": 60 } },

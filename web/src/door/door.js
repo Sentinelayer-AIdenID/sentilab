@@ -49,6 +49,7 @@ import { CSP } from "../csp.js";
 import { identityFor } from "../edge.js";
 import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
+import { declareStopped } from "./declare-stop.js";
 import { NOTICE, declarationOutcome, declareObject, linkCarriesDeclaration, prefillFrom, readOptIn, viaSource } from "./declare.js";
 import { agentView, gateZeroFrom, knownLimitFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
@@ -767,7 +768,8 @@ async function submit(request, env, ctx, url) {
 // from this site (Sec-Fetch-Site same-origin, or, without it, an Origin of this site). An agent: JSON with its pass
 // token and the declare_key its pass's view showed. Either way an opt-in (notice_version) must carry the declare_key of
 // this pass and that notice version, so a link, another pass or another notice can't make one. The pass is never
-// changed; refusals send nothing; an opt-in's arrival is delivered and the answer is the intake's own.
+// changed; refusals send nothing; an opt-in's arrival is delivered and the answer is the intake's own. The operator's
+// stop (declare-stop.js) refuses a listed pass's or network prefix's opt-in at that last step, as any refusal here.
 const MAX_DECLARE_BYTES = 2048;
 const DECLARE_FIELDS = Object.freeze(["t", "notice_version", "declare_key", "name", "reason", "source"]);
 
@@ -823,7 +825,11 @@ async function declare(request, env, ctx, url) {
     const expected = await declareKey(key, { site: url.host, nonce: claims.nonce, version: versions[0] });
     if (versions.length !== 1 || keys.length !== 1 || !sameHex(keys[0], expected)) return refuse(request, format, 403, { error: "declare_key_invalid" });
   }
-  const optIn = readOptIn(params, fields.illFormed);
+  // The operator's stop, only where a declaration would be sent, so every other answer is the same for a stopped pass. The
+  // client address is the one the door's limiters key on (prefixOf).
+  const read = readOptIn(params, fields.illFormed);
+  const optIn = read.status === "opted_in" && declareStopped(env, { shortId: claims.short_id, address: request.headers.get("cf-connecting-ip") })
+    ? { status: "not_sent", code: "not_accepted" } : read;
   let delivery = null;
   if (optIn.status === "opted_in") {
     delivery = await deliverArrival(request, env, ctx, url, { purpose: claims.purpose, nonce: claims.nonce, expiresAt: claims.expires_at,

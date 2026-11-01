@@ -143,6 +143,39 @@ pass. **A GET never records a declaration.**
     venue's network). Both go through the door's existing `allow`, as submit's limits do: the platform binding, or the
     isolate's own window if a binding is missing. Only the heartbeat's limiter has no such fallback.
   - The pass itself is never changed.
+- **The operator's stop** (`web/src/door/declare-stop.js`). This is condition 2 above. The hide (`DOOR-VISITORS.md`)
+  works per event, so without a stop a repost would be public at once. There are two Worker vars, shipped empty in
+  `web/wrangler.jsonc` for production and staging:
+  - `DOOR_DECLARE_DENY_IDS` takes pass short ids: the 4 hex that `/events` and `/visitors` show as each declaration's
+    `short_id` (the first 4 hex of sha256 of the pass's nonce), in either case.
+  - `DOOR_DECLARE_DENY_PREFIXES` takes CIDR prefixes of the client address, IPv4 or IPv6 (`203.0.113.0/24`,
+    `2001:db8::/32`). The address is `CF-Connecting-IP`, which the door's limiters key on. A bare address is that one
+    address; host bits are ignored.
+
+  Entries are separated by commas or whitespace. A listed pass's opt-in, or one from an address in a listed prefix, is
+  refused at the door and nothing is sent to the intake. By JSON or form, the answer is the door's own refusal:
+  `not_recorded` with the code `not_accepted` (below), in words that name no list. Only an opt-in that would be sent is
+  stopped; every other answer is what any pass gets.
+  - **Fail closed.** A bad configuration never turns declarations on and never fails the Worker:
+    - an entry that doesn't parse is ignored and logged by its position (never its text, never a client address); the
+      other entries still apply;
+    - a var that isn't text (say, a JSON array in `wrangler.jsonc`), or a read that throws, refuses every opt-in until
+      it's fixed, and is logged;
+    - while a prefix is listed, an opt-in whose client address the door can't read is refused;
+    - with `DOOR_DECLARATIONS` off, nothing reads the lists.
+  - **Setting it.** Edit both environments' lists in `web/wrangler.jsonc`, commit and redeploy. Removing an entry and
+    redeploying lifts the stop. `web/test/door-declare-stop.test.mjs` fails on any committed entry the Worker would
+    ignore. A `--var` override lasts only until the next deploy, which sets each var back to `wrangler.jsonc`:
+    `npx wrangler deploy --var "DOOR_DECLARE_DENY_PREFIXES:203.0.113.0/24,2001:db8::/32"`. Quote the value, so a shell
+    doesn't split it; wrangler 4.156.0 splits it only at the first colon, so an IPv6 prefix survives.
+  - **A stop, not a moderation queue.** Nothing is reviewed, held or released. A declaration that's already public
+    stays on the feeds until it's hidden as well.
+  - **Known limits.**
+    - A short id is 4 hex, so listing one also stops any other pass with the same short id: about one in 65,536. A pass
+      lasts 60 minutes, and a new pass has a new short id.
+    - A prefix stops everyone on that network, a venue's included.
+    - A stopped opt-in is answered without waiting for the intake, so it comes back sooner than one that's sent. The
+      words don't show the stop; the timing can.
 - **What the intake receives.** The pick's GET sends the pass's arrival as before, never with a declaration. A
   declaration is a later arrival of the same pass: same class rules, purpose and nonce, plus `declaration`. A pass
   may declare again within its limits, and each declaration is another arrival.
@@ -198,7 +231,8 @@ pass. **A GET never records a declaration.**
     - `{"status": "not_given"}`, with a `detail` when something was typed without the opt-in;
     - `{"status": "not_recorded", "code", "detail"}` for a refusal at the door, before anything is sent. `code` is one of
       `notice_changed`, `field_repeated`, `too_long`, `control_character`, `combining_marks`, `blank`, `source_unknown`
-      or `reserved_name`.
+      or `reserved_name`, or `not_accepted` for the operator's stop ("Your declaration was not recorded. Your purpose
+      pass works as usual.").
   - **Protocol refusals:**
     - `400` `malformed_body` for a body over 2,048 bytes, one too slow to read, a JSON body that isn't one object of
       string values, or a repeated JSON key;

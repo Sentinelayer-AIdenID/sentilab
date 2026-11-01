@@ -91,6 +91,8 @@ export const DECLARATION_TEXT = Object.freeze({
   blank: "A field has nothing visible in it, so nothing you typed was recorded.",
   source_unknown: "Where you came from must be one of moltbook, senti, github, direct or other, so nothing you typed was recorded.",
   reserved_name: "That name is reserved for the lab's own labels, so nothing you typed was recorded. Your purpose pass works as usual.",
+  // The operator's stop (declare-stop.js): neutral words, as any refusal here, naming no list.
+  not_accepted: "Your declaration was not recorded. Your purpose pass works as usual.",
 });
 
 // null when text is acceptable display text of at most max code points; otherwise the reason it is not. Judged on the

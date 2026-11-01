@@ -247,6 +247,8 @@ the same pass, prefix or another pass from posting a new declaration. The operat
 must separately verify targeted pass/prefix abuse controls and default-OFF
 deployment behavior before turning declarations ON, alongside the projection and
 refetch checks above. The hide command does not implement those other controls.
+The Worker's stop for one pass or one network prefix is `DOOR_DECLARE_DENY_IDS` and
+`DOOR_DECLARE_DENY_PREFIXES` (`DOOR-PRESENCE-STATS.md` section 4).
 
 Without heartbeat presence enabled, `current_presence` is
 `{ "status": "not_measured", "count": null }`. With `DOOR_PRESENCE=on` it is
