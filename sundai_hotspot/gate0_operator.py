@@ -19,15 +19,21 @@ Everything a call starts is the call's to stop (root #57395). validate-reference
 launches the solver in another one (reference_validation, step 9), so killing validate-reference's process group
 alone would leave the solver running. While a call runs, this supervisor is the child subreaper of everything the
 call starts (OwnedProcesses; in the container it is PID 1 as well), so a process whose parent dies stays its
-descendant. When the total passes the cap, a watcher SIGKILLs every process group the call owns: validate-reference's
-and the group of each live descendant, the solver's own session included. After validate-reference exits, for any
-reason, whatever it left behind is killed and reaped the same way. The CPU is read only after that reap, so a call is
-charged for everything it started. The container's cgroup cannot be killed from inside: cgroupfs is read-only there,
-and the supervisor is a member of that cgroup. Tracking every owned descendant group is the fallback root names.
+descendant. The supervisor reads the meter itself while the call runs, so no separate watcher can die and leave the
+call unwatched (root #57472). When the total passes the cap, or a reading fails, it SIGKILLs every process group the
+call owns: validate-reference's and the group of each live descendant, the solver's own session included. After
+validate-reference exits, for any reason, whatever it left behind is killed and reaped the same way. The CPU is read
+only after that reap, so a call is charged for everything it started. The container's cgroup cannot be killed from
+inside: cgroupfs is read-only there, and the supervisor is a member of that cgroup. Tracking every owned descendant
+group is the fallback root names.
 
 A call whose validate-reference printed no settlement is settled by the operator (contract item 6), and never
-relaunched. Its status is supervisor_cap when the cap killed it, and supervisor_unknown when it died on its own. It is
-charged its full envelope, or the CPU measured after the reap if that is larger.
+relaunched. Its status is supervisor_meter_failed when the meter failed (the errors are kept), supervisor_cap when
+the cap killed it, and supervisor_unknown when it died on its own. It is charged its full envelope, or the CPU
+measured after the reap if that is larger. If the meter failed after the reap as well, the call's usage is unknown.
+It is charged its full envelope (the reservation stays consumed, never zero, never refunded), the cumulative total is
+recorded as unknown, and every later run refuses until the operator reconciles it by hand. A run in which the meter
+failed stops after that call.
 
 Never prints the key, the token or the anchor credential.
 """
@@ -42,7 +48,6 @@ import os
 import signal
 import subprocess
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -77,14 +82,26 @@ def cgroup_cpu_s() -> float:
 
 
 def carried_cpu_s() -> float:
+    """The cumulative CPU used by earlier runs. If a run recorded it as unknown, every run refuses until the operator
+    reconciles it by hand: nothing retries on its own, and no unknown usage is ever counted as zero."""
     if not CPU_FILE.exists():
         return 0.0
-    return float(json.loads(CPU_FILE.read_text(encoding="utf-8"))["used_cpu_s"])
+    record = json.loads(CPU_FILE.read_text(encoding="utf-8"))
+    if record.get("used_cpu_s") is None:
+        raise SystemExit(f"the cumulative CPU used is unknown since {record.get('at')} (the meter failed; at least "
+                         f"{record.get('lower_bound_cpu_s')} CPU-s): reconcile it by hand before any further call")
+    return float(record["used_cpu_s"])
 
 
-def save_cpu(total: float) -> None:
+def save_cpu(total: float | None, lower_bound: float | None = None) -> None:
+    """Saves the cumulative CPU. None means the meter failed after a call: the total is then recorded as unknown, with
+    the last value read as a lower bound, never as a number that looks measured."""
     tmp = CPU_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"used_cpu_s": round(total, 6), "at": now()}), encoding="utf-8")
+    if total is None:
+        record = {"used_cpu_s": None, "usage": "unknown", "lower_bound_cpu_s": lower_bound, "at": now()}
+    else:
+        record = {"used_cpu_s": round(total, 6), "at": now()}
+    tmp.write_text(json.dumps(record), encoding="utf-8")
     os.replace(tmp, CPU_FILE)
 
 
@@ -214,12 +231,23 @@ class OwnedProcesses:
             time.sleep(0.01)
 
 
-def supervisor_settlement(killed: str | None, envelope_cpu_s: float, cpu_s: float) -> dict:
+def supervisor_settlement(killed: str | None, envelope_cpu_s: float, cpu_s: float | None,
+                          meter_errors: list[dict]) -> dict:
     """The operator's settlement of a call whose validate-reference printed none (contract item 6). The call stays
-    consumed and is never relaunched. Its status is supervisor_cap when the cap killed it and supervisor_unknown
-    otherwise. It is charged its full envelope, or the CPU measured after the reap if that is larger."""
-    return {"status": "supervisor_cap" if killed else "supervisor_unknown",
-            "charged_cpu_s": round(max(envelope_cpu_s, cpu_s), 3)}
+    consumed and is never relaunched.
+
+    Its status is supervisor_meter_failed when the CPU meter failed (root #57472; the errors are kept),
+    supervisor_cap when the cap killed it, and supervisor_unknown otherwise. It is charged its full envelope, or the
+    CPU measured after the reap if that is larger. If the meter failed after the reap too (cpu_s None), the call's
+    actual usage is unknown. The charge then stays the full envelope: the reservation stays consumed, and it is never
+    zero and never refunded."""
+    settlement = {"status": "supervisor_meter_failed" if meter_errors else
+                  "supervisor_cap" if killed else "supervisor_unknown",
+                  "charged_cpu_s": round(envelope_cpu_s if cpu_s is None else max(envelope_cpu_s, cpu_s), 3),
+                  "usage": "unknown" if cpu_s is None else "measured"}
+    if meter_errors:
+        settlement["meter_errors"] = meter_errors
+    return settlement
 
 
 def call_argv(call: dict, args, out: Path) -> list[str]:
@@ -234,40 +262,56 @@ def call_argv(call: dict, args, out: Path) -> list[str]:
     return argv
 
 
+def _meter_error(where: str, exc: Exception) -> dict:
+    return {"where": where, "type": type(exc).__name__, "message": str(exc)}
+
+
 def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None, cwd: str = "/app",
              poll_s: float = 0.25, stop_s: float = 10.0) -> dict:
     """Runs one call's validate-reference under the cumulative budget, in its own session. It returns only once
-    nothing the call started is left (OwnedProcesses). When the total passes the cap, the watcher kills every process
-    group the call owns. When validate-reference exits, for any reason, whatever it left behind is killed and reaped.
-    The CPU is read after that reap and saved. The result carries validate-reference's printed summary; when there is
-    none, it carries the operator's own settlement instead (supervisor_settlement)."""
+    nothing the call started is left (OwnedProcesses).
+
+    The supervisor reads the meter itself, in this thread, while the call runs (root #57472). There is no separate
+    watcher that a failed read could stop, so enforcement cannot end silently. Every process group the call owns is
+    killed at once when the total passes the cap, or when a reading fails (the error is kept). When
+    validate-reference exits, for any reason, whatever it left behind is killed and reaped. The CPU is read after
+    that reap and saved. If that reading fails too, the call's usage is recorded as unknown (save_cpu). The result
+    carries validate-reference's printed summary; when there is none, it carries the operator's own settlement
+    instead (supervisor_settlement)."""
     meter = meter or cgroup_cpu_s
     # Beside the out dir, never inside it: the strict reader verifies the out dir's own files. The output is written
     # as it comes, not through pipes, so a process left holding a pipe cannot stall the supervisor.
     stdout_path, stderr_path = out.with_name(out.name + ".stdout"), out.with_name(out.name + ".stderr")
-    killed = {"reason": None}
+    killed, meter_errors = None, []
     with OwnedProcesses() as owned:
-        start = meter()
+        start = meter()  # before the launch: if this read fails, nothing is launched
+        last_read = budget["carried"] + start
         with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
             child = subprocess.Popen(argv, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
-
-        def watch() -> None:
-            while child.poll() is None:
+        while child.poll() is None:
+            try:
                 used = budget["carried"] + meter()
-                if used > budget["cap"]:
-                    killed["reason"] = f"cumulative CPU {used:.2f} s passed the cap {budget['cap']:g} s"
-                    owned.kill(child)  # validate-reference's group and every other group the call owns
-                    return
-                time.sleep(poll_s)
-
-        watcher = threading.Thread(target=watch, daemon=True)
-        watcher.start()
+            except Exception as exc:  # no reading means no enforcement: stop the call now, on the cap's path
+                meter_errors.append(_meter_error("while the call ran", exc))
+                killed = f"the CPU meter failed while the call ran ({type(exc).__name__}: {exc})"
+                owned.kill(child)
+                break
+            last_read = used
+            if used > budget["cap"]:
+                killed = f"cumulative CPU {used:.2f} s passed the cap {budget['cap']:g} s"
+                owned.kill(child)  # validate-reference's group and every other group the call owns
+                break
+            time.sleep(poll_s)
         child.wait()
-        watcher.join(timeout=5)
         reaped, survivors = owned.stop_and_reap(child, stop_s)
-    used = meter()
-    used_now = budget["carried"] + used
-    save_cpu(used_now)
+    try:
+        final = meter()
+    except Exception as exc:  # the actual usage is unknown: recorded as unknown, never as zero
+        meter_errors.append(_meter_error("after the reap", exc))
+        final = None
+    cpu_s = None if final is None else final - start
+    used_now = None if final is None else budget["carried"] + final
+    save_cpu(used_now, lower_bound=round(last_read, 6))
     stdout = stdout_path.read_text(encoding="utf-8", errors="replace")
     stderr = stderr_path.read_text(encoding="utf-8", errors="replace")
     summary = None
@@ -280,10 +324,12 @@ def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None
             summary = candidate
             break
     settlement = None if summary else supervisor_settlement(
-        killed["reason"], float(call["accounting"]["reserved_cpu_s"]), used - start)
-    return {"out": str(out), "exit": child.returncode, "summary": summary, "killed": killed["reason"],
-            "reaped": reaped, "survivors": survivors, "settlement": settlement,
-            "cpu_s_this_call": round(used - start, 3), "cumulative_cpu_s": round(used_now, 3),
+        killed, float(call["accounting"]["reserved_cpu_s"]), cpu_s, meter_errors)
+    return {"out": str(out), "exit": child.returncode, "summary": summary, "killed": killed,
+            "meter_errors": meter_errors, "usage": "unknown" if final is None else "measured", "reaped": reaped,
+            "survivors": survivors, "settlement": settlement,
+            "cpu_s_this_call": None if cpu_s is None else round(cpu_s, 3),
+            "cumulative_cpu_s": None if used_now is None else round(used_now, 3),
             "stderr_tail": stderr.strip().splitlines()[-3:]}
 
 
@@ -338,8 +384,8 @@ def cmd_run(args) -> int:
             admitted = bool(gate0_anchor.call_entries(gate0_anchor.read_ledger(
                 args.ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256), cid))
             log("no_settlement_printed", call=cid, exit=result["exit"], killed=result["killed"], admitted=admitted,
-                reaped=result["reaped"], stderr_tail=result["stderr_tail"], out=result["out"],
-                cumulative_cpu_s=result["cumulative_cpu_s"])
+                meter_errors=result["meter_errors"], usage=result["usage"], reaped=result["reaped"],
+                stderr_tail=result["stderr_tail"], out=result["out"], cumulative_cpu_s=result["cumulative_cpu_s"])
             if admitted:
                 settlement = result["settlement"]
                 message = gate0_anchor.tag_message("settle", args.grant_id, manifest_sha256, cid,
@@ -348,6 +394,10 @@ def cmd_run(args) -> int:
                 sha = settle_tag(request, args.grant_id, manifest_sha256, cid, message)
                 log("settled_by_supervisor", call=cid, settle_commit=sha, **settlement)
             return 5
+        if result["meter_errors"]:  # validate-reference settled itself, but the meter failed: no further call
+            log("stop_meter_failed", call=cid, meter_errors=result["meter_errors"], usage=result["usage"],
+                killed=result["killed"])
+            return 8
         if result["killed"]:
             log("stop_killed", call=cid, reason=result["killed"])
             return 6
