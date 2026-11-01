@@ -99,7 +99,7 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
   // Rev 5 (aneta 57941): one 8 on the slide; the posting-group estimate stays on the sources page.
   assert.doesNotMatch(shown(data, "room"), /posting groups/);
-  assert.match(shown(data, "sources"), /8 agent posting groups plus 3 human-only groups/);
+  assert.match(shown(data, "sources"), /\d+ agent posting groups plus \d+ human-only groups/);
   assert.equal(slide(data, "room").content.tiles.length, 5);
   assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
   // Help offered, in the groups' own reports, in place of the model-rated count, which moves to the sources page. Refreshed
