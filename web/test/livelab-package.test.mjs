@@ -295,3 +295,25 @@ test("package: nothing on the page says unvalidated or names a vendor", async (t
   assert.equal(/unvalidated/i.test(page), false, "no visible unvalidated");
   assert.equal(VENDORS.test(page), false, "no vendor names");
 });
+
+// Review (22:45Z), P2 1: a feed still saying has_more at the page cap is an error, never a complete read.
+test("pages: a feed still saying has_more at the cap rejects as incomplete; a finished feed resolves", async () => {
+  const forever = async (after) => ({ schema: "sentilab-door-results/1", items: [], next_after: after + 1, has_more: true });
+  const seen = [];
+  await assert.rejects(P.readPages(forever, (doc) => seen.push(doc.next_after), 3), /pagination limit reached; results incomplete/);
+  assert.deepEqual(seen, [1, 2, 3], "it read exactly the cap's pages first");
+  const two = async (after) => ({ schema: "sentilab-door-results/1", items: [], next_after: after + 1, has_more: after < 1 });
+  await P.readPages(two, () => {}, 3);
+  assert.equal(P.RESULTS_MAX_PAGES, 200);
+});
+
+// Review (22:45Z), P2 2: a licence entry counts only with who confirmed it and when; otherwise it fails closed.
+test("licences: an entry without confirmed_by or a well-formed confirmed_at is ignored", () => {
+  const id = RAW().items[0].id;
+  const list = (extra) => ({ schema: "sentilab-licensed-runs/1", items: [entry(id, extra)] });
+  assert.equal(P.readLicences(list({})).size, 1, "a complete entry counts");
+  assert.equal(P.readLicences(list({ confirmed_by: undefined })).size, 0, "no confirmed_by");
+  assert.equal(P.readLicences(list({ confirmed_by: "" })).size, 0, "empty confirmed_by");
+  assert.equal(P.readLicences(list({ confirmed_at: undefined })).size, 0, "no confirmed_at");
+  assert.equal(P.readLicences(list({ confirmed_at: "yesterday" })).size, 0, "a confirmed_at that is not a UTC timestamp");
+});

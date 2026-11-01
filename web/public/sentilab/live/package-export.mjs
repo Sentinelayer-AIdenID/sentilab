@@ -30,11 +30,29 @@ export const LICENSED_PATH = "/sentilab/packages/licensed-runs.json";
 export const LICENSED_SCHEMA = "sentilab-licensed-runs/1";
 const RUN_ID = /^open-[0-9a-f]{8}-[0-9a-f]{32}$/;
 const field = (v, max) => (typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v) ? v : null);
+const CONFIRMED_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?Z$/;
+// Every page of the results feed from the start, until has_more is false. A feed still saying has_more at the cap is
+// an error, never a complete read (review, 22:45Z): the caller shows it as incomplete and keeps bulk downloads off.
+export const RESULTS_MAX_PAGES = 200;
+export async function readPages(getPage, onPage, maxPages = RESULTS_MAX_PAGES) {
+  let after = 0;
+  for (let page = 0; page < maxPages; page += 1) {
+    const doc = await getPage(after);
+    if (doc?.schema !== "sentilab-door-results/1" || !Array.isArray(doc.items)) throw new Error("not a results page");
+    onPage(doc);
+    if (!doc.has_more || !(doc.next_after > after)) return;
+    after = doc.next_after;
+  }
+  throw new Error("pagination limit reached; results incomplete");
+}
 export function readLicences(doc) {
   const out = new Map();
   if (!isObj(doc) || doc.schema !== LICENSED_SCHEMA || !Array.isArray(doc.items)) return out;
   for (const x of doc.items) {
-    if (!isObj(x) || typeof x.run_id !== "string" || !RUN_ID.test(x.run_id) || !field(x.licence, 80) || !field(x.owner_role, 40)) continue;
+    // Fail closed: an entry counts only with who confirmed the owner's licence and when (review, 22:45Z). This metadata
+    // records a decision made elsewhere; it is not proof of authority, so entries are added only from an owner's receipt.
+    if (!isObj(x) || typeof x.run_id !== "string" || !RUN_ID.test(x.run_id) || !field(x.licence, 80) || !field(x.owner_role, 40)
+      || !field(x.confirmed_by, 80) || typeof x.confirmed_at !== "string" || !CONFIRMED_AT.test(x.confirmed_at)) continue;
     out.set(x.run_id, { run_id: x.run_id, visit: field(x.visit, 8), owner_role: x.owner_role, licence: x.licence,
       confirmed_by: field(x.confirmed_by, 80), confirmed_at: field(x.confirmed_at, 40) });
   }

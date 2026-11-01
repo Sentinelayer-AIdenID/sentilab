@@ -26,24 +26,16 @@ async function getJson(url) {
   if (!body.ok) throw new Error("answer too large");
   return JSON.parse(new TextDecoder().decode(body.bytes));
 }
-const MAX_PAGES = 200;
 export const state = { raws: new Map(), times: new Map(), licences: new Map(), done: false, error: "" };
 // The licence allowlist first (Terms v1): only listed runs, by full run id, get downloads; an unreadable list is empty.
 async function readLicences() {
   try { state.licences = P.readLicences(await getJson(P.LICENSED_PATH)); } catch { state.licences = new Map(); }
 }
 
-// Every page of the results feed, from the start, until has_more is false.
+// Every page of the results feed, from the start (package-export.mjs readPages: a feed still saying has_more at the
+// cap is an error, shown as incomplete, never "every page read").
 async function readAll() {
-  let after = 0;
-  for (let page = 0; page < MAX_PAGES; page += 1) {
-    const doc = await getJson(`${P.RESULTS_PATH}?after=${after}`);
-    if (doc?.schema !== "sentilab-door-results/1" || !Array.isArray(doc.items)) throw new Error("not a results page");
-    P.keepRawResults(state.raws, doc, Infinity);
-    render();
-    if (!doc.has_more || !(doc.next_after > after)) return;
-    after = doc.next_after;
-  }
+  await P.readPages((after) => getJson(`${P.RESULTS_PATH}?after=${after}`), (doc) => { P.keepRawResults(state.raws, doc, Infinity); render(); });
 }
 // The run's own first record (its queued record, seq = the results row's arrival), for its submission time.
 async function readTimes() {
