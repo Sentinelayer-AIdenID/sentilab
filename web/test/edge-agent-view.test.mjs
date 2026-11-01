@@ -28,6 +28,18 @@ function privateHeaders(response) {
   }
   assert.ok(response.headers.has("content-security-policy"));
 }
+// The human version of /: a redirect to the Live Lab (web/src/worker.js humanVersion; web/test/livelab-route.test.mjs),
+// with the negotiated page's headers. Nothing is fetched for it, so it has no body and no Vary: Accept-Encoding.
+async function liveLabRedirect(response, calls) {
+  assert.deepEqual([response.status, response.headers.get("location"), calls, await response.text()], [302, "/sentilab/live/", [], ""]);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.equal(response.headers.get("link"), '</agents/>; rel="alternate"; type="text/markdown"');
+  const vary = response.headers.get("vary").toLowerCase().split(/,\s*/);
+  for (const name of ["accept", "user-agent", "cookie", "signature", "signature-input", "signature-agent"]) {
+    assert.equal(vary.filter((value) => value === name).length, 1, name);
+  }
+  assert.ok(response.headers.has("content-security-policy"));
+}
 
 test("classified agents use forge paths and types regardless of Accept", async () => {
   for (const [path, alternate] of Object.entries(pages)) {
@@ -65,8 +77,8 @@ test("unclassified requests retain forge Accept negotiation and direct index", a
     ["/", "text/markdown", "/agents/index.md", "text/markdown; charset=utf-8"],
     ["/sentilab/", "application/json", "/agents/index.json", "application/json; charset=utf-8"],
     ["/sentilab/package/", "text/markdown", "/agents/physics.md", "text/markdown; charset=utf-8"],
-    ["/", "text/html,text/markdown", "/", "application/octet-stream"],
-    ["/", "text/html;q=1,application/json;q=0.5", "/", "application/octet-stream"],
+    ["/sentilab/", "text/html,text/markdown", "/sentilab/", "application/octet-stream"],
+    ["/sentilab/", "text/html;q=1,application/json;q=0.5", "/sentilab/", "application/octet-stream"],
     ["/agents/", "text/html", "/agents/index.md", "text/markdown; charset=utf-8"],
     ["/agents", "*/*", "/agents/index.md", "text/markdown; charset=utf-8"],
     ["/unmapped", "text/markdown", "/unmapped", "application/octet-stream"],
@@ -76,12 +88,17 @@ test("unclassified requests retain forge Accept negotiation and direct index", a
     assert.deepEqual(s.calls, [target]);
     assert.equal(await res.text(), `bytes:${target}`);
     assert.equal(res.headers.get("content-type"), type);
-    if (target === "/") assert.equal(res.headers.get("link"), '</agents/>; rel="alternate"; type="text/markdown"');
+    if (target === "/sentilab/") assert.equal(res.headers.get("link"), '</agents/>; rel="alternate"; type="text/markdown"');
     if (pages[path]) privateHeaders(res);
     else {
       assert.equal(res.headers.get("vary"), "Accept-Encoding");
       assert.equal(res.headers.get("cache-control"), null);
     }
+  }
+  // At /, HTML winning the same ties gets the human version of /: the redirect to the Live Lab.
+  for (const accept of ["text/html,text/markdown", "text/html;q=1,application/json;q=0.5"]) {
+    const s = setup();
+    await liveLabRedirect(await worker.fetch(request("/", { "user-agent": "unrecognized-client", accept }), s.env), s.calls);
   }
 });
 
@@ -93,10 +110,14 @@ test("human query and cookie override classification and Accept negotiation", as
         const headers = { "user-agent": ua, accept: "application/json,text/markdown" };
         if (!query) headers.cookie = "sl_view=human";
         const res = await worker.fetch(request(path + (query ? "?view=human" : ""), headers), s.env);
-        assert.deepEqual(s.calls, [path]);
-        assert.equal(await res.text(), `bytes:${path}`);
         if (query) assert.ok(res.headers.getSetCookie().includes("sl_view=human; Max-Age=1800; Path=/; Secure; SameSite=Lax"));
-        privateHeaders(res);
+        // The human version of / is the redirect to the Live Lab; the other pages are their asset.
+        if (path === "/") await liveLabRedirect(res, s.calls);
+        else {
+          assert.deepEqual(s.calls, [path]);
+          assert.equal(await res.text(), `bytes:${path}`);
+          privateHeaders(res);
+        }
       }
     }
   }

@@ -92,9 +92,10 @@ test("documented automation and Safari trade-offs route the exact request shapes
     const s = setup();
     assert.equal(await classify(request(ua, "/", headers), s.env), expected, ua);
     const res = await worker.fetch(request(ua, "/", headers), s.env, s.ctx);
-    assert.deepEqual(s.fetched, [expected === "agent" ? "/agents/index.md" : "/"]);
+    // The human version of / is the redirect to the Live Lab: nothing is fetched for it.
+    assert.deepEqual(s.fetched, expected === "agent" ? ["/agents/index.md"] : []);
     if (expected === "agent") assert.equal(await res.text(), files["/agents/index.md"].body);
-    else assert.deepEqual(new Uint8Array(await res.arrayBuffer()), HUMAN);
+    else assert.deepEqual([res.status, res.headers.get("location"), await res.text()], [302, "/sentilab/live/", ""]);
     await s.drain();
     assert.equal(s.posts.length, expected === "agent" ? 1 : 0);
   }
@@ -104,17 +105,21 @@ test("browser preserves original bytes, status and headers except cache policy",
   const s = setup();
   const direct = await snapshot(await s.options.serve(browser(), s.env));
   s.fetched.length = 0;
-  const actual = await snapshot(await worker.fetch(browser(), s.env, s.ctx));
-  const expectedHeaders = new Headers(direct.headers);
-  expectedHeaders.set("cache-control", "private, no-store");
-  expectedHeaders.set("link", '</agents/>; rel="alternate"; type="text/markdown"');
-  const vary = new Headers(actual.headers).get("vary");
-  for (const name of ["Accept-Encoding", "User-Agent", "Accept", "Signature", "Signature-Input", "Signature-Agent", "Cookie",
+  // The human version of / is the redirect to the Live Lab, with no body and the negotiated page's cache policy, Vary
+  // and Link; nothing is fetched for it.
+  const root = await snapshot(await worker.fetch(browser(), s.env, s.ctx));
+  const rootHeaders = new Headers(root.headers);
+  assert.deepEqual([root.status, rootHeaders.get("location"), root.bytes, rootHeaders.get("cache-control"), rootHeaders.get("link")],
+    [302, "/sentilab/live/", [], "private, no-store", '</agents/>; rel="alternate"; type="text/markdown"']);
+  const vary = rootHeaders.get("vary");
+  for (const name of ["User-Agent", "Accept", "Signature", "Signature-Input", "Signature-Agent", "Cookie",
     "Accept-Language", "Sec-Fetch-Mode", "Sec-Fetch-Dest", "Sec-Fetch-Site", "Sec-CH-UA", "Sec-CH-UA-Mobile", "Sec-CH-UA-Platform", "Referer"]) {
     assert.ok(vary.toLowerCase().split(/,\s*/).includes(name.toLowerCase()));
   }
-  expectedHeaders.set("vary", vary);
-  assert.deepEqual(actual, { ...direct, headers: [...expectedHeaders] });
+  assert.deepEqual(s.fetched, []);
+  // The page / served before is at /lab: the asset at /, its original bytes, status and every header, cache policy
+  // included (it has no agent version, so nothing is negotiated), with the CSP.
+  assert.deepEqual(await snapshot(await worker.fetch(browser("/lab"), s.env, s.ctx)), direct);
   assert.deepEqual(s.fetched, ["/"]);
   assert.equal(await classify(browser(), {}), "human");
 });

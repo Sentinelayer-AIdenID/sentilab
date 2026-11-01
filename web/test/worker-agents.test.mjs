@@ -3,7 +3,8 @@
 // web/src/worker.js), against the real files in web/public. Root's rerouting checklist, item by item:
 //   1. agentPathFor maps "/" and "/sentilab/" to /agents/index.md and "/sentilab/package/" to /agents/physics.md, and
 //      every other path to null (served unchanged); serveAgentVersion serves that file, typed, varying on Accept.
-//   2. A browser's Accept gets the exact human page: the asset layer's bytes, untouched.
+//   2. A browser's Accept gets the exact human page: the asset layer's bytes, untouched. (The human version of "/" is
+//      a redirect to the Live Lab, web/src/worker.js humanVersion; web/test/livelab-route.test.mjs covers it.)
 //   3. Accept negotiation, with one rule: the agent version is served when the Accept header gives markdown or JSON a
 //      strictly higher q-value than HTML. Each type's q-value is that of its most specific matching range
 //      (type/subtype, then type/*, then */*); a missing or malformed q is 1 or 0 respectively. Markdown wins a tie with
@@ -39,7 +40,10 @@ const BROWSERS = [
 const MD = "text/markdown; charset=utf-8";
 const JSON_TYPE = "application/json; charset=utf-8";
 const NO_SHARED_CACHE = "private, no-store";
-const HUMAN = { "/": "index.html", "/sentilab/": "sentilab/index.html", "/sentilab/package/": "sentilab/package/index.html" };
+// The human version of each page with an agent version: its file, or null for "/", whose human version is a redirect
+// to the Live Lab (LIVE_LAB).
+const HUMAN = { "/": null, "/sentilab/": "sentilab/index.html", "/sentilab/package/": "sentilab/package/index.html" };
+const LIVE_LAB = "/sentilab/live/";
 const AGENT_MD = { "/": "/agents/index.md", "/sentilab/": "/agents/index.md", "/sentilab/package/": "/agents/physics.md" };
 const AGENT_JSON = { "/": "/agents/index.json", "/sentilab/": "/agents/index.json" };
 const ALTERNATE = { "/": "/agents/", "/sentilab/": "/agents/", "/sentilab/package/": "/agents/physics.md" };
@@ -115,11 +119,15 @@ async function browsersGetTheExactHumanPage(worker) {
     for (const [path, rel] of Object.entries(HUMAN)) {
       const direct = await assets().fetch(new Request(BASE + path));
       const { res, body } = await get(worker, path, { headers: accept ? { accept } : {} });
+      assert.equal(res.headers.get("link"), link(ALTERNATE[path]), `${path}: names its agent version`);
+      if (rel === null) {
+        assert.deepEqual([res.status, res.headers.get("location"), body.length], [302, LIVE_LAB, 0], `${path} with Accept ${JSON.stringify(accept)}: the redirect to the Live Lab`);
+        continue;
+      }
       assert.equal(res.status, 200);
       assert.ok(same(body, file(rel)), `${path} with Accept ${JSON.stringify(accept)}: the human page, byte for byte`);
       const others = [...res.headers.entries()].filter(([k]) => !["content-security-policy", "vary", "cache-control", "link"].includes(k)).sort();
       assert.deepEqual(others, [...direct.headers.entries()].filter(([k]) => k !== "cache-control").sort(), `${path}: the asset layer's own headers`);
-      assert.equal(res.headers.get("link"), link(ALTERNATE[path]), `${path}: names its agent version`);
     }
   }
 }
@@ -132,10 +140,14 @@ const NEGOTIATION = [
   ["application/*", "json", "human"], ["text/plain", "human", "human"], ["text/markdown;q=0.7, text/*;q=0.9", "human", "human"],
 ];
 async function acceptNegotiationIsDeterministic(worker) {
-  const expectFile = { md: AGENT_MD, json: AGENT_JSON, human: { "/": "/index.html", "/sentilab/package/": "/sentilab/package/index.html" } };
+  const expectFile = { md: AGENT_MD, json: AGENT_JSON, human: { "/sentilab/package/": "/sentilab/package/index.html" } };
   for (const [accept, root, pkg] of NEGOTIATION) {
     for (const [path, outcome] of [["/", root], ["/sentilab/package/", pkg]]) {
       const { res, body } = await get(worker, path, { headers: { accept } });
+      if (outcome === "human" && HUMAN[path] === null) {
+        assert.deepEqual([res.status, res.headers.get("location")], [302, LIVE_LAB], `${path} with Accept ${JSON.stringify(accept)}: human, the redirect to the Live Lab`);
+        continue;
+      }
       assert.ok(same(body, file(expectFile[outcome][path])), `${path} with Accept ${JSON.stringify(accept)}: ${outcome}`);
       assert.match(res.headers.get("content-type"), outcome === "human" ? /^text[/]html/ : outcome === "md" ? /^text[/]markdown; charset=utf-8$/ : /^application[/]json; charset=utf-8$/);
     }
@@ -239,7 +251,8 @@ test("the classification header of an earlier draft is not read: x-aidenid-class
   for (const env of [{}, { TRUST_EDGE_CLASS: "1" }]) {
     const bound = { ...envOf(), ...env };
     const res = await realWorker.fetch(new Request(`${BASE}/`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, "x-aidenid-class": "agent" } }), bound);
-    assert.ok(same(new Uint8Array(await res.arrayBuffer()), file("index.html")));
+    // The human version of /, the redirect to the Live Lab: never the agent version.
+    assert.deepEqual([res.status, res.headers.get("location")], [302, LIVE_LAB]);
   }
   assert.doesNotMatch(["agent-paths.js", "agent-view.js", "worker.js"].map((f) => readFileSync(join(SRC, f), "utf8")).join(""), /aidenid-class|TRUST_EDGE_CLASS/);
 });

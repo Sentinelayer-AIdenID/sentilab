@@ -36,6 +36,7 @@ test("1. every response to a request that can carry a token is no-referrer and p
     [`/?t=${token}&view=human`, agent(), "the human override by query"],
     [`/?t=${token}`, agent(undefined, { cookie: "sl_view=human" }), "the human override by cookie"],
     [`/?t=${token}`, { headers: BROWSER }, "a browser on a token-bearing URL"],
+    [`/lab?t=${token}`, { headers: BROWSER }, "the earlier demo on a token-bearing URL"],
     [`/sentilab/?t=${expired}`, agent(), "the wall again, for an expired token"],
     [`/styles.css?t=${token}`, { headers: BROWSER }, "any asset"],
     [`/agents/index.md?t=${token}`, agent(), "an agent page"],
@@ -50,8 +51,11 @@ test("1. every response to a request that can carry a token is no-referrer and p
     const policy = (r.headers.get("cache-control") ?? "").split(/,\s*/);
     for (const directive of ["private", "no-store", "no-transform"]) assert.ok(policy.includes(directive), `${why}: ${directive}`);
   }
-  // The pages are the same bytes as before; only the two headers change.
-  assert.ok(same((await s.go(`/?t=${token}&view=human`, agent())).bytes, file("index.html")));
+  // The pages are the same bytes as before; only the two headers change. The human version of / is the redirect to the
+  // Live Lab, which never carries the token on; the earlier page it replaced is at /lab.
+  const override = await s.go(`/?t=${token}&view=human`, agent());
+  assert.deepEqual([override.status, override.headers.get("location"), override.bytes.length], [302, "/sentilab/live/", 0]);
+  assert.ok(same((await s.go(`/lab?t=${token}&view=human`, agent())).bytes, file("index.html")));
   assert.ok(same((await s.go(`/?t=${token}`, agent())).bytes, file("agents/index.md")));
   // A URL without a token keeps its headers exactly as E and #66 set them.
   const plain = await s.go("/", { headers: BROWSER });
