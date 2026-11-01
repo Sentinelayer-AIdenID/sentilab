@@ -8,7 +8,6 @@
 //                  module adds one thing to an event: the server's own time `at`, read only when it is a strict UTC
 //                  timestamp (else null), so the page can say when a record was observed.
 //   the board      GET /api/open/v1/door/board: the door (open or closed), the scorer, the queue and the compute budget.
-//   lab runs       GET /api/view/runs (../runs-list.mjs): how many lab runs are listed, by status.
 // Nothing here invents a value: no clock-driven movement, no random numbers, no sample records. A field the feeds do not
 // carry (presence, identity, a page route) is reported as unknown, never guessed.
 import { normalizeEvents, fetchDoorResults, LIVE_FRESH_MS, BOARD_METRIC, readScorer, statusLine, hostEnv, DOOR_EVENTS_PATH }
@@ -18,12 +17,11 @@ import { formatTemp } from "../package/temps.mjs";
 import { dieRects } from "../package/model.mjs";
 import { INTERPOSER_MM } from "../package/case-cpu-dram.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
-import { strictJson, fetchRunsList } from "../runs-list.mjs";
+import { strictJson } from "../runs-list.mjs";
 
 export const BOARD_PATH = "/api/open/v1/door/board";
 export const BOARD_SCHEMA = "sentilab-door-board/1";
 export const BOARD_POLL_MS = 15000;
-export const RUNS_POLL_MS = 30000;
 const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const count = (n) => Number.isSafeInteger(n) && n >= 0;
 const num = (x) => typeof x === "number" && Number.isFinite(x);
@@ -88,19 +86,6 @@ export async function fetchBoard({ fetchImpl, signal } = {}) {
   if (!got.ok) return got;
   const board = normalizeBoard(got.doc);
   return board ? { ok: true, board } : { ok: false, error: "answer is not a door board" };
-}
-
-// Lab runs: only the count and the statuses this page knows; nothing else from an entry is shown.
-const RUN_STATUSES = Object.freeze(["running", "finished", "stopped"]);
-export function summarizeLabRuns(list) {
-  const byStatus = Object.fromEntries(RUN_STATUSES.map((s) => [s, 0]));
-  let other = 0;
-  for (const r of list) if (RUN_STATUSES.includes(r.status)) byStatus[r.status] += 1; else other += 1;
-  return { total: list.length, byStatus, other };
-}
-export async function fetchLabRuns({ fetchImpl = (...a) => fetch(...a) } = {}) {
-  try { return { ok: true, runs: summarizeLabRuns(await fetchRunsList(fetchImpl)) }; }
-  catch (e) { return { ok: false, error: String(e?.message ?? e).slice(0, 120) }; }
 }
 
 // ── the connection state: the badge never says LIVE unless the door feed's last good answer is fresh ─────────────
@@ -321,13 +306,6 @@ export function recordTitle(p) {
   const [cls, short] = String(p.label).split(" · ");
   if (!short) return `${p.label} ${p.line}`;
   return p.kind === "run" ? `Run ${short} ${p.line}` : `Visitor ${short} (${visitorType(cls)}) ${p.line}`;
-}
-// The lab-runs line, or null when there is nothing to count (no line at all rather than "0 listed").
-export function labRunsLine(lr) {
-  if (!lr) return "Lab runs: checking";
-  if (!lr.ok) return "Lab runs: list unavailable";
-  if (lr.runs.total === 0) return null;
-  return `Lab runs: ${lr.runs.total} listed · ${lr.runs.byStatus.finished} finished`;
 }
 
 // "15:21:02Z" from a server timestamp; "time not recorded" for none.

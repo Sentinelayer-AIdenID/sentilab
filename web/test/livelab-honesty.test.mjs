@@ -94,7 +94,8 @@ test("CSP-safe markup and front-door-safe paths", () => {
     if (url.startsWith("/sentilab/live/") && !url.endsWith("/")) assert.ok(existsSync(join(PUBLIC, url)), `exists: ${url}`);
   }
   for (const p of files.filter((f) => f.endsWith(".mjs"))) {
-    for (const m of text(p).matchAll(/["'`](\/api\/[^"'`?$]*)/g)) assert.match(m[1], /^\/api\/(open\/v1\/door\/(results|events|board)|view\/runs)$/, `read-only feed paths only: ${m[1]}`);
+    for (const m of text(p).matchAll(/["'`](\/api\/[^"'`?$]*)/g)) assert.match(m[1], /^\/api\/open\/v1\/door\/(results|events|board)$/, `the door's three read-only feeds only: ${m[1]}`);
     assert.equal(/method:\s*["'](POST|PUT|PATCH|DELETE)/i.test(text(p)), false, `${relative(PUBLIC, p)} writes nothing`);
+    assert.equal(/view\/runs|fetchRunsList|refreshRuns/.test(text(p)), false, `${relative(PUBLIC, p)} never reads the lab-runs list (slow in production)`);
   }
 });

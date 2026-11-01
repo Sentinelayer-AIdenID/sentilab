@@ -63,7 +63,7 @@ const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
 // ── state ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
   selectedId: null, cursor: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
-  board: { ok: null, board: null, error: "", at: null }, labRuns: null, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
+  board: { ok: null, board: null, error: "", at: null }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
 const feed = createDoorFeed({ onChange: () => render(), fetchEvents: M.fetchEventsTimed });
 
@@ -210,10 +210,6 @@ function renderRuns() {
     box.append(h("p", { class: "rail-empty" }, st === "error" ? "No runs: the door feed is not answering." : st === "connecting" ? "Reading the door's runs." : "No runs yet. The first proposal appears here as it arrives."));
   }
   if (focusId) $$(`[data-run]`).find((b) => b.dataset.run === focusId && b.offsetParent !== null)?.focus();
-  const lr = S.labRuns;
-  const line = M.labRunsLine(lr);
-  $("labRuns").hidden = line === null;
-  $("labRunsText").textContent = line ?? "";
 }
 
 function renderModel() {
@@ -599,8 +595,7 @@ function showModal(kind) {
       h("ul", { class: "modal-list" },
         h("li", null, h("span", { class: "step-no" }, "01"), h("div", null, h("strong", null, "The door's runs and results"), h("p", null, "GET /api/open/v1/door/results: each run's eight dies and, once scored, the scorer's board metric and the checks it reports. Simulated by HotSpot 6.0 on the model stack; not silicon."))),
         h("li", null, h("span", { class: "step-no" }, "02"), h("div", null, h("strong", null, "The door's records"), h("p", null, "GET /api/open/v1/door/events: arrivals, refused attempts and run state changes, with server times."))),
-        h("li", null, h("span", { class: "step-no" }, "03"), h("div", null, h("strong", null, "The board"), h("p", null, "GET /api/open/v1/door/board: whether the door is open, the queue and the compute budget."))),
-        h("li", null, h("span", { class: "step-no" }, "04"), h("div", null, h("strong", null, "Lab runs"), h("p", null, "GET /api/view/runs: the lab runs listed; the Lab view shows them.")))),
+        h("li", null, h("span", { class: "step-no" }, "03"), h("div", null, h("strong", null, "The board"), h("p", null, "GET /api/open/v1/door/board: whether the door is open, the queue and the compute budget.")))),
       note("Geometry and layer thicknesses come from the model stack the solver simulates (the Package view's model). Layer heights are drawn thicker than true where marked; explode spacing is display only."),
       note(NOTICE, true));
   } else {
@@ -678,19 +673,12 @@ async function pollBoard() {
   }
   boardTimer = setTimeout(pollBoard, M.BOARD_POLL_MS);
 }
-let runsTimer = 0;
-async function pollLabRuns() {
-  clearTimeout(runsTimer);
-  if (!document.hidden) { S.labRuns = await M.fetchLabRuns(); renderRuns(); }
-  runsTimer = setTimeout(pollLabRuns, M.RUNS_POLL_MS);
-}
 
 wire();
 render();
 try { if (!sessionStorage.getItem("sentilab-intro-seen")) showIntro(); } catch { /* storage off: no entrance */ }
 feed.start();
 pollBoard();
-pollLabRuns();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
 setInterval(() => { renderStatus(); }, 1000);
-window.addEventListener("pagehide", () => { feed.stop(); clearTimeout(boardTimer); clearTimeout(runsTimer); stopPlay(); });
+window.addEventListener("pagehide", () => { feed.stop(); clearTimeout(boardTimer); stopPlay(); });

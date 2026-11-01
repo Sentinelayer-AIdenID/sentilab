@@ -193,9 +193,8 @@ test("the board: door, scorer, queue and budget from their own fields; anything 
   assert.deepEqual(partial, { door: null, scorer: { state: "unknown", since: null }, queue: null, budget: null });
   assert.deepEqual(await M.fetchBoard({ fetchImpl: recordedFetch({ status: () => 503 }) }), { ok: false, error: "answered 503" });
   assert.equal((await M.fetchBoard({ fetchImpl: recordedFetch() })).ok, true);
-  const runs = await M.fetchLabRuns({ fetchImpl: recordedFetch() });
-  assert.deepEqual(runs, { ok: true, runs: { total: 8, byStatus: { running: 0, finished: 7, stopped: 1 }, other: 0 } });
-  assert.equal((await M.fetchLabRuns({ fetchImpl: recordedFetch({ status: () => 502 }) })).ok, false);
+  // The lab-runs list is not read at all (/api/view/runs is slow in production; web/test/livelab-load.test.mjs).
+  assert.equal("fetchLabRuns" in M || "labRunsLine" in M || "RUNS_POLL_MS" in M, false);
 });
 
 test("follow the work: full run ids and classes only; a finished run never moves its submission", async () => {
@@ -333,9 +332,4 @@ test("copy: a run is titled by its short id, and its class is a separate visitor
   assert.match(M.recordTitle(run), /^Run [0-9a-f]{4} /);
   assert.equal(M.recordTitle(anon), `${anon.label} ${anon.line}`);
   assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "Visitor 7c2e (visitor type: unknown) arrived at the door");
-  // The lab-runs line is only worth a line when there is something to count.
-  assert.equal(M.labRunsLine({ ok: true, runs: { total: 0, byStatus: { finished: 0 } } }), null);
-  assert.equal(M.labRunsLine({ ok: true, runs: { total: 8, byStatus: { finished: 7 } } }), "Lab runs: 8 listed · 7 finished");
-  assert.equal(M.labRunsLine({ ok: false, error: "x" }), "Lab runs: list unavailable");
-  assert.equal(M.labRunsLine(null), "Lab runs: checking");
 });
