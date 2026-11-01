@@ -9,7 +9,8 @@
 //   - Board metric and reference statistics: AGENT-DOOR Amendment 2 (root #57454).
 //   - Published points: the TAP-2.5D paper (pdf sha256 b209f51a…), Sec. IV-B, p. 5: the original placement at 115.94 C
 //     and 67,686 mm; the TAP-2.5D solution (c) at 94.89 C and 216,064 mm.
-//   - Scorer: HotSpot 6.0, grid 64, block-centre map, binary 751b357f…, source merge 1575556d, gate zero PASS 23:45Z.
+//   - Scorer: HotSpot 6.0, grid 64, block-centre map, binary 751b357f…, source merge 1575556d. Gate zero's status and
+//     numbers are read from root's record, web/public/agents/evidence.json, never restated here.
 // A module of its own because worker.js may export nothing but its default handler.
 
 export const CASE_ID = "cpu-dram";
@@ -50,7 +51,6 @@ export const SCORER = Object.freeze({
   readout: "block-centre map",
   binary_sha256: "751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6",
   source_merge: "1575556d",
-  gate: "gate zero PASS 2026-10-31T23:45Z",
 });
 
 // The one board statistic (Amendment 2): score, replay, board and captions all use it.

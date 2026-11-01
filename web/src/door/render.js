@@ -27,6 +27,7 @@ function page(title, body) {
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <title>${esc(title)}</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/door.css">
 </head>
 <body>
@@ -58,7 +59,7 @@ ${radios}
 <button type="submit">Continue</button>
 </form>
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>
-<p class="fine">Only the purpose you pick is recorded, never your words. If you can only follow links, follow the one that fits.</p>
+<p class="fine">Only the purpose you pick is recorded. If you can only follow links, follow the one that fits.</p>
 <p class="fine">A person? <a href="${esc(origin)}/?view=human">Open the normal site</a>.</p>`);
 }
 
@@ -72,7 +73,7 @@ ${PURPOSES.map((p) => `- [I am here to ${p.label}](${intentUrl(origin, p.id)})`)
 
 Submissions: ${SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown}
 
-Only the purpose you pick is recorded, never your words. Simulated, not silicon.
+Only the purpose you pick is recorded. Simulated, not silicon.
 
 A person? [Open the normal site](${origin}/?view=human).
 `;
@@ -137,7 +138,7 @@ const COLOURS = Object.freeze({ CPU: "#e6a36a", DRAM: "#8aa9dd" });
 export function layoutSvg(dies, flagged = new Set()) {
   const flip = (y) => FRAME_UM - y;
   const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${FRAME_UM} ${FRAME_UM}" width="100%" role="img" aria-label="Layout: 4 CPUs and 4 DRAMs on the 45 mm interposer">`,
-    `<rect x="0" y="0" width="${FRAME_UM}" height="${FRAME_UM}" fill="#152128" stroke="#2a3a42" stroke-width="200"/>`,
+    `<rect x="100" y="100" width="${FRAME_UM - 200}" height="${FRAME_UM - 200}" fill="#152128" stroke="#2a3a42" stroke-width="200"/>`,
     `<rect x="${EDGE_CLEARANCE_UM}" y="${EDGE_CLEARANCE_UM}" width="${FRAME_UM - 2 * EDGE_CLEARANCE_UM}" height="${FRAME_UM - 2 * EDGE_CLEARANCE_UM}" fill="none" stroke="#3b4f58" stroke-width="80" stroke-dasharray="500 400"/>`];
   rectangles(dies).forEach(({ body, halo }, index) => {
     const spec = DIES[index];
