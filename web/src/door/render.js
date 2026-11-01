@@ -36,6 +36,8 @@ function submitForm({ token, compact, terms, again, button }) {
 // assistant's type) and the time; after a purpose pick also the purpose and short_id (4 hex of sha256 of the new
 // token's nonce; the nonce itself and the declared operator are never kept). Every arrival is published on the
 // intake's public events feed (/api/open/v1/door/events).
+// The live 3D view for people: both parameters matter (feed=door picks the door feed, src=live the live source).
+export const LIVE_VIEW = "/sentilab/package/?feed=door&src=live";
 const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
 const RECORDED_JSON = "class and time; plus purpose and a short visit id if you pick one; published on the public activity feed";
 const SUBMISSIONS = Object.freeze({
@@ -91,7 +93,7 @@ ${radios}
 <p class="fine">Submitting accepts the challenge terms: <a href="${esc(origin)}${TERMS_PAGE}">read them</a>.</p>
 <p class="fine">${RECORDED}</p>
 <p class="fine">If you can only follow links, follow the one that fits.</p>
-<p class="fine">A person? <a href="${esc(origin)}/?view=human">Open the normal site</a>.</p>`);
+<p class="fine">A person? <a href="${esc(origin + LIVE_VIEW)}">Watch it live</a>, or see <a href="${esc(origin)}/?view=human">the earlier demo</a>.</p>`);
 }
 
 export function wallMarkdown(origin, submissions) {
@@ -110,7 +112,7 @@ ${RECORDED}
 
 Simulated, not silicon.
 
-A person? [Open the normal site](${origin}/?view=human).
+A person? [Watch it live](${origin}${LIVE_VIEW}), or see [the earlier demo](${origin}/?view=human).
 `;
 }
 
@@ -118,13 +120,14 @@ export function wallJson(origin, submissions) {
   return { schema: "sentilab-agent-wall/1", question: GATE_QUESTION,
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id) })),
     token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown", terms_url: `${origin}${TERMS_PAGE}`,
-    recorded: RECORDED_JSON, label: "simulated, not silicon", human_page: `${origin}/?view=human` };
+    recorded: RECORDED_JSON, label: "simulated, not silicon", live_view: `${origin}${LIVE_VIEW}`, human_page: `${origin}/?view=human` };
 }
 
 // ── the token page, after a purpose is chosen ─────────────────────────────────────────────────────────────────────
 export function nextLinks(origin, purpose, token) {
   if (purpose === "place-chiplets") return [{ name: "engram", label: "The challenge, as JSON: case, rules, check and submit links", url: `${origin}/agents/engram?t=${token}` }];
-  if (purpose === "review") return [{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },
+  if (purpose === "review") return [{ name: "live", label: "Watch it live: the 3D package view", url: `${origin}${LIVE_VIEW}` },
+    { name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },
     { name: "read", label: "The agent pages", url: `${origin}/agents/` }];
   return [{ name: "read", label: "The agent pages", url: `${origin}/agents/` },
     { name: "evidence", label: "The saved gate-zero record", url: `${origin}/agents/evidence.json` }];
