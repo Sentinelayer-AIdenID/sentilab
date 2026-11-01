@@ -6,6 +6,9 @@
 //   2. runs it: wrangler dev on 127.0.0.1, with the /api upstream switched off (API_ORIGIN=none), and checks
 //      - /sentilab/, /sentilab/package/, /sentilab/lab.js and / answer 200 with the exact Content-Security-Policy and
 //        the bytes in web/public;
+//      - the agent pages serve with the asset layer's own types (/llms.txt, /agents.json, /agents/*.md and *.json), and
+//        /agents/ plus the agent versions of / and /sentilab/package/ (Accept: markdown or JSON) serve their files with
+//        the Worker's types; a browser's Accept gets the human page, with Vary, private caching and the Link header;
 //      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
 //      - a write to /api is refused (405 read_only) with no CSP added;
 //      - the runtime logged no error.
@@ -65,6 +68,30 @@ if (ready) {
     check(`GET ${path}: 200, the exact CSP, the bytes in web/public/${rel}`, r.status === 200 && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
       `${r.status} · csp ${r.headers.get("content-security-policy") === CSP ? "exact" : JSON.stringify(r.headers.get("content-security-policy"))}`);
   }
+  // The agent pages: the files as the asset layer types them, and the agent versions the Worker negotiates.
+  for (const [path, rel, type] of [["/llms.txt", "llms.txt", /^text[/]plain/], ["/agents.json", "agents.json", /^application[/]json/],
+    ["/agents/index.md", "agents/index.md", /^text[/]markdown/], ["/agents/challenge.json", "agents/challenge.json", /^application[/]json/]]) {
+    const r = await fetch(BASE + path);
+    const body = new Uint8Array(await r.arrayBuffer());
+    check(`GET ${path}: 200, ${type.source}, the bytes in web/public/${rel}`, r.status === 200 && type.test(r.headers.get("content-type") || "") && same(body, file(rel)),
+      `${r.status} · ${r.headers.get("content-type")}`);
+  }
+  for (const [path, accept, rel, type] of [["/agents/", undefined, "agents/index.md", "text/markdown; charset=utf-8"],
+    ["/", "text/markdown", "agents/index.md", "text/markdown; charset=utf-8"], ["/", "application/json", "agents/index.json", "application/json; charset=utf-8"],
+    ["/sentilab/package/", "text/markdown", "agents/physics.md", "text/markdown; charset=utf-8"]]) {
+    const r = await fetch(BASE + path, accept ? { headers: { accept } } : {});
+    const body = new Uint8Array(await r.arrayBuffer());
+    check(`GET ${path}${accept ? ` (Accept: ${accept})` : ""}: the agent version web/public/${rel}, ${type}, the exact CSP`,
+      r.status === 200 && r.headers.get("content-type") === type && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
+      `${r.status} · ${r.headers.get("content-type")}`);
+  }
+  // A browser's Accept: the human page, byte for byte, varying on Accept, kept out of shared caches, naming its agent version.
+  const human = await fetch(`${BASE}/`, { headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
+  const humanBody = new Uint8Array(await human.arrayBuffer());
+  check("GET / with a browser's Accept: the human page, with Vary: Accept, private caching and the Link header",
+    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept"
+      && human.headers.get("cache-control") === "private, no-store" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
+    `${human.status} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
   const api = await fetch(`${BASE}/api/view/runs`);
   const apiText = await api.text();
   check("GET /api/view/runs reaches the proxy (upstream off: 503) with no CSP added", api.status === 503 && apiText === "API origin not configured" && api.headers.get("content-security-policy") === null, `${api.status} ${apiText}`);
