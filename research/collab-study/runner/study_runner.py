@@ -2,6 +2,7 @@
 """Fixed, text-only collaboration study runner (protocol v2)."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -490,13 +491,15 @@ class JobOutputs:
                 raise InputError("duplicate job directory")
             self.directory.mkdir()
         self._stream = (self.directory / "transcript.jsonl").open("x", encoding="utf-8")
+        self._record_lock = threading.Lock()
         self.closed = False
 
     def record(self, value: dict) -> None:
         if self.closed:
             raise InputError("job output is already closed")
-        self._stream.write(canonical(value).decode("utf-8") + "\n")
-        self._stream.flush()
+        with self._record_lock:
+            self._stream.write(canonical(value).decode("utf-8") + "\n")
+            self._stream.flush()
 
     def abort(self) -> None:
         """Close a partial transcript without pretending the job completed."""
@@ -531,6 +534,79 @@ class JobOutputs:
         self.abort()
         write_json_exclusive(self.directory / "findings.json", findings)
         write_json_exclusive(self.directory / "job.json", job)
+
+
+def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: str,
+            packet_message: str, continue_prompt: str, initial_prompt_bounds: dict[int, int],
+            c_turn_prompts: dict[int, str] | None = None, scope: str = "study") -> None:
+    """Run fixed arm rules; the caller supplies sealed prompts and initial bounds.
+
+    B agents run concurrently with independent histories and one arm deadline.
+    C turn instructions must be supplied explicitly, never invented here.
+    """
+    arm = job.get("arm")
+    if arm not in {"A", "B", "C"} or scope not in {"pilot", "study"}:
+        raise InputError("invalid arm or accounting scope")
+    numbers = [1] if arm == "A" else [1, 2, 3]
+    if any(number not in initial_prompt_bounds for number in numbers):
+        raise InputError("each agent needs an explicit initial prompt bound")
+    if arm == "C" and (not isinstance(c_turn_prompts, dict) or
+                       any(not isinstance(c_turn_prompts.get(n), str) for n in numbers)):
+        raise InputError("C requires sealed turn prompts for all three agents")
+    agents = [AgentState(n, 120000 if arm == "A" else 40000, initial_prompt_bounds[n]) for n in numbers]
+    writer = JobOutputs(output, job, clock=engine.clock)
+    deadline = writer.start_time + 900
+    base = [{"role": "system", "content": system_prompt}, {"role": "user", "content": packet_message}]
+
+    def empty_set():
+        return {"findings": [], "malformed": [], "discarded": 0}
+
+    def isolated(agent):
+        messages = [dict(message) for message in base]
+        while not agent.stop_reason:
+            reply = engine.request(job["job_id"], agent, messages, deadline=deadline,
+                                   scope=scope, record=writer.record)
+            if reply is None:
+                break
+            final = parse_final(reply.content)
+            if final is not None:
+                agent.stop_reason = "final"
+                return final
+            messages.extend([{"role": "assistant", "content": reply.content},
+                             {"role": "user", "content": continue_prompt}])
+        return empty_set()
+
+    try:
+        if arm == "A":
+            findings = isolated(agents[0])
+        elif arm == "B":
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                results = list(pool.map(isolated, agents))
+            findings = {str(agent.number): result for agent, result in zip(agents, results)}
+        else:
+            findings, transcript, finalized = empty_set(), [], False
+            while not finalized and any(not agent.stop_reason for agent in agents):
+                for agent in agents:
+                    if agent.stop_reason:
+                        continue
+                    messages = base + transcript + [{"role": "user", "content": c_turn_prompts[agent.number]}]
+                    reply = engine.request(job["job_id"], agent, messages, deadline=deadline,
+                                           scope=scope, record=writer.record)
+                    if reply is None:
+                        continue
+                    transcript.append({"role": "assistant", "content": f"Agent {agent.number}:\n{reply.content}"})
+                    final = parse_final(reply.content)
+                    if agent.number == 1 and final is not None:
+                        findings, finalized = final, True
+                        agent.stop_reason = "final"
+                        for other in agents:
+                            if not other.stop_reason:
+                                other.stop_reason = "writer_final"
+                        break
+        writer.finish(agents, findings, engine.ledger)
+    finally:
+        if not writer.closed:
+            writer.abort()
 
 
 def finish_run(output: Path, ledger: Ledger) -> dict:
