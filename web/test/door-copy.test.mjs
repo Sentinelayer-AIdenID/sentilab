@@ -150,6 +150,13 @@ test("the agent view's scoring states the known limit, read from evidence.json",
   }
 });
 
+test("the known limit is the same sentence the Package view's Honest limits shows", () => {
+  const stated = JSON.parse(file("agents/evidence.json")).known_limit;
+  const html = file("sentilab/package/index.html").toString("utf8");
+  const limits = html.slice(html.indexOf('<dialog id="limits"'), html.indexOf("</dialog>", html.indexOf('<dialog id="limits"')));
+  assert.ok(limits.includes(`<li>${stated}</li>`), "one sentence on both surfaces");
+});
+
 test("no door page calls a run independently verified", () => {
   for (const state of ["reproduced", "cross_checked", "failed", "evaluated"]) {
     const page = resultHtml(BASE, "t", { refusal: null, state, runId: null, codes: [] });
