@@ -77,6 +77,11 @@ def test_b_agents_are_concurrent_and_never_see_another_agents_text(tmp_path):
     assert [agent['cap'] for agent in job['agents'].values()] == [40000] * 3
     assert [agent['charged_tokens'] for agent in job['agents'].values()] == [240] * 3
     assert accounting['scopes']['study']['attempts'] == 6
+    emitted = [json.loads(line) for line in (tmp_path / 'output/job-one/emitted_sets.jsonl').read_text().splitlines()]
+    assert len(emitted) == 3
+    assert {row['agent'] for row in emitted} == {1, 2, 3}
+    assert all(row['set_index'] == 0 and row['kind'] == 'FINAL' for row in emitted)
+    assert job['history_complete'] is True
 
 
 def test_c_round_robin_shares_every_labelled_reply_and_only_writer_final_ends(tmp_path):

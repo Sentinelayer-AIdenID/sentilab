@@ -81,6 +81,26 @@ def parse_final(text: str) -> dict | None:
     return result
 
 
+def parse_emitted_sets(text: str) -> list[dict]:
+    """Find exact marker lines; preserve every set and malformed body line."""
+    sets, kind, lines = [], None, []
+
+    def append_set():
+        body = "\n".join(lines) + ("\n" if lines else "")
+        sets.append({"kind": kind, **parse_final("FINAL\n" + body)})
+
+    for line in text.splitlines():
+        if line in {"FINDINGS", "FINAL"}:
+            if kind is not None:
+                append_set()
+            kind, lines = line, []
+        elif kind is not None:
+            lines.append(line)
+    if kind is not None:
+        append_set()
+    return sets
+
+
 def claim_output(directory: Path) -> None:
     """Claim even an existing empty directory exclusively; never reuse a run."""
     if directory.is_symlink():
@@ -132,7 +152,7 @@ def snapshot_inputs(protocol_path: Path, prompt_paths: dict[str, Path], order_pa
         packets[directory.name], packet_hashes[directory.name] = message, hashes
         tree.update({f"{directory.name}/{name}": digest for name, digest in hashes.items()})
     freeze = {
-        "schema": "collab-study-freeze-v2",
+        "schema": "collab-study-freeze-v3",
         "runner_sha256": sha256(Path(__file__).read_bytes()),
         "protocol": protocol,
         "protocol_sha256": sha256(protocol_bytes),
@@ -462,6 +482,7 @@ class RequestEngine:
                 pass
             record({**attempt, "event": "failure" if failure else "response",
                     "reply": reply.content if reply is not None else None,
+                    "deadline_exceeded": self.clock() >= deadline,
                     "response_id": reply.response_id if reply is not None else None})
             if failure:
                 if failure.safe_to_retry and not agent.retried and agent.successful_responses == 0:
@@ -515,19 +536,51 @@ class JobOutputs:
                 raise InputError("duplicate job directory")
             self.directory.mkdir()
         self._stream = (self.directory / "transcript.jsonl").open("x", encoding="utf-8")
+        self._emitted = (self.directory / "emitted_sets.jsonl").open("x", encoding="utf-8")
         self._record_lock = threading.Lock()
+        self._first_request_time = None
+        self._set_indices = {}
+        self._finals = {}
+        self._parsed_attempts = set()
+        self._history_complete = True
         self.closed = False
 
     def record(self, value: dict) -> None:
         if self.closed:
             raise InputError("job output is already closed")
         with self._record_lock:
+            if value.get("event") == "request" and self._first_request_time is None:
+                self._first_request_time = self.clock()
+            if value.get("event") == "failure" or value.get("deadline_exceeded"):
+                self._history_complete = False
+            if isinstance(value.get("reply"), str):
+                if self._first_request_time is None:
+                    raise InputError("reply cannot precede the first request")
+                sets = parse_emitted_sets(value["reply"])
+                elapsed = self.clock() - self._first_request_time
+                self._parsed_attempts.add(value["attempt"])
+                agent = value["agent"]
+                for emitted in sets:
+                    index = self._set_indices.get(agent, 0)
+                    row = {"job_id": self.job["job_id"], "arm": self.job["arm"], "agent": agent,
+                           "set_index": index, "elapsed_s": elapsed, **emitted,
+                           "malformed": [{**line, "malformed": True} for line in emitted["malformed"]]}
+                    self._emitted.write(canonical(row).decode("utf-8") + "\n")
+                    self._set_indices[agent] = index + 1
+                    if emitted["kind"] == "FINAL":
+                        self._finals[agent] = {key: emitted[key] for key in ("findings", "malformed", "discarded")}
+                self._emitted.flush()
             self._stream.write(canonical(value).decode("utf-8") + "\n")
             self._stream.flush()
+
+    def final_set(self, agent: int) -> dict | None:
+        with self._record_lock:
+            return self._finals.get(agent)
 
     def abort(self) -> None:
         """Close a partial transcript without pretending the job completed."""
         self._stream.close()
+        self._emitted.close()
         self.closed = True
 
     def finish(self, agents: list[AgentState], findings, ledger: Ledger) -> None:
@@ -547,8 +600,10 @@ class JobOutputs:
                 "stop_reason": agent.stop_reason,
                 "usage": [row["usage"] for row in rows],
             }
-        job = {**self.job, "start_utc": self.start_utc, "end_utc": utc_now(),
+        job = {**self.job, "schema": "collab-study-job-v3", "start_utc": self.start_utc, "end_utc": utc_now(),
                "wall_seconds": max(0, self.clock() - self.start_time), "agents": per_agent,
+               "history_complete": self._history_complete and
+                   all(row["state"] == "response" and row["attempt"] in self._parsed_attempts for row in attempts),
                "provider_request_ids": [row["request_id"] for row in attempts if row["request_id"] is not None],
                "failures": [row for row in attempts if row["state"] == "failed"],
                "unknown_usage": any(row["unknown_usage"] for row in attempts),
@@ -559,6 +614,8 @@ class JobOutputs:
                "overspend_limit_exceeded": any(row["overspend_limit_exceeded"] for row in attempts)}
         self._stream.flush()
         os.fsync(self._stream.fileno())
+        self._emitted.flush()
+        os.fsync(self._emitted.fileno())
         self.abort()
         write_json_exclusive(self.directory / "findings.json", findings)
         write_json_exclusive(self.directory / "job.json", job)
@@ -597,7 +654,7 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                                    scope=scope, record=writer.record)
             if reply is None:
                 break
-            final = parse_final(reply.content)
+            final = writer.final_set(agent.number)
             if final is not None:
                 agent.stop_reason = "final"
                 return final
@@ -624,7 +681,9 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                     if reply is None:
                         continue
                     transcript.append({"role": "assistant", "content": f"Agent {agent.number}:\n{reply.content}"})
-                    final = parse_final(reply.content)
+                    final = writer.final_set(agent.number)
+                    if final is not None and not agent.stop_reason:
+                        agent.stop_reason = "final"
                     if agent.number == 1 and final is not None:
                         findings, finalized = final, True
                         agent.stop_reason = "final"
@@ -648,7 +707,7 @@ def finish_run(output: Path, ledger: Ledger) -> dict:
     for directory in output.iterdir():
         if directory.is_symlink():
             raise InputError("output must not contain symlinks")
-        if directory.is_dir() and {path.name for path in directory.iterdir()} != {"job.json", "findings.json", "transcript.jsonl"}:
+        if directory.is_dir() and {path.name for path in directory.iterdir()} != {"job.json", "findings.json", "transcript.jsonl", "emitted_sets.jsonl"}:
             raise InputError("cannot seal unfinished job")
     write_json_exclusive(output / "ACCOUNTING.json", accounting)
     hashes = {}
@@ -657,7 +716,7 @@ def finish_run(output: Path, ledger: Ledger) -> dict:
             raise InputError("output must not contain symlinks")
         if path.is_file() and path.name != ".running":
             hashes[path.relative_to(output).as_posix()] = sha256(path.read_bytes())
-    manifest = {"schema": "collab-study-run-manifest-v2", "files": hashes}
+    manifest = {"schema": "collab-study-run-manifest-v3", "files": hashes}
     write_json_exclusive(output / "RUN-MANIFEST.json", manifest)
     (output / ".running").unlink()
     return manifest
@@ -804,6 +863,7 @@ def main(argv=None) -> int:
         if not args.dry_run and not endpoint:
             raise InputError("STUDY_ENDPOINT must be set for a live freeze")
         descriptor = {**inputs.freeze,
+                      "output_schema": "collab-study-output-v3",
                       "request_settings": {"model": "deepseek-v4-pro", "deployment": inputs.protocol["deployment"],
                                            "temperature": 0.3, "top_p": 1, "max_tokens_per_reply": inputs.protocol["max_tokens_per_reply"],
                                            "stream": False, "allow_redirects": False, "timeout": "remaining arm wall time"},
@@ -826,6 +886,9 @@ def main(argv=None) -> int:
             raise InputError("a matching --freeze file is required to run")
         if args.output is None:
             raise InputError("--output is required to run")
+        packet_roots = [args.packets] + ([args.pilot_packet] if args.pilot_packet else [])
+        if any(args.output.resolve().is_relative_to(root.resolve()) for root in packet_roots):
+            raise InputError("output must be outside all packet directories")
         model = DryRunModel() if args.dry_run else HTTPModel.from_env()
         claim_output(args.output)
         write_json_exclusive(args.output / "FREEZE.json", descriptor)

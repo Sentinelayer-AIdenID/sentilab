@@ -536,7 +536,8 @@ def test_outputs_persist_transcript_usage_failures_and_hashes(tmp_path):
     assert transcript[0]['messages_sha256'] == runner.sha256(runner.canonical([]))
     assert transcript[1]['reply'] == 'verbatim\r\nanswer'
     manifest = json.loads((output / 'RUN-MANIFEST.json').read_text())
-    assert set(manifest['files']) == {'job-one/job.json', 'job-one/findings.json', 'job-one/transcript.jsonl', 'ACCOUNTING.json'}
+    assert set(manifest['files']) == {'job-one/job.json', 'job-one/findings.json', 'job-one/transcript.jsonl',
+                                      'job-one/emitted_sets.jsonl', 'ACCOUNTING.json'}
     for path, digest in manifest['files'].items():
         assert runner.sha256((output / path).read_bytes()) == digest
     before = (output / 'RUN-MANIFEST.json').read_bytes()
