@@ -25,8 +25,10 @@
     const w = Math.round(f.width * f.scale), h = Math.round(f.height * f.scale);
     return `<figure class="fig"><img src="${esc(f.src)}" alt="${esc(f.alt)}" width="${w}" height="${h}" data-fig="${esc(f.id)}" data-min-font="${esc(f.minFont)}" data-natural-width="${esc(f.width)}"></figure>`;
   };
-  // A number tile; one not measured yet says so, in its own style.
-  const tile = (t) => `<div class="tile${t.measuring ? " is-measuring" : ""}"><b class="${t.measuring ? "measuring" : "tv"}">${esc(t.value)}</b><span class="tl">${esc(t.label)}</span></div>`;
+  // A slide's points, as a list (slide 9's door address).
+  const pointList = (c) => (c.points ? `<ul class="npoints">${c.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "");
+  // A number tile; one not measured yet says so, in its own style; a measured one prints its time window.
+  const tile = (t) => `<div class="tile${t.measuring ? " is-measuring" : ""}"><b class="${t.measuring ? "measuring" : "tv"}">${esc(t.value)}</b><span class="tl">${esc(t.label)}</span>${t.when ? `<span class="tw">${esc(t.when)}</span>` : ""}</div>`;
 
   const LAYOUTS = {
     joke(c) {
@@ -38,9 +40,15 @@
     },
     numbers(c) {
       const tiles = `<div class="tiles n${c.tiles.length}${c.still ? " with-pic" : ""}">${c.tiles.map(tile).join("")}</div>`;
-      const points = c.points ? `<ul class="npoints">${c.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
       // With a picture (the door's QR code), the tiles sit two by two beside it.
-      return c.still ? `${h1(c)}<div class="npic"><div>${tiles}${points}</div>${still(c.still, 420)}</div>` : `${h1(c)}${tiles}${points}`;
+      return c.still ? `${h1(c)}<div class="npic"><div>${tiles}${pointList(c)}</div>${still(c.still, 420)}</div>` : `${h1(c)}${tiles}${pointList(c)}`;
+    },
+    // Slide 9 at a freeze with no measured number: the fallback picture takes the tiles' place, with the door's QR code
+    // beside it (the picture at its type floor leaves a 205px column) and the door's address under them.
+    fallback(c) {
+      // The QR code sits in the free space right of the picture's own text, 330px wide (aneta, 14:41Z: bigger, to scan
+      // from farther back), over the picture's empty margin, not over its words.
+      return `${h1(c)}<div class="fb">${fig(c.figure)}${still(c.still, 330)}</div>${pointList(c)}`;
     },
     bars(c) {
       const bars = c.bars.map((b) => `<div class="hbar hbar-${esc(b.tone)}"><span class="hbar-fill" style="width:${(b.share * 100).toFixed(2)}%"></span>`
@@ -51,7 +59,7 @@
       return `${h1(c)}<div class="times">${c.times.map((t) => `<div class="time"><b>${esc(t.show)}</b><span>${esc(t.what)}</span></div>`).join("")}</div>`;
     },
     figure(c) {
-      return `${h1(c)}${c.label ? `<p class="blabel">${pill(c.label, "warn")}</p>` : ""}<div class="fwrap">${fig(c.figure)}</div>${c.line ? `<p class="fline">${esc(c.line)}</p>` : ""}`;
+      return `${h1(c)}${c.label ? `<p class="blabel">${pill(c.label, "warn")}</p>` : ""}<div class="fwrap">${fig(c.figure)}</div>${c.line ? `<p class="fline">${esc(c.line)}</p>` : ""}${pointList(c)}`;
     },
     tiles(c) {
       return `${h1(c)}<p class="blabel">${pill(c.label, "warn")}</p><div class="pair">${c.tiles.map((t) => `<div class="ptile ptile-${esc(t.tone)}"><b>${esc(t.head)}</b><p>${esc(t.body)}</p></div>`).join("")}</div>`;
