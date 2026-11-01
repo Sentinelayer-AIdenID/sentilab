@@ -42,6 +42,10 @@
       // With a picture (the door's QR code), the tiles sit two by two beside it.
       return c.still ? `${h1(c)}<div class="npic"><div>${tiles}${points}</div>${still(c.still, 420)}</div>` : `${h1(c)}${tiles}${points}`;
     },
+    // Slide 9 at a freeze with no measured number: the fallback picture, with the door's QR code beside it.
+    fallback(c) {
+      return `<div class="fb">${fig(c.figure)}<div class="fbqr">${still(c.still, 200)}${c.points ? `<p>${esc(c.points[0])}</p>` : ""}</div></div>`;
+    },
     bars(c) {
       const bars = c.bars.map((b) => `<div class="hbar hbar-${esc(b.tone)}"><span class="hbar-fill" style="width:${(b.share * 100).toFixed(2)}%"></span>`
         + `<b class="hbar-val">${esc(b.show)}</b><span class="hbar-lab">${esc(b.label)}</span></div>`).join("");

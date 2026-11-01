@@ -164,3 +164,11 @@ h1.big { font-size: 72px; }
 .fstat { display: flex; align-items: baseline; gap: 22px; padding: 18px 26px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
 .fstat b { flex: none; font: 800 60px/1 var(--display); color: var(--cyan); }
 .fstat span { font-size: 28px; color: var(--body); }
+
+/* 9 at a freeze with nothing measured: the fallback picture, and the QR code beside it (never dropped) */
+.l-fallback .fb { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-top: 24px; }
+.l-fallback .fb .fig { margin: 0; }
+.fbqr { flex: none; width: 205px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.fbqr .still { margin: 0; }
+.fbqr .still img { border-radius: 10px; background: #fff; }
+.fbqr p { font-size: 22px; line-height: 1.2; text-align: center; color: var(--body); }

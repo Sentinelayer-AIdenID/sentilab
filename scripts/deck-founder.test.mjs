@@ -342,3 +342,30 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
   odd.build = "rehearsal";
   assert.throws(() => buildFounderData({ ...loaded, v4: odd }), /V4.json build must be "draft" or "final"/);
 });
+
+test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
+  const { readQr } = await import("./qr-read.mjs");
+  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window: "w", source: "x" }];
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
+  for (const [name, keys] of Object.entries(cases)) {
+    const d = freeze(keys);
+    const inv = slide(d, "invite");
+    // The call to action, in every case: the QR code (read from its pixels) and the door's address.
+    assert.equal(inv.content.still?.id, "qr", `${name}: the QR code stays`);
+    assert.equal(readQr(readFileSync(join(FOUNDER_DIR, "figures", loaded.v4.stills[inv.content.still.id].file))).text, "https://sentilab.aidenid.com", name);
+    assert.ok(inv.content.points.includes("The agent door: sentilab.aidenid.com"), `${name}: the door's address stays`);
+    const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
+    assert.match(section, /data-still="qr"/, `${name}: the QR code is drawn`);
+    assert.doesNotMatch(html(d), /measuring…|DRAFT/, name);
+    if (name === "none") {
+      assert.equal(inv.content.layout, "fallback");
+      assert.equal(inv.content.figure.id, "plain8", "the fallback picture only when nothing is measured");
+      assert.equal(inv.content.tiles, undefined);
+    } else {
+      assert.equal(inv.content.layout, "numbers");
+      assert.equal(inv.content.figure, undefined, `${name}: no fallback picture while a number is measured`);
+      assert.deepEqual(inv.content.tiles.map((t) => t.metric), loaded.v4.slides.find((x) => x.id === "invite").tiles.map((t) => t.metric).filter((id) => keys.includes(loaded.v4.metrics.wanted[id].key ?? id)), `${name}: each measured tile, in order`);
+    }
+  }
+});

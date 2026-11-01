@@ -127,7 +127,7 @@ export function loadFounder() {
 }
 
 const SCIENCE = new Set(["chips", "hook", "link", "scorecard"]);
-const LAYOUTS = new Set(["joke", "flow", "numbers", "bars", "times", "figure", "tiles", "statement", "closer", "sources"]);
+const LAYOUTS = new Set(["joke", "flow", "numbers", "bars", "times", "figure", "tiles", "statement", "closer", "sources", "fallback"]);
 
 // The text a slide shows, for the checks: everything but the pictures.
 function shownText(c) {
@@ -214,13 +214,17 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: alt.replace(/&quot;/g, '"').replace(/&amp;/g, "&"), pending: f.pending ?? null };
     };
     if (s.picture?.figure) content.figure = figureContent(s.picture.figure);
-    // At the freeze, a slide whose numbers have no receipt shows its fallback picture instead of its tiles.
-    if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric && !metrics.byId.get(wanted[t.metric]?.key ?? t.metric))) {
-      for (const k of ["tiles", "points", "still", "title"]) delete content[k];
-      content.layout = "figure";
+    // At the freeze (the coordinator, 11:45Z): each tile with a receipt stays, each without one is dropped and the rest
+    // reflow; only when no tile has a receipt does the fallback picture take their place. The QR code and the door's
+    // address stay on the slide in every case: they are the audience's call to action.
+    const measuredTiles = (s.tiles ?? []).filter((t) => t.metric && metrics.byId.get(wanted[t.metric]?.key ?? t.metric));
+    if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric) && measuredTiles.length === 0) {
+      for (const k of ["tiles", "title"]) delete content[k];
+      content.layout = "fallback";
       content.figure = figureContent(s.finalFallback.figure);
       content.footer = s.finalFallback.footer;
     }
+    if (s.picture?.still === "qr" && !content.still) throw new FounderError(`${where} lost its QR code`);
     if (s.bars) {
       const top = Math.max(...s.bars.map((b) => b.value));
       content.bars = s.bars.map((b) => {
