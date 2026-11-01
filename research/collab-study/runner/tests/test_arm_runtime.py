@@ -183,3 +183,35 @@ def test_c_messages_alternate_roles_and_keep_every_shared_reply_once(tmp_path):
         for message in messages:
             if message['role'] == 'assistant':
                 assert message['content'].startswith(f'Agent {turn % 3 + 1}:\n')
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+def test_complete_request_reservation_caps_long_continue_and_turn_prompts(tmp_path, arm):
+    class ByteProvider:
+        def complete(self, messages, *, max_tokens, timeout):
+            # Independent synthetic provider: UTF-8 content plus chat framing.
+            prompt = 3 + sum(8 + len(m['content'].encode('utf-8')) for m in messages)
+            return response('r' * max_tokens, prompt=prompt, completion=max_tokens)
+
+    clock = FakeClock()
+    ledger = runner.Ledger('10', {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    engine = runner.RequestEngine(ByteProvider(), ledger, max_tokens_per_reply=100,
+                                  clock=clock, sleep=clock.sleep)
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    runner.run_arm(job_metadata(arm), output=output, engine=engine,
+                   system_prompt='system ' * 30, packet_message='packet ' * 100,
+                   continue_prompt=('continue\n' * 100)[:748],
+                   initial_prompt_bounds={n: 1000 for n in (1, 2, 3)},
+                   c_turn_prompts={n: (f'turn {n}\n' * 400)[:2099] for n in (1, 2, 3)})
+    job = json.loads((output / 'job-one/job.json').read_text())
+    attempts = ledger.report()['attempts']
+    for number, agent in job['agents'].items():
+        rows = [row for row in attempts if row['agent'] == int(number)]
+        assert len(rows) >= 3  # Exercise accumulated prompts and multiple C cycles.
+        assert agent['stop_reason'] == 'token_cap'
+        assert agent['charged_tokens'] <= agent['cap'] + 100
+        assert all(row['prompt_bound'] >= row['usage']['prompt_tokens'] for row in rows)
+        assert agent['charged_tokens'] == sum(row['usage']['prompt_tokens'] +
+                                              row['usage']['completion_tokens'] for row in rows)
+    assert not job['overspend_limit_exceeded']
