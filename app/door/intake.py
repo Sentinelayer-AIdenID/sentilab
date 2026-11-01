@@ -50,6 +50,15 @@ if declaration_unicode.unidata_version != "16.0.0":
 _REFUSED_DECLARATION_CATEGORIES = frozenset(("Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"))
 # Assigned letters/symbols that render blank are not covered by the Unicode category rule.
 _REFUSED_DECLARATION_FILLERS = frozenset("\u3164\u115f\u1160\uffa0\u2800")
+# Unicode 16.0 Default_Ignorable_Code_Point (DerivedCoreProperties-16.0.0.txt): 4,174 code points that render as
+# nothing. Most are already Cf or Cn; 263 are marks (Mn) that the category rule passes, such as the combining grapheme
+# joiner U+034F and the variation selectors, so "admin" plus one of them would read as "admin". Each is refused in a
+# name or reason. The Worker hard-codes the same ranges (web/src/door/declare.js DEFAULT_IGNORABLE).
+_DEFAULT_IGNORABLE = ((0x00AD, 0x00AD), (0x034F, 0x034F), (0x061C, 0x061C), (0x115F, 0x1160), (0x17B4, 0x17B5),
+                      (0x180B, 0x180F), (0x200B, 0x200F), (0x202A, 0x202E), (0x2060, 0x206F), (0x3164, 0x3164),
+                      (0xFE00, 0xFE0F), (0xFEFF, 0xFEFF), (0xFFA0, 0xFFA0), (0xFFF0, 0xFFF8), (0x1BCA0, 0x1BCA3),
+                      (0x1D173, 0x1D17A), (0xE0000, 0xE0FFF))
+_DEFAULT_IGNORABLE_CHARS = frozenset(chr(cp) for first, last in _DEFAULT_IGNORABLE for cp in range(first, last + 1))
 _MAX_COMBINING_RUN = 8
 # Match the Worker's nameKey rule; Python's \s includes extra C0/C1 characters.
 _NAME_SPACE = re.compile(r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
@@ -148,12 +157,29 @@ def _declaration_text_allowed(text: str) -> bool:
     combining_run = 0
     for char in text:
         category = declaration_unicode.category(char)
-        if category in _REFUSED_DECLARATION_CATEGORIES or char in _REFUSED_DECLARATION_FILLERS:
+        if (category in _REFUSED_DECLARATION_CATEGORIES or char in _REFUSED_DECLARATION_FILLERS
+                or char in _DEFAULT_IGNORABLE_CHARS):
             return False
         combining_run = combining_run + 1 if category in ("Mn", "Mc", "Me") else 0
         if combining_run > _MAX_COMBINING_RUN:
             return False
     return True
+
+
+def _name_key(text: str) -> str:
+    """The reserved-name comparison key, as the Worker's nameKey: NFKC, format characters (Cf) removed, whitespace runs
+    collapsed, trimmed, lower-cased. Only ever compared; accepted text remains exactly as submitted. lower() is Python
+    3.12's own, from Unicode 15.0: the 27 capital letters Unicode 16 added with a lower-case pair keep their case here,
+    while the Worker's toLowerCase lowers them. No reserved name holds one, so no reserved verdict differs."""
+    key = declaration_unicode.normalize("NFKC", text)
+    key = "".join(char for char in key if declaration_unicode.category(char) != "Cf")
+    return _NAME_SPACE.sub(" ", key).strip(" ").lower()
+
+
+def _declaration_field_allowed(text: str) -> bool:
+    """A name or reason: the character rule, and not blank. Text with nothing left once the comparison's cleanup is
+    done (only spaces) shows nothing a reader could check, so it is refused; an empty field is no text at all."""
+    return _declaration_text_allowed(text) and (text == "" or _name_key(text) != "")
 
 
 def read_arrival(raw: bytes, size: int | None = None) -> tuple:
@@ -162,15 +188,11 @@ def read_arrival(raw: bytes, size: int | None = None) -> tuple:
         return None, found
     declaration = value.get("declaration", {})
     found = [violation("schema_invalid", path="/declaration/" + field, keyword="pattern")
-             for field in ("name", "reason") if not _declaration_text_allowed(declaration.get(field, ""))]
+             for field in ("name", "reason") if not _declaration_field_allowed(declaration.get(field, ""))]
     if found:
         return None, canonical_list(found)
-    name = declaration.get("name", "")
     # Compare a key only. Accepted declaration text remains exactly as submitted.
-    key = declaration_unicode.normalize("NFKC", name)
-    key = "".join(char for char in key if declaration_unicode.category(char) != "Cf")
-    key = _NAME_SPACE.sub(" ", key).strip(" ").lower()
-    if key in _RESERVED_NAMES:
+    if _name_key(declaration.get("name", "")) in _RESERVED_NAMES:
         return None, [violation("schema_invalid", path="/declaration/name", keyword="not")]
     return value, []
 
