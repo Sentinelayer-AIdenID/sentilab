@@ -585,6 +585,22 @@ test("a final build claims no \"measuring\" in any cue or the sheet header, and 
   assert.match(B.sheetFillLine(draft), /^Still measuring \(shown as "measuring…"\): /);
 });
 
+test("SUBMISSION-INDEX.md: every in-repo entry reads back exactly, and the index has no signed link or declined name", () => {
+  const { createHash } = createRequire(import.meta.url)("node:crypto");
+  const index = readFileSync(join(REPO_ROOT, "docs", "sentilab", "SUBMISSION-INDEX.md"), "utf8");
+  const rows = [...index.matchAll(/^\| [^|]+ \| `([^`]+)` \| ([\d,]+) \| `([0-9a-f]{64})` \|$/gm)];
+  assert.ok(rows.length >= 9, `${rows.length} in-repo rows`);
+  for (const [, path, bytes, sha] of rows) {
+    const b = readFileSync(join(REPO_ROOT, path));
+    assert.equal(b.length, Number(bytes.replace(/,/g, "")), path);
+    assert.equal(createHash("sha256").update(b).digest("hex"), sha, path);
+  }
+  // The final PDFs are the ones the deck exports, the handoff files the ones V4.json pins.
+  for (const d of [data, buildFounderData(loaded, { slot: "2min" })]) assert.ok(index.includes(`\`docs/sentilab/deck/${founderPdfName(d)}\``), d.deck.slot);
+  for (const [f, h] of Object.entries(loaded.v4.handoff)) assert.ok(index.includes(`\`docs/sentilab/deck/founder-v4/${f}\` | ${readFileSync(join(FOUNDER_DIR, f)).length.toLocaleString("en-US")} | \`${h.sha256}\``), f);
+  assert.doesNotMatch(index, /[?&](?:sig|se|sv|sp)=|vortex/i);
+});
+
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
   const pins = { "CARTER-QA.md": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
