@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/Sentinelayer-AIdenID/AIdenID",
+  "commit": "09b2ff466d0fadcb83b09b0f6f213d13f430c9e1",
+  "source": "workers/aquarium-edge/src",
+  "files": {
+    "src/agent-resources.ts": "88d3c738902f9a05d678076dc4419126e88d7916ab3c73628346037912436241",
+    "src/intent-gate.ts": "4d5389483abdcc702e3fe1bd07f1fd5fda0f47394fe073b7961c144ccbf7efa7"
+  },
+  "git_blobs": {
+    "src/agent-resources.ts": "e882bb85b113dc1e884ecd695f44ffae3f51433b",
+    "src/intent-gate.ts": "1cd963a6048ba2afd39a0438ecaf02ea0b37a4d6"
+  },
+  "license": "None declared at the pinned commit: a private repository of the same owner (Sentinelayer-AIdenID), with no LICENSE file and no license field in its package.json. The upstream header comment (the source note) is kept unchanged in src/intent-gate.ts.",
+  "generated": "src/generated/aidenid-intent-gate/: Node type stripping only (web/scripts/build-intent-gate.mjs), plus a .js extension on the one extensionless relative import (./agent-resources), which Node ESM cannot resolve without it.",
+  "use": "SentiLab's wall (src/door/) asks the gate's question (GATE_QUESTION) and sends its agent cache policy (AGENT_RESPONSE_CACHE). The purposes are SentiLab's own (place-chiplets, review, read), set in src/door/case.js; the gate's AIdenID intent list, page text and session token are not used."
+}

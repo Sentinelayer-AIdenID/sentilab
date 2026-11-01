@@ -12,5 +12,36 @@
   "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
   // Keep observation off until the aquarium accepts and retains SentiLab site/path attribution (EDGE.md).
   "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },
-  "observability": { "enabled": true }
+  // The agent door (src/door/door.js). DOOR_TOKEN_KEY is a Worker secret (wrangler secret put DOOR_TOKEN_KEY, at least
+  // 32 characters, its own per environment); without it the door stays closed. The terms a submission accepts come
+  // from the intake's board (the signed manifest's accepted versions). Rate limits per token (nonce) and per client IP
+  // prefix on its write route, per prefix on minting and on the routes that call the API; without these bindings each
+  // falls back to an in-memory window.
+  "ratelimits": [
+    { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110101", "simple": { "limit": 10, "period": 60 } },
+    { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110102", "simple": { "limit": 60, "period": 60 } },
+    { "name": "DOOR_READ_LIMITER", "namespace_id": "2026110103", "simple": { "limit": 300, "period": 60 } },
+    { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110104", "simple": { "limit": 120, "period": 60 } }
+  ],
+  // Invocation logs record each request's URL, and the door's links carry the scoped purpose token as ?t=, so they
+  // stay off; console logs (the door writes none with a token) are kept.
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "env": {
+    // npx wrangler deploy --env staging: the Worker sentilab-web-staging at staging.sentilab.aidenid.com, with its own
+    // secrets (DOOR_TOKEN_KEY, ORIGIN_TOKEN) and its own rate-limit namespaces. There is no staging API yet, and staging
+    // must never reach the production API, so its API_ORIGIN is "none": its /api answers 503, the door's board reads
+    // "unavailable" and a submission is refused before anything is sent. Set a staging API origin here when one exists.
+    "staging": {
+      "name": "sentilab-web-staging",
+      "routes": [{ "pattern": "staging.sentilab.aidenid.com", "custom_domain": true }],
+      "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
+      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off" },
+      "ratelimits": [
+        { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },
+        { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110112", "simple": { "limit": 60, "period": 60 } },
+        { "name": "DOOR_READ_LIMITER", "namespace_id": "2026110113", "simple": { "limit": 300, "period": 60 } },
+        { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110114", "simple": { "limit": 120, "period": 60 } }
+      ]
+    }
+  }
 }

@@ -1,52 +1,67 @@
-// SentiLab Package view: the agent-door feed. The ONE place the 3D view gets CPU-DRAM layouts, from a static fixture
-// today and, later, from the API through the Worker's read-only /api/* proxy (polling only: the Worker strips
-// upgrade, so there are no WebSockets). Pure apart from fetchDoorResults() and the poller; the node tests drive both
-// with a scripted fetch and clock.
+// SentiLab Package view: the agent-door feed. The ONE place the 3D view gets CPU-DRAM layouts: the bundled replay
+// (door-fixture.json, page-owned: the raw and snapped references and two synthetic examples) and, live, the agent door
+// API through the Worker's read-only /api/* proxy (polling only: the Worker strips upgrade, so there are no
+// WebSockets). Pure apart from the fetches and the poller; the node tests drive both with a scripted fetch and clock.
 //
-// What a layout may say, and nothing more (every other field is dropped unread):
-//   id       [a-z0-9][a-z0-9._-]{0,79}: a key only, never shown
-//   label    "<class> · <short>": class from CLASSES, short = 4 lowercase hex. Rebuilt here from those two parts; a
-//            label that is anything else refuses the layout. This is the only name the page shows: never free text.
-//   dies     exactly C0, C1, C2, C3, D0, D1, D2, D3, each { die, x_um, y_um, rot_deg }: the die CENTRE in micrometres
-//            (origin at the interposer's lower-left corner), and a catalogue rotation (CPU 0 or 90, DRAM 0)
-//   status   a contract lifecycle state (STATUSES); "reference" and "example" only in a fixture
-//   seq      optional record version (a non-negative integer that grows with every change to the record): an older
-//            version never replaces a newer one. Arrival order is the order each id is first seen.
-//   result   optional, from the scorer: { metric_id, value_C, precision_K, label, grid64?, row0?,
-//            native_all_block_max_C?, active_layer_peak_C? }
-//            metric_id    exactly "max_chiplet_centre_cell_mean_C" (BOARD_METRIC): the one frozen statistic of the
-//                         board and of the 3D caption; value_C is its value in °C and precision_K its grid precision.
-//                         The page shows the API's value and never recomputes it from the grid.
-//            label        "simulated, not silicon": the scorer's claim label; any other label is not drawn
-//            grid64       4096 temperatures in °C, row-major, 64 x 64 over the 45 mm chip layer: the active-layer
-//                         temperature field, drawn as the colour map
-//            row0         "bottom" (row 0 at y = 0) or "top" (row 0 at y = 45 mm): required with grid64, never guessed
-//            native_all_block_max_C, active_layer_peak_C: distinct statistics, shown apart under their own names and
-//                         never as the board metric
-// A layout that breaks a rule is refused whole (never drawn, counted with its reason code). A result that breaks a
-// rule is dropped and the layout drawn without a map or value, with the reason. Nothing visitor-written can reach
-// the page; any other field (a definition, a note, a name) is dropped unread.
+// The live contract is the API's own shape (AGENT-DOOR Amendment 3; sentilab PR #81). The page adapts to it; the
+// page-side `sentilab-door-layouts/1` is retired:
+//   GET /api/open/v1/door/results?after=<n>  `sentilab-door-results/1` = { items, next_after, has_more, metric, label,
+//                                            scorer }: the runs that changed after version n, paged by next_after while
+//                                            has_more is true
+//   GET /api/open/v1/door/events?after=<n>   `sentilab-door-events/1` = { events, next_after, has_more, scorer }: the
+//                                            arrivals (agents at the door, refused attempts, each run's state changes)
+// From an item the page reads this, and nothing more (every other field is dropped unread, `operator` included if an
+// older build still sends it):
+//   id       the run id, open-<8 hex>-<32 hex>: a key only, never shown
+//   label    rebuilt here from `class` (API_CLASSES) and `short_id` (4 lowercase hex) and checked against the item's own
+//            label: the only name the page shows, never free text
+//   status   a state of the open-proposal contract (STATUSES); `arrival` (the door's admission order) and `seq` (the
+//            record's version: an older version never replaces a newer one)
+//   position the run's place in the queue (1 is next), while queued or held, as the API reported it; the poller then
+//            keeps it current by #81's own rule (withPositions); `codes` and `reason`, why it is where it is
+//            (contract reason codes, #81's own reasons: [a-z0-9_] identifiers only); `summary`, the contract's own
+//            four-state summary of the state (SUMMARIES). status.mjs words them; nothing is derived from animation.
+//   dies     exactly 8 contract dies { die: 0..7, x_um, y_um, rot_deg }: die i is TAP die i (C0..C3, then D0..D3), its
+//            centre in micrometres from the interposer's lower-left corner, a catalogue rotation (CPU 0 or 90, DRAM 0)
+//   result   null, or the scorer's: the value under result.metric_id (exactly BOARD_METRIC) with its metric's
+//            precision_K, native_all_block_max_C and active_layer_peak_C (distinct statistics, shown apart by name),
+//            active_guard, evaluator, temperature_label, verification and replay. Never its grid64 (below).
+// From an event: seq, kind, the label rebuilt from class and short_id, and for an attempt its outcome and codes, for a
+// run its id, state and codes. Scorer events move the cursor only. From each page, the API's scorer snapshot
+// ({ state: unknown | up | down, since }), which status.mjs shows as the scorer chip.
+// A record that breaks a rule is refused whole (never drawn, counted with its reason code). A result that breaks a rule
+// is dropped and the layout drawn without a value, with the reason.
 //
-// Payload shape is not provenance (CAD/3D freeze section 5.7, PL-2, PL-6, D14). A result's FIELD is drawn only when an
-// admitted association binds it: a pin in reviewed page code (case-cpu-dram.mjs FIELD_PINS) whose geometry, field and
-// result-record digests the page recomputes with WebCrypto (verifyPinnedFields): the record digest covers the field's
-// orientation and every statistic shown with it, so a pin admits nothing it did not check. The door feed is unsigned,
-// so an API result's field is always "unassociated": never drawn, never kept; its scalar value stays as a qualified
-// diagnostic. Every temperature carries a shared label (temperature-label.mjs LABELS), resolved by labelFor() from a
-// VERIFIED evaluator identity, never from the payload's claim: with none, labelFor(undefined) is "unvalidated".
-import { DIE_IDS, dieById, RULES, FIELD_PINS } from "./case-cpu-dram.mjs";
+// Payload shape is not provenance (CAD/3D freeze section 5.7, PL-2, PL-6, D14; root's PR78 R1; Amendment 3). The door
+// feed is unsigned, so no map is drawn from any feed result, even when it carries a grid64, until an admitted
+// association exists (P5): the grid is never read, the result's field is "unassociated" and its value a qualified
+// diagnostic. Every temperature carries a shared label (temperature-label.mjs LABELS). A feed result's is labelForAll()
+// over the evaluator identity the feed names and no verified one, so it is never more than "unvalidated" (a withdrawn
+// identity stays withdrawn), and the API's own temperature_label can only make it more cautious. The one map the page
+// draws is the bundled raw reference's, admitted by a pin in reviewed page code (case-cpu-dram.mjs FIELD_PINS) whose
+// geometry, field and result-record digests the page recomputes with WebCrypto (verifyPinnedFields): the record digest
+// covers the field's orientation and every statistic shown with it, so a pin admits nothing it did not check.
+import { DIES, DIE_IDS, dieById, RULES, FIELD_PINS, ACTIVE_LAYER_GUARD_C } from "./case-cpu-dram.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson } from "../runs-list.mjs";
 import { canonical } from "../canonical.mjs";
-import { labelFor } from "../../temperature-label.mjs";
+import { labelFor, labelForAll, LABELS } from "../../temperature-label.mjs";
 
-export const FEED_SCHEMA = "sentilab-door-layouts/1";
-export const CLASSES = Object.freeze(["reference-only", "reference", "example", "ours", "verified_agent", "signed_agent",
-  "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown"]);
+export const RESULTS_SCHEMA = "sentilab-door-results/1";
+export const EVENTS_SCHEMA = "sentilab-door-events/1";
+export const REPLAY_SCHEMA = "sentilab-package-replay/1";
+// The classes a door record may carry (#81 app/door/policy.py CLASSES); the bundled replay adds the page's own three.
+export const API_CLASSES = Object.freeze(["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation",
+  "likely_human", "unknown", "ours"]);
+export const CLASSES = Object.freeze(["reference-only", "reference", "example", ...API_CLASSES]);
 // The open-proposal contract's lifecycle (open_proposals/contract/states.py LIFECYCLE), unchanged.
 export const STATUSES = Object.freeze(["rejected", "queued", "held", "evaluating", "evaluated", "failed", "replaying",
   "reproduced", "not_reproduced", "cross_checked", "cancelled", "expired"]);
 export const FIXTURE_STATUSES = Object.freeze(["reference", "example"]);
+// The contract's summary of a state (open_proposals/contract/states.py SUMMARY; cancelled and expired have none).
+export const SUMMARIES = Object.freeze(["rejected", "queued", "evaluated", "independently verified"]);
+// The scorer's states as the API reports them (#81 app/door/dispatch.py ScorerState).
+export const SCORER_STATES = Object.freeze(["unknown", "up", "down"]);
 // States whose result is a score that stands (a failed run's numbers are never drawn).
 export const SCORED = Object.freeze(["evaluated", "replaying", "reproduced", "not_reproduced", "cross_checked", "reference"]);
 // The board's one frozen statistic (the score, the replay, the board and the 3D caption all use it).
@@ -61,7 +76,9 @@ export const DISTINCT_FIELDS = Object.freeze({
   native_all_block_max_C: "Native all-block maximum",
   active_layer_peak_C: "Active-layer peak",
 });
+// The page's claim text, and the API's result label (#81 RESULT_LABEL): a feed result under any other label is not read.
 export const RESULT_LABEL = "simulated, not silicon";
+export const FEED_RESULT_LABEL = "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C";
 export const GRID_CELLS = 64 * 64;
 export const BOUNDS = Object.freeze({
   // A centre may sit off the interposer by half its width (a refused or out-of-frame proposal still draws); past
@@ -69,11 +86,18 @@ export const BOUNDS = Object.freeze({
   centre_um: Object.freeze({ min: -22500, max: 67500 }),   // half an interposer (22.5 mm) beyond each edge, in µm
   temp_c: Object.freeze({ min: -50, max: 500 }),
   layouts: 500,
+  events: 40,                                                // the arrivals kept, newest last
 });
 const ID = /^[a-z0-9][a-z0-9._-]{0,79}$/;
+const RUN_ID = /^open-[0-9a-f]{8}-[0-9a-f]{32}$/;
 const SHORT = /^[0-9a-f]{4}$/;
+const HEX64 = /^[0-9a-f]{64}$/;
+const CODE = /^[a-z][a-z0-9_]{0,47}$/;
 const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+const codesOf = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === "string" && CODE.test(c)).slice(0, 8) : []);
 const num = (x) => typeof x === "number" && Number.isFinite(x);
+const count = (n) => Number.isSafeInteger(n) && n >= 0;
+const inTemp = (v) => num(v) && v >= BOUNDS.temp_c.min && v <= BOUNDS.temp_c.max;
 
 // "<class> · <short>": the separator is " · " (U+00B7 between spaces); nothing before, between or after.
 export function parseLabel(label) {
@@ -84,59 +108,220 @@ export function parseLabel(label) {
 }
 export const labelText = (cls, short) => `${cls} · ${short}`;
 
-// One raw layout -> { layout } or { refused: code }. source: "fixture" | "api".
-export function normalizeLayout(raw, { source = "api" } = {}) {
-  if (!isObj(raw)) return { refused: "not_an_object" };
-  if (raw.hidden === true) return { refused: "hidden" };
-  if (typeof raw.id !== "string" || !ID.test(raw.id)) return { refused: "id_invalid" };
-  const lab = parseLabel(raw.label);
-  if (!lab) return { refused: "label_invalid" };
-  const statuses = source === "fixture" ? [...STATUSES, ...FIXTURE_STATUSES] : STATUSES;
-  if (!statuses.includes(raw.status)) return { refused: "status_unknown" };
-  if (!Array.isArray(raw.dies) || raw.dies.length !== DIE_IDS.length) return { refused: "dies_count" };
+// Eight dies -> { dies } in C0..D3 order, or { refused: code }. key: "die" names them (the replay: "C0"), "index" numbers
+// them (the API: TAP die i, 0..7).
+function readDies(list, key) {
+  if (!Array.isArray(list) || list.length !== DIE_IDS.length) return { refused: "dies_count" };
   const seen = new Map();
-  for (const d of raw.dies) {
-    if (!isObj(d) || typeof d.die !== "string" || !DIE_IDS.includes(d.die)) return { refused: "die_unknown" };
-    if (seen.has(d.die)) return { refused: "die_duplicate" };
+  for (const d of list) {
+    if (!isObj(d)) return { refused: "die_unknown" };
+    const id = key === "index" ? (Number.isInteger(d.die) ? DIES.find((x) => x.tap_index === d.die)?.id : undefined)
+      : typeof d.die === "string" && DIE_IDS.includes(d.die) ? d.die : undefined;
+    if (!id) return { refused: "die_unknown" };
+    if (seen.has(id)) return { refused: "die_duplicate" };
     if (![d.x_um, d.y_um, d.rot_deg].every(num)) return { refused: "coord_not_number" };
     const { min, max } = BOUNDS.centre_um;
     if (d.x_um < min || d.x_um > max || d.y_um < min || d.y_um > max) return { refused: "coord_out_of_range" };
-    if (!RULES.rotations_deg[dieById(d.die).kind].includes(d.rot_deg)) return { refused: "rotation_not_allowed" };
-    seen.set(d.die, { die: d.die, x_um: d.x_um, y_um: d.y_um, rot_deg: d.rot_deg });
+    if (!RULES.rotations_deg[dieById(id).kind].includes(d.rot_deg)) return { refused: "rotation_not_allowed" };
+    seen.set(id, { die: id, x_um: d.x_um, y_um: d.y_um, rot_deg: d.rot_deg });
   }
+  return { dies: DIE_IDS.map((id) => seen.get(id)) };
+}
+
+// ── the API: one results item ────────────────────────────────────────────────────────────────────────────────────
+// One raw item -> { layout } or { refused: code }.
+export function normalizeItem(raw) {
+  if (!isObj(raw)) return { refused: "not_an_object" };
+  if (raw.hidden === true) return { refused: "hidden" };
+  if (typeof raw.id !== "string" || !RUN_ID.test(raw.id)) return { refused: "id_invalid" };
+  if (!API_CLASSES.includes(raw.class) || typeof raw.short_id !== "string" || !SHORT.test(raw.short_id)) return { refused: "label_invalid" };
+  const label = labelText(raw.class, raw.short_id);
+  if (raw.label !== label) return { refused: "label_invalid" };
+  if (!STATUSES.includes(raw.status)) return { refused: "status_unknown" };
+  const dies = readDies(raw.dies, "index");
+  if (dies.refused) return dies;
+  const queued = raw.status === "queued" || raw.status === "held";
   const layout = {
-    id: raw.id, cls: lab.cls, short: lab.short, label: labelText(lab.cls, lab.short), status: raw.status,
-    seq: Number.isSafeInteger(raw.seq) && raw.seq >= 0 ? raw.seq : null,
-    dies: DIE_IDS.map((id) => seen.get(id)),
-    result: null, result_refused: null,
+    id: raw.id, cls: raw.class, short: raw.short_id, label, status: raw.status,
+    seq: count(raw.seq) ? raw.seq : null, arrival: count(raw.arrival) ? raw.arrival : null,
+    position: queued && Number.isSafeInteger(raw.position) && raw.position >= 1 ? raw.position : null,
+    reason: typeof raw.reason === "string" && CODE.test(raw.reason) ? raw.reason : null, codes: codesOf(raw.codes),
+    summary: SUMMARIES.includes(raw.summary) ? raw.summary : null,
+    dies: dies.dies, result: null, result_refused: null,
   };
   if (raw.result !== undefined && raw.result !== null) {
-    const r = normalizeResult(raw.result, layout.status, { source });
+    const r = normalizeItemResult(raw.result, layout.status);
     if (r.refused) layout.result_refused = r.refused;
     else layout.result = r.result;
   }
   return { layout };
 }
 
-// A result -> { result } or { refused: code }. result:
-//   metric       { id, value, precision_K }: the scorer's value of the board metric
-//   label        a temperature-label.mjs LABELS object for every temperature of this result (PL-2): labelFor() of the
-//                verified evaluator identity; until verifyPinnedFields() admits an association, labelFor(undefined)
-//   claim        the scorer's claim label ("simulated, not silicon"), shown beside the shared label, never instead of it
-//   field_state  "unassociated" (API: unsigned feed; or no pin), "pending" (bundled, awaiting the pin check), and after
-//                verifyPinnedFields(): "verified", "mismatch" or "file_check_unavailable"
+// The evaluator a feed result names, spelled as the API's identity string (#81 EVALUATOR_IDENTITY) only so the label
+// rule can read it; never taken as verified. null when it names none the page can read.
+export const evaluatorIdentity = (ev) => (isObj(ev) && typeof ev.binary_sha256 === "string" && HEX64.test(ev.binary_sha256) && ev.grid === 64
+  ? `hotspot6:${ev.binary_sha256}:grid:64x64` : null);
+// A feed result's label: the most cautious of the identity it names and none verified (labelForAll), so an unverified
+// identity is never more than "unvalidated"; the API's own temperature_label may only make it more cautious. rule: the
+// label rule (the tests pass one with their own lists).
+export function feedLabel(identity, apiLabel, rule = { labelForAll }) {
+  const label = rule.labelForAll([identity ?? undefined, undefined]);
+  return apiLabel === LABELS.withdrawn.state ? LABELS.withdrawn : label;
+}
+const VERIFICATION_FLAGS = ["distinct_execution", "receipts_bound", "binding_ok", "active_guard_ok", "candidate"];
+const CPU = ["measured", "unknown_charged_conservatively"];
+const NOT_CLAIMED = ["beat", "margin", "routed wire", "source acceptance"];
+
+// A feed result -> { result } or { refused: code }. result:
+//   metric        { id, value, precision_K }: the scorer's value of the board metric; the page never recomputes it
+//   label         a temperature-label.mjs LABELS object for every temperature of this result (feedLabel)
+//   claim         "simulated, not silicon", shown beside the shared label, never instead of it
+//   evaluator     the identity the feed names (evaluatorIdentity), shown as named, never checked here; or null
+//   field_state   always "unassociated": the feed is unsigned, so no map; grid, grid_text, result_text, field_key null
+//   diagnostic    always true: the value is shown qualified, as a diagnostic
+//   distinct      [{ key, name, value }] native_all_block_max_C and active_layer_peak_C, shown apart, by name
+//   guard         { limit_C, ok }: the active-layer guard as the feed states it (strictly below 119.07 °C)
+//   verification  { replay, replay_code, distinct_execution, receipts_bound, binding_ok, active_guard_ok, cpu,
+//                   candidate, not_claimed }: what the feed says the result was checked for, and what it is not
+//   replay        { fresh_process, match, receipts_bound, code }
+export function normalizeItemResult(raw, status) {
+  if (!isObj(raw)) return { refused: "result_malformed" };
+  if (!SCORED.includes(status)) return { refused: "result_not_scored_state" };
+  if (raw.label !== FEED_RESULT_LABEL) return { refused: "result_label_unknown" };
+  if (raw.metric_id !== BOARD_METRIC.id || !isObj(raw.metric) || raw.metric.metric_id !== BOARD_METRIC.id) return { refused: "metric_unknown" };
+  const value = raw[raw.metric_id];
+  if (!inTemp(value)) return { refused: "metric_value" };
+  const precision = raw.metric.precision_K;
+  if (!num(precision) || precision <= 0 || precision > 1) return { refused: "precision_missing" };
+  const distinct = [];
+  for (const [key, name] of Object.entries(DISTINCT_FIELDS)) {
+    if (!inTemp(raw[key])) return { refused: "distinct_value" };
+    distinct.push({ key, name, value: raw[key] });
+  }
+  const g = raw.active_guard;
+  if (!isObj(g) || g.field !== "active_layer_peak_C" || g.rule !== "strictly below" || g.limit_C !== ACTIVE_LAYER_GUARD_C || typeof g.ok !== "boolean") return { refused: "guard_unknown" };
+  if (g.ok !== (raw.active_layer_peak_C < g.limit_C)) return { refused: "guard_inconsistent" };
+  const v = raw.verification;
+  if (!isObj(v) || (v.replay !== "reproduced" && v.replay !== "not_reproduced") || !CPU.includes(v.cpu)
+    || !VERIFICATION_FLAGS.every((k) => typeof v[k] === "boolean") || !(v.replay_code === null || (typeof v.replay_code === "string" && CODE.test(v.replay_code)))
+    || !Array.isArray(v.not_claimed) || !v.not_claimed.every((x) => NOT_CLAIMED.includes(x))) return { refused: "verification_malformed" };
+  const p = raw.replay;
+  if (!isObj(p) || !["fresh_process", "match", "receipts_bound"].every((k) => typeof p[k] === "boolean")
+    || !(p.code === null || (typeof p.code === "string" && CODE.test(p.code)))) return { refused: "replay_malformed" };
+  const evaluator = evaluatorIdentity(raw.evaluator);
+  return { result: {
+    metric: { id: BOARD_METRIC.id, value, precision_K: precision }, claim: RESULT_LABEL, label: feedLabel(evaluator, raw.temperature_label), evaluator,
+    field_state: "unassociated", grid: null, grid_text: null, result_text: null, field_key: null, diagnostic: true, distinct,
+    guard: { limit_C: g.limit_C, ok: g.ok },
+    verification: { replay: v.replay, replay_code: v.replay_code, cpu: v.cpu, ...Object.fromEntries(VERIFICATION_FLAGS.map((k) => [k, v[k]])), not_claimed: [...v.not_claimed] },
+    replay: { fresh_process: p.fresh_process, match: p.match, receipts_bound: p.receipts_bound, code: p.code },
+  } };
+}
+
+// A results page -> { layouts, refused: { code: count }, next_after, has_more }, or null when it is not one.
+export function normalizeResults(doc) {
+  if (!isObj(doc) || doc.schema !== RESULTS_SCHEMA || !Array.isArray(doc.items) || !count(doc.next_after) || typeof doc.has_more !== "boolean"
+    || !isObj(doc.metric) || doc.metric.metric_id !== BOARD_METRIC.id) return null;
+  const refused = {};
+  const layouts = [], ids = new Set();
+  for (const raw of doc.items.slice(0, BOUNDS.layouts)) {
+    const n = normalizeItem(raw);
+    if (n.refused) { refused[n.refused] = (refused[n.refused] ?? 0) + 1; continue; }
+    if (ids.has(n.layout.id)) { refused.id_duplicate = (refused.id_duplicate ?? 0) + 1; continue; }
+    ids.add(n.layout.id);
+    layouts.push(n.layout);
+  }
+  if (doc.items.length > BOUNDS.layouts) refused.over_cap = doc.items.length - BOUNDS.layouts;
+  return { layouts, refused, next_after: doc.next_after, has_more: doc.has_more, scorer: readScorer(doc.scorer) };
+}
+// The API's scorer snapshot -> { state, since }: one of SCORER_STATES and the epoch second it began (or null). Anything
+// else reads as unknown: the snapshot is the page's only source of the scorer's health.
+export function readScorer(raw) {
+  if (!isObj(raw) || !SCORER_STATES.includes(raw.state)) return { state: "unknown", since: null };
+  return { state: raw.state, since: num(raw.since) && raw.since > 0 && raw.since < 1e11 ? raw.since : null };
+}
+
+// ── the API: one event (the arrivals) ────────────────────────────────────────────────────────────────────────────
+// -> { event }, { skip: true } for a scorer event (it moves the cursor only), or { refused: code }.
+// event: { seq, kind: "arrival" | "attempt" | "run", cls, short (null for an arrival without a token), label,
+//          outcome ("rejected" | "refused", attempts), run_id and state (runs), codes (attempts and runs) }
+export function normalizeEvent(raw) {
+  if (!isObj(raw) || !count(raw.seq)) return { refused: "event_malformed" };
+  if (raw.kind === "scorer") return { skip: true };
+  if (!["arrival", "attempt", "run"].includes(raw.kind)) return { refused: "event_kind_unknown" };
+  if (!API_CLASSES.includes(raw.class)) return { refused: "label_invalid" };
+  const short = raw.short_id;              // null only for an arrival that carried no token
+  if (short === null ? raw.kind !== "arrival" : typeof short !== "string" || !SHORT.test(short)) return { refused: "label_invalid" };
+  const label = short === null ? raw.class : labelText(raw.class, short);
+  if (raw.label !== label) return { refused: "label_invalid" };
+  const event = { seq: raw.seq, kind: raw.kind, cls: raw.class, short, label };
+  if (raw.kind === "attempt") {
+    if (raw.outcome !== "rejected" && raw.outcome !== "refused") return { refused: "event_malformed" };
+    Object.assign(event, { outcome: raw.outcome, codes: codesOf(raw.codes).slice(0, 4) });
+  }
+  if (raw.kind === "run") {
+    if (typeof raw.run_id !== "string" || !RUN_ID.test(raw.run_id) || !STATUSES.includes(raw.state)) return { refused: "event_malformed" };
+    Object.assign(event, { run_id: raw.run_id, state: raw.state, codes: codesOf(raw.codes).slice(0, 4) });
+  }
+  return { event };
+}
+// An events page -> { events, refused, next_after, has_more }, or null when it is not one.
+export function normalizeEvents(doc) {
+  if (!isObj(doc) || doc.schema !== EVENTS_SCHEMA || !Array.isArray(doc.events) || !count(doc.next_after) || typeof doc.has_more !== "boolean") return null;
+  const refused = {}, events = [];
+  for (const raw of doc.events.slice(0, 500)) {
+    const n = normalizeEvent(raw);
+    if (n.refused) refused[n.refused] = (refused[n.refused] ?? 0) + 1;
+    else if (n.event) events.push(n.event);
+  }
+  return { events, refused, next_after: doc.next_after, has_more: doc.has_more, scorer: readScorer(doc.scorer) };
+}
+// Keep each event once (by seq), in seq order, the newest BOUNDS.events.
+export function mergeEvents(current, incoming) {
+  const bySeq = new Map(current.map((e) => [e.seq, e]));
+  for (const e of incoming) if (!bySeq.has(e.seq)) bySeq.set(e.seq, e);
+  return [...bySeq.values()].sort((a, b) => a.seq - b.seq).slice(-BOUNDS.events);
+}
+
+// ── the bundled replay (page-owned records: the references and the synthetic examples) ──────────────────────────
+// A replay record is the page's own layout: { id, label "<class> · <short>", status, dies: [{ die: "C0", x_um, y_um,
+// rot_deg }], result? }. Its result: { metric_id, value_C, precision_K, label, grid64?, row0?, native_all_block_max_C?,
+// active_layer_peak_C? }, row0 "bottom" or "top" required with grid64, never guessed. A bundled field waits for its
+// pin check (verifyPinnedFields); without a pin it is unassociated and not kept.
+export function normalizeLayout(raw) {
+  if (!isObj(raw)) return { refused: "not_an_object" };
+  if (raw.hidden === true) return { refused: "hidden" };
+  if (typeof raw.id !== "string" || !ID.test(raw.id)) return { refused: "id_invalid" };
+  const lab = parseLabel(raw.label);
+  if (!lab) return { refused: "label_invalid" };
+  if (![...STATUSES, ...FIXTURE_STATUSES].includes(raw.status)) return { refused: "status_unknown" };
+  const dies = readDies(raw.dies, "die");
+  if (dies.refused) return dies;
+  const layout = {
+    id: raw.id, cls: lab.cls, short: lab.short, label: labelText(lab.cls, lab.short), status: raw.status,
+    seq: count(raw.seq) ? raw.seq : null, arrival: null, position: null, reason: null, codes: [], summary: null,
+    dies: dies.dies, result: null, result_refused: null,
+  };
+  if (raw.result !== undefined && raw.result !== null) {
+    const r = normalizeResult(raw.result, layout.status);
+    if (r.refused) layout.result_refused = r.refused;
+    else layout.result = r.result;
+  }
+  return { layout };
+}
+
+// A replay result -> { result } or { refused: code }. As a feed result's (normalizeItemResult), with:
+//   field_state  "pending" (a field, awaiting the pin check) or "unassociated" (no field); after verifyPinnedFields():
+//                "verified", "mismatch" or "file_check_unavailable"
 //   grid         the field (Float32Array, row 0 at y = 0) ONLY while pending or verified; otherwise null, not kept
 //   grid_text, result_text  while pending only: the texts a pin's field_sha256 and result_sha256 cover (resultText)
 //   field_key    the verified field's sha256 (its content identity), else null
-//   diagnostic   true while no association is admitted: the value is shown qualified, as a diagnostic
-//   distinct     [{ key, name, value }] statistics shown apart, by name
-export function normalizeResult(raw, status, { source = "api" } = {}) {
+//   evaluator, guard, verification, replay  null: a bundled record names its evaluator through its pin only
+export function normalizeResult(raw, status) {
   if (!isObj(raw)) return { refused: "result_malformed" };
   if (!SCORED.includes(status)) return { refused: "result_not_scored_state" };
   if (raw.label !== RESULT_LABEL) return { refused: "result_label_unknown" };
   if (raw.metric_id !== BOARD_METRIC.id) return { refused: "metric_unknown" };
-  const { min, max } = BOUNDS.temp_c;
-  const inTemp = (v) => num(v) && v >= min && v <= max;
   if (!inTemp(raw.value_C)) return { refused: "metric_value" };
   if (!num(raw.precision_K) || raw.precision_K <= 0 || raw.precision_K > 1) return { refused: "precision_missing" };
   let grid = null, gridText = null;
@@ -161,11 +346,11 @@ export function normalizeResult(raw, status, { source = "api" } = {}) {
     if (!inTemp(raw[key])) return { refused: "distinct_value" };
     distinct.push({ key, name, value: raw[key] });
   }
-  // The door feed is unsigned: an API field is unassociated, never kept. A bundled field waits for its pin check.
-  const pending = source === "fixture" && grid !== null;
+  const pending = grid !== null;
   return { result: { metric: { id: BOARD_METRIC.id, value: raw.value_C, precision_K: raw.precision_K }, claim: RESULT_LABEL,
-    label: labelFor(undefined), field_state: pending ? "pending" : "unassociated", grid: pending ? grid : null,
-    grid_text: pending ? gridText : null, result_text: pending ? resultText(raw) : null, field_key: null, diagnostic: true, distinct } };
+    label: labelFor(undefined), evaluator: null, field_state: pending ? "pending" : "unassociated", grid: pending ? grid : null,
+    grid_text: pending ? gridText : null, result_text: pending ? resultText(raw) : null, field_key: null, diagnostic: true, distinct,
+    guard: null, verification: null, replay: null } };
 }
 
 // The rest of a result record, exactly as bundled: every field but grid64 (its orientation row0, the value, precision
@@ -175,7 +360,8 @@ export const resultText = (raw) => canonical(Object.fromEntries(Object.entries(r
 
 // ── the admitted associations: pinned fields, rechecked with WebCrypto before anything is drawn ─────────────────────
 // layouts: normalized layouts. subtle: globalThis.crypto.subtle, or null where WebCrypto is unavailable (D14: then no
-// result field is drawn). Returns new layouts; a result's field is drawable only when field_state is "verified".
+// result field is drawn). Returns new layouts; a result's field is drawable only when field_state is "verified". Only a
+// bundled result is ever "pending": a feed result is unassociated from the start and never reaches a pin.
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 export const geometryText = (layout) => canonical({ dies: layout.dies.map(({ die, x_um, y_um, rot_deg }) => ({ die, x_um, y_um, rot_deg })) });
 export async function verifyPinnedFields(layouts, { subtle = globalThis.crypto?.subtle ?? null, pins = FIELD_PINS } = {}) {
@@ -199,31 +385,40 @@ export async function verifyPinnedFields(layouts, { subtle = globalThis.crypto?.
   return out;
 }
 
-// A document ({ layouts: [...], next?, env? }) -> { layouts, refused: { code: count }, next, env }.
-export function normalizeFeed(doc, { source = "api" } = {}) {
+// A replay document ({ schema: REPLAY_SCHEMA, fixture: true, layouts: [...] }) -> { layouts, refused: { code: count } }.
+export function normalizeReplay(doc) {
   const refused = {};
-  const count = (code) => { refused[code] = (refused[code] ?? 0) + 1; };
   const list = isObj(doc) && Array.isArray(doc.layouts) ? doc.layouts : null;
-  if (!list) return { layouts: [], refused: { not_a_feed: 1 }, next: null, env: null };
+  if (!list) return { layouts: [], refused: { not_a_replay: 1 } };
   const layouts = [], ids = new Set();
   for (const raw of list.slice(0, BOUNDS.layouts)) {
-    const n = normalizeLayout(raw, { source });
-    if (n.refused) { count(n.refused); continue; }
-    if (ids.has(n.layout.id)) { count("id_duplicate"); continue; }
+    const n = normalizeLayout(raw);
+    if (n.refused) { refused[n.refused] = (refused[n.refused] ?? 0) + 1; continue; }
+    if (ids.has(n.layout.id)) { refused.id_duplicate = (refused.id_duplicate ?? 0) + 1; continue; }
     ids.add(n.layout.id);
     layouts.push(n.layout);
   }
   if (list.length > BOUNDS.layouts) refused.over_cap = list.length - BOUNDS.layouts;
-  const next = typeof doc.next === "string" && doc.next.length <= 128 && /^[A-Za-z0-9._:-]*$/.test(doc.next) ? doc.next : null;
-  const env = doc.env === "staging" || doc.env === "production" ? doc.env : null;
-  return { layouts, refused, next, env };
+  return { layouts, refused };
 }
 
-// ── the arrival list: merge by id, keep the order of first arrival ───────────────────────────────────────────────
-// A later record for the same id updates its status and result (a layout arrives queued, then gets scored); its place
-// in the arrival order never changes. A record never replaces a newer one: when the held record has a version (seq),
-// the incoming one must have a version at least as new, else it is a stale or replayed answer and is dropped.
+// ── the arrival list: merge by id ────────────────────────────────────────────────────────────────────────────────
+// A later record for the same id updates its status and result (a layout arrives queued, then gets scored). A record
+// never replaces a newer one: when the held record has a version (seq), the incoming one must have a version at least
+// as new, else it is a stale or replayed answer and is dropped. Order: the door's admission order (arrival) when every
+// record has one, else the order each id was first seen (the replay).
 export const isOlder = (incoming, held) => Number.isSafeInteger(held.seq) && !(Number.isSafeInteger(incoming.seq) && incoming.seq >= held.seq);
+// A waiting run's place, by #81's own rule (app/door/store.py _position): the number of queued or held runs whose arrival
+// is at or before its own, over the API's own states. The results feed returns a run again only when the run itself
+// changes, so the place it reported goes stale as the runs ahead of it leave the queue; the poller reapplies the rule
+// after every page. Only the API's states and arrival numbers count: nothing on the page's own clock or animation.
+export function withPositions(layouts) {
+  const waiting = layouts.filter((l) => (l.status === "queued" || l.status === "held") && count(l.arrival));
+  return layouts.map((l) => {
+    const position = waiting.includes(l) ? waiting.filter((w) => w.arrival <= l.arrival).length : null;
+    return position === l.position ? l : { ...l, position };
+  });
+}
 export function mergeArrivals(current, incoming) {
   const byId = new Map(current.map((l) => [l.id, l]));
   const order = current.map((l) => l.id);
@@ -232,10 +427,12 @@ export function mergeArrivals(current, incoming) {
     if (!held) { order.push(l.id); byId.set(l.id, l); continue; }
     if (!isOlder(l, held)) byId.set(l.id, l);
   }
-  return order.map((id) => byId.get(id));
+  const list = order.map((id) => byId.get(id));
+  if (!list.every((l) => count(l.arrival))) return list;
+  return list.map((l, i) => [l, i]).sort((a, b) => a[0].arrival - b[0].arrival || a[1] - b[1]).map(([l]) => l);
 }
 
-// ── the fixture ──────────────────────────────────────────────────────────────────────────────────────────────────
+// ── the bundled replay file ──────────────────────────────────────────────────────────────────────────────────────
 export const FIXTURE_URL = new URL("./door-fixture.json", import.meta.url).href;
 export async function loadFixture({ fetchImpl = (...a) => fetch(...a), url = FIXTURE_URL } = {}) {
   const r = await fetchImpl(url, { cache: "no-store" });
@@ -243,21 +440,20 @@ export async function loadFixture({ fetchImpl = (...a) => fetch(...a), url = FIX
   const body = await readBodyCapped(r, MAX_API_BYTES, "too_large");
   if (!body.ok) throw new Error("the fixture is over 4 MiB");
   const doc = strictJson(body.bytes);
-  if (!isObj(doc) || doc.schema !== FEED_SCHEMA || doc.fixture !== true) throw new Error("not a door fixture");
-  return normalizeFeed(doc, { source: "fixture" });
+  if (!isObj(doc) || doc.schema !== REPLAY_SCHEMA || doc.fixture !== true) throw new Error("not a door fixture");
+  return normalizeReplay(doc);
 }
 
 // ── the API seam ─────────────────────────────────────────────────────────────────────────────────────────────────
-// THE one function the API lane wires: GET /api/open/v1/door/results?after=<cursor>, through the Worker's read-only
-// /api/* proxy. `after` is the opaque cursor of the previous answer's `next` (null for the first call). It sends
-// nothing but the cursor, follows no redirect, reads at most 4 MiB, and never throws: it returns
-// { ok: true, layouts, refused, next, env, more } or { ok: false, error }.
+// The two GETs the page makes, through the Worker's read-only /api/* proxy, each with the integer cursor and nothing
+// else. They follow no redirect, read at most 4 MiB, and never throw: { ok: true, ...page } or { ok: false, error }.
 export const DOOR_RESULTS_PATH = "/api/open/v1/door/results";
-export async function fetchDoorResults(after = null, { fetchImpl = (...a) => fetch(...a), signal = undefined } = {}) {
-  const query = after === null || after === undefined || after === "" ? "" : `?${new URLSearchParams({ after: String(after) })}`;
+export const DOOR_EVENTS_PATH = "/api/open/v1/door/events";
+async function getPage(path, after, normalize, what, { fetchImpl = (...a) => fetch(...a), signal = undefined } = {}) {
+  const cursor = count(after) ? after : 0;
   let r;
   try {
-    r = await fetchImpl(`${DOOR_RESULTS_PATH}${query}`, { method: "GET", cache: "no-store", redirect: "error", headers: { accept: "application/json" }, signal });
+    r = await fetchImpl(`${path}?after=${cursor}`, { method: "GET", cache: "no-store", redirect: "error", headers: { accept: "application/json" }, signal });
   } catch {
     return { ok: false, error: "unreachable" };
   }
@@ -270,43 +466,58 @@ export async function fetchDoorResults(after = null, { fetchImpl = (...a) => fet
   } catch {
     return { ok: false, error: "answer is not JSON" };
   }
-  if (!isObj(doc) || doc.schema !== FEED_SCHEMA) return { ok: false, error: "answer is not a door feed" };
-  const feed = normalizeFeed(doc, { source: "api" });
-  return { ok: true, ...feed, more: doc.more === true };
+  const page = normalize(doc);
+  if (!page) return { ok: false, error: `answer is not a door ${what} page` };
+  if (page.next_after < cursor) return { ok: false, error: "the cursor went backwards" };
+  return { ok: true, ...page };
 }
+export const fetchDoorResults = (after = 0, opts = {}) => getPage(DOOR_RESULTS_PATH, after, normalizeResults, "results", opts);
+export const fetchDoorEvents = (after = 0, opts = {}) => getPage(DOOR_EVENTS_PATH, after, normalizeEvents, "events", opts);
 
 // ── the poller ───────────────────────────────────────────────────────────────────────────────────────────────────
-// Every POLL_MS after a good answer (at once while `more` is true, up to 8 pages), BACKOFF_MS after a failure, and
-// paused while the tab is hidden. onChange(state) after every poll. The cursor only moves on a good answer.
-// stop() ends the epoch: it aborts the request in flight, and an answer that still arrives for an ended epoch is
-// discarded before it touches the state or calls onChange. start() begins a new epoch.
+// Every POLL_MS after a good answer, BACKOFF_MS after a failure, paused while the tab is hidden. Each poll reads the
+// results, then the events, each page by page while has_more (up to MAX_PAGES); a poll is good only when both answer.
+// onChange(state) after every poll. A cursor only moves on a good page. stop() ends the epoch: it aborts the request in
+// flight, and an answer that still arrives for an ended epoch is discarded before it touches the state or calls
+// onChange. start() begins a new epoch.
 export const POLL_MS = 3000;
 export const BACKOFF_MS = 5000;
 export const LIVE_FRESH_MS = 12000;
-export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetch(...a), now = () => Date.now(), fetchResults = fetchDoorResults } = {}) {
-  const state = { layouts: [], cursor: null, connected: null, lastOkAt: null, error: "", env: null, refused: {}, polls: 0 };
+export const MAX_PAGES = 8;
+export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetch(...a), now = () => Date.now(),
+  fetchResults = fetchDoorResults, fetchEvents = fetchDoorEvents } = {}) {
+  const state = { layouts: [], cursor: 0, events: [], eventsCursor: 0, connected: null, lastOkAt: null, error: "", refused: {}, polls: 0,
+    scorer: null };
   let timer = null, stopped = true, epoch = 0, controller = null;
-  async function pollOnce() {
-    const mine = epoch;
-    let delay = POLL_MS;
-    for (let page = 0; page < 8; page += 1) {
+  const tally = (refused) => { for (const [k, v] of Object.entries(refused)) state.refused[k] = (state.refused[k] ?? 0) + v; };
+  // Pages of one feed until has_more is false; false when a page failed (the error is in state.error), null when stopped.
+  async function drain(mine, fetchPage, cursorKey, take) {
+    for (let page = 0; page < MAX_PAGES; page += 1) {
       controller = typeof AbortController === "function" ? new AbortController() : null;
-      const got = await fetchResults(state.cursor, { fetchImpl, signal: controller?.signal });
+      const got = await fetchPage(state[cursorKey], { fetchImpl, signal: controller?.signal });
       if (mine !== epoch) return null;            // stopped (or restarted) while waiting: discard, change nothing
       state.polls += 1;
-      if (!got.ok) { state.connected = false; state.error = got.error; delay = BACKOFF_MS; break; }
-      state.connected = true;
-      state.error = "";
-      state.lastOkAt = now();
-      state.env = got.env ?? state.env;
-      for (const [k, v] of Object.entries(got.refused)) state.refused[k] = (state.refused[k] ?? 0) + v;
-      state.layouts = mergeArrivals(state.layouts, got.layouts);
-      if (got.next !== null) state.cursor = got.next;
-      if (!got.more || got.next === null) break;
+      if (!got.ok) { state.error = got.error; return false; }
+      tally(got.refused);
+      take(got);
+      state.scorer = { ...got.scorer, at: now() };   // the newest snapshot, and when this page read it
+      const moved = got.next_after > state[cursorKey];
+      state[cursorKey] = got.next_after;
+      if (!got.has_more || !moved) break;
     }
-    if (mine !== epoch) return null;
+    return true;
+  }
+  async function pollOnce() {
+    const mine = epoch;
+    const results = await drain(mine, fetchResults, "cursor", (got) => { state.layouts = withPositions(mergeArrivals(state.layouts, got.layouts)); });
+    if (results === null) return null;
+    const events = results ? await drain(mine, fetchEvents, "eventsCursor", (got) => { state.events = mergeEvents(state.events, got.events); }) : false;
+    if (events === null || mine !== epoch) return null;
+    const ok = results && events;
+    state.connected = ok;
+    if (ok) { state.error = ""; state.lastOkAt = now(); }
     onChange(state);
-    return delay;
+    return ok ? POLL_MS : BACKOFF_MS;
   }
   async function tick() {
     if (stopped) return;
@@ -324,7 +535,7 @@ export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetc
 }
 
 // The status line: "replay", "staging" or "live". Live data counts as live only while the last good answer is fresh;
-// a staging host or an API that says it is staging is "staging". Anything else (the fixture, a replay, a feed that
+// on a staging host (staging.*, or this machine) it is "staging". Anything else (the fixture, a replay, a feed that
 // stopped answering) is "replay".
 export function hostEnv(hostname) {
   const h = String(hostname ?? "");
@@ -332,5 +543,5 @@ export function hostEnv(hostname) {
 }
 export function statusLine({ source, feed = null, hostname = "", nowMs = Date.now() }) {
   if (source !== "api" || !feed || feed.connected !== true || feed.lastOkAt === null || nowMs - feed.lastOkAt > LIVE_FRESH_MS) return "replay";
-  return feed.env === "staging" || hostEnv(hostname) === "staging" ? "staging" : "live";
+  return hostEnv(hostname) === "staging" ? "staging" : "live";
 }

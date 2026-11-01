@@ -1,7 +1,8 @@
 // node --test web/test/package3d-source.test.mjs
-// The agent-door adapter (web/public/sentilab/package/source3d.mjs): the bundled fixture's schema and provenance, the
+// The agent-door adapter (web/public/sentilab/package/source3d.mjs): the bundled replay's schema and provenance, the
 // legality of its layouts under the case's rules, what the adapter keeps and refuses (unknown fields and free text never
-// pass), the one API seam and its poller.
+// pass), the one API seam and its poller. The API's own contract, against #81's recorded responses, is in
+// package3d-feed.test.mjs; this file reads those recordings too where it needs an API page.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -24,6 +25,9 @@ const fileFetch = async () => respond(fixtureText);
 const DIES8 = (rot = () => 0) => DIE_IDS.map((die, i) => ({ die, x_um: [18000, 27000, 27000, 18000, 8500, 36500, 36500, 8500][i], y_um: [17500, 17500, 27500, 27500, 17500, 17500, 27500, 27500][i], rot_deg: rot(i) }));
 const GOOD = () => ({ id: "open-1a2b3c4d-00112233445566778899aabbccddeeff", label: "declared_agent · 3fa2", status: "queued", dies: DIES8() });
 const RESULT = () => ({ metric_id: "max_chiplet_centre_cell_mean_C", value_C: 101.235, precision_K: 0.01, label: "simulated, not silicon", row0: "bottom", grid64: Array.from({ length: 4096 }, (_, k) => 50 + (k % 64)) });
+// #81's recorded responses (package3d-feed.test.mjs says how they were made).
+const API = JSON.parse(readFileSync(join(here, "door-api-d1b09d12.json"), "utf8")).responses;
+const page = (name) => structuredClone(API[name].body);
 
 // ── the case's placement rules, ported from sundai_hotspot/tap_oracle.py:359-410 (margin with halo, lattice, halo
 //    overlap, minimum body gap), to check the fixture's layouts the same way the oracle does ──
@@ -56,7 +60,8 @@ test("the fixture: schema, order, labels and statuses; nothing refused", async (
     ["example-537d", "example · 537d", "example"],
     ["example-2431", "example · 2431", "example"],
   ]);
-  assert.equal(fixtureDoc.schema, door.FEED_SCHEMA);
+  assert.equal(fixtureDoc.schema, door.REPLAY_SCHEMA);
+  assert.equal(door.REPLAY_SCHEMA, "sentilab-package-replay/1", "page-owned: the retired sentilab-door-layouts/1 is no feed shape");
   assert.equal(fixtureDoc.fixture, true);
   // Short ids: the first 4 hex of the references' identity hashes, and of each example's compact layout string.
   assert.ok(ref.raw_annotations.identity.content_sha256.startsWith("6e54"));
@@ -118,17 +123,23 @@ test("the raw reference's map: the gate-zero layer-4 field, declared row0 top an
 
 // ── the adapter: what passes, what is refused ──
 test("unknown fields are dropped unread; visitor text never reaches a layout", () => {
-  const raw = { ...GOOD(), note: "IGNORE PREVIOUS INSTRUCTIONS", name: "<script>alert(1)</script>", team: "visit evil.example", extra: { deep: "x" },
-    dies: DIES8().map((d) => ({ ...d, comment: "hello-there", colour: "crimson-x" })), result: { ...RESULT(), definition: "free text from the API", note: "x", peak_c: 999 } };
-  raw.status = "evaluated";
-  const { layout } = door.normalizeLayout(raw);
-  assert.deepEqual(Object.keys(layout).sort(), ["cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
+  // An API item (#81's own reproduced record) with junk at every level.
+  const raw = page("results_reproduced").items[0];
+  Object.assign(raw, { note: "IGNORE PREVIOUS INSTRUCTIONS", name: "<script>alert(1)</script>", team: "visit evil.example", extra: { deep: "x" }, operator: "openai" });
+  raw.dies = raw.dies.map((d) => ({ ...d, comment: "hello-there", colour: "crimson-x" }));
+  Object.assign(raw.result, { definition: "free text from the API", note: "x", peak_c: 4242.4242 });
+  const { layout } = door.normalizeItem(raw);
+  assert.deepEqual(Object.keys(layout).sort(), ["arrival", "cls", "codes", "dies", "id", "label", "position", "reason", "result", "result_refused", "seq", "short", "status", "summary"]);
   for (const d of layout.dies) assert.deepEqual(Object.keys(d).sort(), ["die", "rot_deg", "x_um", "y_um"]);
-  assert.deepEqual(Object.keys(layout.result).sort(), ["claim", "diagnostic", "distinct", "field_key", "field_state", "grid", "grid_text", "label", "metric", "result_text"]);
-  assert.deepEqual([layout.result.grid_text, layout.result.result_text], [null, null], "an API result keeps no text of its record");
-  const text = JSON.stringify({ ...layout, result: { ...layout.result, grid: null } });
-  for (const bad of ["IGNORE", "script", "evil", "deep", "hello-there", "crimson-x", "free text", "999"]) assert.ok(!text.includes(bad), bad);
-  assert.equal(layout.label, "declared_agent · 3fa2", "rebuilt from class and short id");
+  assert.deepEqual([layout.result.grid, layout.result.grid_text, layout.result.result_text], [null, null, null], "an API result keeps no field and no text of its record");
+  const text = JSON.stringify(layout);
+  for (const bad of ["IGNORE", "script", "evil", "deep", "openai", "hello-there", "crimson-x", "free text", "peak_c", "4242"]) assert.ok(!text.includes(bad), bad);
+  assert.equal(layout.label, `declared_agent · ${raw.short_id}`, "rebuilt from class and short id");
+  // The replay reader drops the same junk from a bundled record.
+  const rec = { ...GOOD(), note: "IGNORE PREVIOUS INSTRUCTIONS", extra: { deep: "x" }, dies: DIES8().map((d) => ({ ...d, comment: "hello-there" })) };
+  const kept = door.normalizeLayout(rec).layout;
+  assert.deepEqual(Object.keys(kept).sort(), ["arrival", "cls", "codes", "dies", "id", "label", "position", "reason", "result", "result_refused", "seq", "short", "status", "summary"]);
+  for (const bad of ["IGNORE", "deep", "hello-there"]) assert.ok(!JSON.stringify(kept).includes(bad), bad);
 });
 
 test("labels: exactly '<class> · <4 hex>'; anything else refuses the whole layout", () => {
@@ -161,24 +172,21 @@ test("dies: exactly the eight, numbers in range, catalogue rotations only", () =
   assert.equal(door.normalizeLayout("x").refused, "not_an_object");
 });
 
-test("statuses: the contract's lifecycle; 'reference' and 'example' only in a fixture", () => {
-  for (const status of door.STATUSES) assert.ok(door.normalizeLayout({ ...GOOD(), status }).layout, status);
-  for (const status of ["reference", "example"]) {
-    assert.equal(door.normalizeLayout({ ...GOOD(), status }).refused, "status_unknown", status);
-    assert.ok(door.normalizeLayout({ ...GOOD(), status }, { source: "fixture" }).layout, status);
-  }
+test("statuses: the contract's lifecycle; 'reference' and 'example' only in the bundled replay", () => {
+  for (const status of [...door.STATUSES, ...door.FIXTURE_STATUSES]) assert.ok(door.normalizeLayout({ ...GOOD(), status }).layout, status);
   assert.equal(door.normalizeLayout({ ...GOOD(), status: "won" }).refused, "status_unknown");
+  const item = page("results_queued_page2").items[0];
+  for (const status of door.STATUSES) assert.ok(door.normalizeItem({ ...item, status }).layout, status);
+  for (const status of door.FIXTURE_STATUSES) assert.equal(door.normalizeItem({ ...item, status }).refused, "status_unknown", `${status}: never from the API`);
 });
 
-test("results: the frozen board metric only, a declared grid orientation, a scored state; a bad result drops the map, not the layout", () => {
-  const scored = (result, status = "evaluated", source = "api") => door.normalizeLayout({ ...GOOD(), status, result }, { source });
+test("replay results: the frozen board metric only, a declared grid orientation, a scored state; a bad result drops the map, not the layout", () => {
+  const scored = (result, status = "reference") => door.normalizeLayout({ ...GOOD(), status, result });
   const ok = scored(RESULT()).layout;
   assert.deepEqual(ok.result.metric, { id: "max_chiplet_centre_cell_mean_C", value: 101.235, precision_K: 0.01 });
-  assert.deepEqual([ok.result.field_state, ok.result.grid], ["unassociated", null], "an API field is unassociated and not kept");
-  // Orientation, on a bundled result (kept until its pin check).
-  const bottom = scored(RESULT(), "reference", "fixture").layout;
-  assert.equal(bottom.result.grid[5], 55, "row0 bottom: kept as given");
-  const top = scored({ ...RESULT(), row0: "top" }, "reference", "fixture").layout;
+  assert.equal(ok.result.field_state, "pending", "a bundled field waits for its pin check");
+  assert.equal(ok.result.grid[5], 55, "row0 bottom: kept as given");
+  const top = scored({ ...RESULT(), row0: "top" }).layout;
   assert.equal(top.result.grid[0], RESULT().grid64[63 * 64], "row0 top: turned so row 0 is y = 0");
   const refusal = (r, status) => scored(r, status).layout.result_refused;
   assert.equal(refusal({ ...RESULT(), metric_id: "peak_c" }), "metric_unknown");
@@ -191,21 +199,27 @@ test("results: the frozen board metric only, a declared grid orientation, a scor
   assert.equal(refusal({ ...RESULT(), grid64: RESULT().grid64.map((v, k) => (k === 77 ? NaN : v)) }), "grid_value");
   assert.equal(refusal({ ...RESULT(), active_layer_peak_C: 1e9 }), "distinct_value");
   for (const status of ["queued", "evaluating", "failed", "rejected"]) assert.equal(refusal(RESULT(), status), "result_not_scored_state", status);
-  const noGrid = scored({ ...RESULT(), grid64: undefined, row0: undefined }, "reference", "fixture").layout;
+  const noGrid = scored({ ...RESULT(), grid64: undefined, row0: undefined }).layout;
   assert.deepEqual([noGrid.result.grid, noGrid.result.field_state], [null, "unassociated"], "a value without a map");
   assert.ok(scored({ ...RESULT(), metric_id: "x" }).layout, "the layout itself still draws");
 });
 
-test("normalizeFeed: caps, duplicate ids, cursor and env checks", () => {
+test("normalizeReplay and normalizeResults: caps, duplicate ids, and what is not one", () => {
   const many = { layouts: Array.from({ length: 520 }, (_, i) => ({ ...GOOD(), id: `l${i}` })) };
-  const f = door.normalizeFeed(many);
+  const f = door.normalizeReplay(many);
   assert.equal(f.layouts.length, door.BOUNDS.layouts);
   assert.equal(f.refused.over_cap, 20);
-  const dup = door.normalizeFeed({ layouts: [GOOD(), GOOD()], next: "c-12", env: "staging" });
-  assert.deepEqual([dup.layouts.length, dup.refused, dup.next, dup.env], [1, { id_duplicate: 1 }, "c-12", "staging"]);
-  assert.equal(door.normalizeFeed({ layouts: [], next: "<script>", env: "prod!" }).next, null);
-  assert.equal(door.normalizeFeed({ layouts: [], env: "prod!" }).env, null);
-  assert.deepEqual(door.normalizeFeed([1, 2]).refused, { not_a_feed: 1 });
+  const dup = door.normalizeReplay({ layouts: [GOOD(), GOOD()] });
+  assert.deepEqual([dup.layouts.length, dup.refused], [1, { id_duplicate: 1 }]);
+  assert.deepEqual(door.normalizeReplay([1, 2]).refused, { not_a_replay: 1 });
+  const results = page("results_reproduced");
+  results.items.push(structuredClone(results.items[0]));
+  assert.deepEqual(door.normalizeResults(results).refused, { id_duplicate: 1 }, "one run twice on a page is drawn once");
+  for (const edit of [{ schema: "sentilab-door-layouts/1" }, { next_after: -1 }, { next_after: 1.5 }, { next_after: "18" }, { has_more: "no" },
+    { items: {} }, { metric: null }]) {
+    assert.equal(door.normalizeResults({ ...page("results_reproduced"), ...edit }), null, JSON.stringify(edit));
+  }
+  assert.equal(door.normalizeEvents({ ...page("events_all"), next_after: 2 ** 53 }), null, "past the API's own cursor range");
 });
 
 test("mergeArrivals: first arrival keeps its place; a later record updates status and result", () => {
@@ -218,69 +232,45 @@ test("mergeArrivals: first arrival keeps its place; a later record updates statu
 });
 
 // ── the seam ──
-test("fetchDoorResults: one read-only GET to the door results path, the cursor and nothing else", async () => {
-  const calls = [];
-  const fetchImpl = async (url, init) => { calls.push({ url, init }); return respond({ schema: door.FEED_SCHEMA, layouts: [GOOD()], next: "c1", more: true }); };
-  const first = await door.fetchDoorResults(null, { fetchImpl });
-  assert.deepEqual([first.ok, first.layouts.length, first.next, first.more], [true, 1, "c1", true]);
-  await door.fetchDoorResults("c 1/&x", { fetchImpl });
-  assert.equal(calls[0].url, "/api/open/v1/door/results");
-  assert.equal(calls[1].url, "/api/open/v1/door/results?after=c+1%2F%26x");
-  for (const { init } of calls) {
-    assert.equal(init.method, "GET");
-    assert.equal(init.body, undefined);
-    assert.equal(init.redirect, "error");
-    assert.equal(init.cache, "no-store");
-  }
-  assert.deepEqual(await door.fetchDoorResults(null, { fetchImpl: async () => respond("nope", 503) }), { ok: false, error: "answered 503" });
-  assert.deepEqual(await door.fetchDoorResults(null, { fetchImpl: async () => { throw new TypeError("network"); } }), { ok: false, error: "unreachable" });
-  assert.deepEqual(await door.fetchDoorResults(null, { fetchImpl: async () => respond("{not json") }), { ok: false, error: "answer is not JSON" });
-  assert.deepEqual(await door.fetchDoorResults(null, { fetchImpl: async () => respond({ layouts: [] }) }), { ok: false, error: "answer is not a door feed" });
-  const big = new Uint8Array(4 * 1024 * 1024 + 10).fill(32);
-  assert.deepEqual(await door.fetchDoorResults(null, { fetchImpl: async () => new Response(big, { status: 200 }) }), { ok: false, error: "answer over 4 MiB" });
-});
-
-test("the poller: drains pages while `more`, keeps the cursor on failure, backs off, and resumes", async () => {
-  const script = [
-    { schema: door.FEED_SCHEMA, layouts: [{ ...GOOD(), id: "a" }], next: "c1", more: true },
-    { schema: door.FEED_SCHEMA, layouts: [{ ...GOOD(), id: "b" }], next: "c2", more: false },
-    503,
-    { schema: door.FEED_SCHEMA, layouts: [{ ...GOOD(), id: "a", status: "evaluated", result: RESULT() }], next: "c3", env: "staging" },
-  ];
+test("the poller: results then events, page by page; a failure keeps the cursors and backs off; then it resumes", async () => {
+  // #81's recorded pages, in the order the poller asks for them.
+  const script = [page("results_queued_page1"), page("results_queued_page2"), page("events_page"), page("events_all"),
+    503, page("results_reproduced"), page("events_all")];
   const seen = [];
   let t = 1000;
   const fetchImpl = async (url) => { seen.push(url); const next = script.shift(); return typeof next === "number" ? respond("down", next) : respond(next); };
   const changes = [];
-  const feed = door.createDoorFeed({ fetchImpl, now: () => t, onChange: (s) => changes.push({ connected: s.connected, n: s.layouts.length, cursor: s.cursor }) });
+  const feed = door.createDoorFeed({ fetchImpl, now: () => t, onChange: (s) => changes.push({ connected: s.connected, n: s.layouts.length, cursor: s.cursor, events: s.eventsCursor }) });
   assert.equal(await feed.pollOnce(), door.POLL_MS);
-  assert.deepEqual(seen, ["/api/open/v1/door/results", "/api/open/v1/door/results?after=c1"]);
-  assert.deepEqual(changes.at(-1), { connected: true, n: 2, cursor: "c2" });
+  assert.deepEqual(seen, ["/api/open/v1/door/results?after=0", "/api/open/v1/door/results?after=4", "/api/open/v1/door/events?after=0", "/api/open/v1/door/events?after=3"]);
+  assert.deepEqual(changes.at(-1), { connected: true, n: 3, cursor: 5, events: 41 });
   t = 5000;
   assert.equal(await feed.pollOnce(), door.BACKOFF_MS);
-  assert.deepEqual(changes.at(-1), { connected: false, n: 2, cursor: "c2" }, "a failure keeps the layouts and the cursor");
+  assert.deepEqual(changes.at(-1), { connected: false, n: 3, cursor: 5, events: 41 }, "a failure keeps the layouts and the cursors");
   assert.equal(feed.state.error, "answered 503");
   assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "sentilab.aidenid.com", nowMs: 5000 }), "replay", "a feed that stopped answering is not live");
   t = 9000;
   await feed.pollOnce();
-  assert.equal(seen.at(-1), "/api/open/v1/door/results?after=c2", "resumes from the last good cursor");
-  assert.deepEqual(feed.state.layouts.map((l) => [l.id, l.status]), [["a", "evaluated"], ["b", "queued"]]);
-  assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "sentilab.aidenid.com", nowMs: 9000 }), "staging", "the API says staging");
-  feed.state.env = "production";
+  assert.deepEqual(seen.slice(-2), ["/api/open/v1/door/results?after=5", "/api/open/v1/door/events?after=41"], "resumes from the last good cursors");
+  assert.deepEqual(feed.state.layouts.map((l) => l.status), ["reproduced", "reproduced", "reproduced"]);
+  assert.equal(feed.state.events.length, door.BOUNDS.events);
   assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "sentilab.aidenid.com", nowMs: 9000 }), "live");
   assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "staging.sentilab.aidenid.com", nowMs: 9000 }), "staging", "the staging host");
+  assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "127.0.0.1", nowMs: 9000 }), "staging", "this machine");
   assert.equal(door.statusLine({ source: "api", feed: feed.state, hostname: "sentilab.aidenid.com", nowMs: 9000 + door.LIVE_FRESH_MS + 1 }), "replay", "stale is not live");
   assert.equal(door.statusLine({ source: "fixture", feed: feed.state, hostname: "sentilab.aidenid.com", nowMs: 9000 }), "replay");
 });
 
 test("the page modules talk to the API only through the seam, by GET", () => {
   const dir = join(repo, "web", "public", "sentilab", "package");
-  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "case-cpu-dram.mjs"]) {
+  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "case-cpu-dram.mjs", "status.mjs"]) {
     const src = readFileSync(join(dir, f), "utf8");
     assert.doesNotMatch(src, /\bfetch\s*\(/, `${f} never fetches`);
     assert.doesNotMatch(src, /new (WebSocket|EventSource|XMLHttpRequest)|sendBeacon\(/, `${f}: polling only`);
   }
   const src = readFileSync(join(dir, "source3d.mjs"), "utf8");
-  assert.equal(src.match(/fetchImpl\(`\$\{DOOR_RESULTS_PATH\}/g)?.length, 1, "one call site for the API");
+  assert.equal(src.match(/fetchImpl\(`/g)?.length, 1, "one call site for the API");
+  assert.match(src, /r = await fetchImpl\(`\$\{path\}\?after=\$\{cursor\}`, \{ method: "GET",/);
   assert.doesNotMatch(src, /method:\s*"(POST|PUT|PATCH|DELETE)"/);
   assert.doesNotMatch(src, /new (WebSocket|EventSource|XMLHttpRequest)|sendBeacon\(/);
 });
