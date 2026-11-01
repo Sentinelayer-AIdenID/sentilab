@@ -369,7 +369,9 @@ export function speakerScript(data, v4) {
     out.push(`## Option, Carter's call: not spoken unless he asks (slide ${o.slide})`, "", o.line, "", `Numbers: ${o.numbers} Qualifiers that travel with it: ${o.qualifiers} Source: ${o.source}`, "");
   }
   if (data.placeholders.length) {
-    out.push("## Still measuring", "", "Each shows \"measuring…\" on its slide and is read out only once it is filled:", "");
+    // A draft shows each as "measuring…"; the final shows none of them (root's copy P2, relayed 13:49Z).
+    if (data.deck.draft) out.push("## Still measuring", "", "Each shows \"measuring…\" on its slide and is read out only once it is filled:", "");
+    else out.push("## Not shown: dropped at the freeze", "", `Each had no number on its slide at the freeze, so the slide does not show it and the words do not read it${data.freezeNote ? "; FILL-IN gives the receipt" : " (no receipt)"}:`, "");
     for (const p of data.placeholders) out.push(`- ${p.label} (${p.where}; metric \`${p.id}\`)`);
     out.push("");
   }

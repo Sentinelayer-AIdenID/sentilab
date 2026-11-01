@@ -246,12 +246,18 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
     assert.equal(slide(fin, "invite").content.figure.id, "plain13", "the fallback picture at the freeze");
     assert.equal(slide(fin, "invite").notes.text, "We're inviting other people's agents to the chip challenge: scan the code and send yours.");
     assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
+    // Root's copy P2 (relayed 13:49Z): the final's script lists what was dropped, and claims no "measuring…" for it.
+    const script = speakerScript(fin, reviewed);
+    assert.ok(fin.placeholders.length > 0 && fin.placeholders.every((p) => p.dropped && script.includes(`\`${p.id}\``)), slot);
+    assert.match(script, /## Not shown: dropped at the freeze\n\nEach had no number on its slide at the freeze, so the slide does not show it and the words do not read it \(no receipt\):/);
+    assert.doesNotMatch(script, /## Still measuring|shows "measuring…" on its slide/, slot);
     // The script and FILL-IN say what the build is: the freeze's final, not a review.
     assert.match(speakerScript(fin, reviewed).split("\n")[0], /, final \d{4}-\d\d-\d\d \d\d:\d\d UTC$/, slot);
     assert.match(fillInTable(fin), /^# FILL-IN: the founder deck's placeholders\n\nThe freeze, \d{4}-\d\d-\d\d \d\d:\d\d UTC\. Each below had no receipt/);
     assert.ok(fin.budget.totalSeconds <= fin.budget.talkCapSeconds);
   }
   assert.match(speakerScript(draft, pre.v4).split("\n")[0], /, draft \d{4}-\d\d-\d\d \d\d:\d\d UTC$/);
+  assert.match(speakerScript(draft, pre.v4), /## Still measuring\n\nEach shows "measuring…" on its slide and is read out only once it is filled:/, "a draft keeps its wording");
   // The draft keeps the placeholders and the tag.
   assert.match(html(draft), /DRAFT · numbers still measuring/);
   // A slide whose words need a missing number must say what to speak at the freeze instead.
