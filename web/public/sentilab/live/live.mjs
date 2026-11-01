@@ -285,14 +285,14 @@ function drawAtlas(svg, { large = false } = {}) {
     // One dot per run at its station (a task state), at most 12 drawn per station; arrivals are counted, not drawn.
     const row = st.runs.slice(-12);
     row.forEach((r, k) => {
-      const cx = x - ((row.length - 1) * 7) / 2 + k * 7, cy = y + (y < 76 ? 17 : -17);
+      const cx = x - ((row.length - 1) * 7) / 2 + k * 7, cy = y + 17;
       const dot = s("circle", { class: `atlas-dot${shown && r.id === shown.id ? " sel" : ""}`, cx: cx.toFixed(1), cy, r: large ? 3.5 : 2.8, fill: LANE_COLOR.run });
       dot.append(s("title", {}, `${r.label} · ${(STATUS_TAG[r.status] ?? r.status).toLowerCase()}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
     });
   });
-  if (a.out.length) svg.append(s("text", { x: 150, y: 168, "text-anchor": "middle", class: "atlas-out", fill: "#8fa398", "font-size": 8, "font-family": "monospace" },
+  if (a.out.length) svg.append(s("text", { x: 150, y: 158, "text-anchor": "middle", class: "atlas-out", fill: "#8fa398", "font-size": 8, "font-family": "monospace" },
     `${a.out.length} run(s) out of the flow: rejected, failed, cancelled or expired`));
   return a;
 }
