@@ -11,10 +11,15 @@
 //      answer the door does not recognise is "not confirmed", never "nothing was sent", and the person is offered the
 //      same idempotent retry (same token, layout and request key), never a new link.
 // Plus the terms a submission accepts, now read from the intake's board (#81 at 796fec43: terms.accepted_versions).
+// Root's repair review at df1189c4 (one P2, the rest of 3): after the POST, a schema tag alone made an answer definite;
+// a 202 with no state, or a state outside the contract's lifecycle, showed "Not queued", "State: unknown" and no
+// retry. Only an outcome the door can name (a run with its lifecycle state and run id, a refusal in the contract's
+// reason codes, or the intake's token refusal) is definite; everything else is "not confirmed", with the same retry.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
-import { API_ORIGIN, BASE, BOARD, BROWSER, OVERLAP, REF, TERMS, agent, file, installApi, mint, postForm, postJson, same, setup } from "./door-harness.mjs";
+import { API_ORIGIN, BASE, BOARD, BROWSER, OVERLAP, REF, RUN, TERMS, agent, file, installApi, mint, postForm, postJson, same, setup } from "./door-harness.mjs";
 
 const submits = (calls) => calls.filter((c) => c.method === "POST" && c.path === "/api/open/v1/door/submit");
 const rejected = (codes) => ({ schema: "sentilab-door-submit/1", state: "rejected", codes: codes.map((code) => ({ code })) });
@@ -193,6 +198,108 @@ test("3. refusals before the POST still say nothing was sent, and only they do",
     assert.match(r.text, /Nothing was sent\./);
   }
   assert.deepEqual(submits(calls), []);
+});
+
+// ── 3, root's repair review at df1189c4: only an outcome the door can name is definite ─────────────────────────────
+const SUBMIT = "sentilab-door-submit/1";
+// The contract's own vocabularies: the lifecycle states (schemas/common.schema.json) and the 48 reason codes with their
+// groups (reason-codes.json), both pinned in contracts/HASHES.txt.
+const CONTRACT = new URL("../../contracts/open-proposal-v1/", import.meta.url);
+const LIFECYCLE = JSON.parse(readFileSync(new URL("schemas/common.schema.json", CONTRACT), "utf8")).$defs.lifecycle_state.enum;
+const GROUP_OF = new Map(JSON.parse(readFileSync(new URL("reason-codes.json", CONTRACT), "utf8")).groups
+  .flatMap((group) => group.codes.map((entry) => [entry.code, group.group])));
+// #81's http_status (app/door/service.py at d1b09d12): the first code decides the status of a refusal.
+const refusalStatus = (code) => (code === "oversize" ? 413 : ["transport", "envelope"].includes(GROUP_OF.get(code)) ? 400
+  : ["not_open_yet", "manifest_closed"].includes(code) ? 503 : code === "idempotency_conflict" ? 409 : GROUP_OF.get(code) === "policy" ? 429 : 422);
+
+// Answers that carry the submit schema (or look like a token refusal) but name no outcome the door can stand behind.
+const UNNAMED = [
+  ["root's control: a 202 with the schema and no state", 202, { schema: SUBMIT }],
+  ["root's control: a 202 with a state outside the lifecycle", 202, { schema: SUBMIT, state: "not-a-state" }],
+  ["a state outside the lifecycle, with a run id", 202, { schema: SUBMIT, state: "not-a-state", run_id: RUN }],
+  ["a run state with no run id", 202, { schema: SUBMIT, state: "queued" }],
+  ["a run state whose run id is not one", 202, { schema: SUBMIT, state: "queued", run_id: "../../admin" }],
+  ["a run state under a status that is not the intake's acceptance", 201, { schema: SUBMIT, state: "queued", run_id: RUN }],
+  ["a run state under a refusal status", 422, { schema: SUBMIT, state: "queued", run_id: RUN }],
+  ["a refusal under an acceptance status", 202, rejected(["halo_overlap"])],
+  ["a refusal under a server-error status", 500, rejected(["halo_overlap"])],
+  ["a refusal with no codes", 422, { schema: SUBMIT, state: "rejected" }],
+  ["a refusal with an empty code list", 422, { schema: SUBMIT, state: "rejected", codes: [] }],
+  ["a refusal whose code is outside the contract", 422, rejected(["not-a-code"])],
+  ["a refusal with one code outside the contract", 422, rejected(["halo_overlap", "not-a-code"])],
+  ["queue_full as a state (in the contract it is a code)", 429, { schema: SUBMIT, state: "queue_full" }],
+  ["a lifecycle state with no run id under 200", 200, { schema: SUBMIT, state: "evaluated" }],
+  ["a token refusal the intake never gives", 403, { error: "token_revoked" }],
+];
+
+test("3, repair review: an answer naming no outcome the door can stand behind (root's two 202 controls among them) is 'not confirmed', with the same retry", async (t) => {
+  const token = await mint();
+  for (const [name, status, answer] of UNNAMED) {
+    const calls = installApi(t, { submit: async () => Response.json(answer, { status }) });
+    const s = setup();
+    const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }));
+    const body = JSON.parse(r.text);
+    assert.deepEqual([r.status, body.error, body.cause], [502, "delivery_unknown", "unrecognized_answer"], name);
+    assert.deepEqual(body.retry, { method: "POST", url: `${BASE}/agents/submit`, content_type: "application/json", body: { t: token, layout: REF, request_key: body.request_key } }, name);
+    const page = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`));
+    assert.equal(page.status, 502, name);
+    assertNotConfirmedPage(page.text, token);
+    assert.ok(!/Not queued|State:/.test(page.text), `${name}: never a definite "Not queued", never a state`);
+    const keys = submits(calls).map((c) => c.body.request_key);
+    assert.deepEqual([keys.length, new Set([...keys, body.request_key]).size], [2, 1], `${name}: one request, retried as itself`);
+    t.mock.restoreAll();
+  }
+});
+
+// The result page names the state in words: never "unknown", never an unfilled value.
+const named = (text) => /<p>State: (?!unknown\.|undefined\.)[a-z][a-z -]+\.<\/p>/.test(text);
+
+test("3, repair review: the intake's own outcomes stay definite: a run in every lifecycle state, a refusal in every contract code, its token refusals", async (t) => {
+  const token = await mint();
+  const form = postForm(`t=${token}&l=${encodeURIComponent(REF)}`);
+  assert.equal(LIFECYCLE.length, 12);
+  assert.equal(GROUP_OF.size, 48);
+  // A run the intake holds: 202 when new, 200 when the same request comes again, in any state but rejected.
+  for (const state of LIFECYCLE.filter((x) => x !== "rejected")) {
+    for (const status of [202, 200]) {
+      const answer = { schema: SUBMIT, state, run_id: RUN, position: 1, duplicate: status === 200, label: "automation · ab12", short_id: "ab12" };
+      installApi(t, { submit: async () => Response.json(answer, { status }) });
+      const s = setup();
+      const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }));
+      assert.deepEqual([r.status, JSON.parse(r.text)], [status, answer], `${state} ${status}`);
+      const page = await s.go("/agents/submit", form);
+      assert.equal(page.status, 200, `${state} ${status}`);
+      assert.match(page.text, /<h1>Sent to the scorer<\/h1>/, state);
+      assert.ok(page.text.includes(`<code>${RUN}</code>`) && named(page.text) && !/<form\b/.test(page.text), `${state}: a named state and its run`);
+      t.mock.restoreAll();
+    }
+  }
+  // A refusal before any run, for every reason code in the contract's vocabulary, under the status #81 gives it.
+  for (const code of GROUP_OF.keys()) {
+    const answer = rejected([code]);
+    installApi(t, { submit: async () => Response.json(answer, { status: refusalStatus(code) }) });
+    const s = setup();
+    const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }));
+    assert.deepEqual([r.status, JSON.parse(r.text)], [refusalStatus(code), answer], code);
+    const page = await s.go("/agents/submit", form);
+    assert.equal(page.status, refusalStatus(code), code);
+    assert.match(page.text, /<h1>Not queued<\/h1>/, code);
+    assert.ok(page.text.includes("<p>State: rejected before any solve.</p>") && page.text.includes(`<li>${code}: `) && /Nothing was queued\./.test(page.text)
+      && !/same run|<form\b/.test(page.text), `${code}: named, and nothing queued`);
+    t.mock.restoreAll();
+  }
+  // The intake's token refusals (app/door/intake.py token_refusal), a definite "nothing was queued".
+  for (const answer of [{ error: "token_scope", allowed: "review" }, { error: "token_expired" }, { error: "token_invalid" }]) {
+    installApi(t, { submit: async () => Response.json(answer, { status: 403 }) });
+    const s = setup();
+    const r = await s.go("/agents/submit", postJson({ t: token, layout: REF }));
+    assert.deepEqual([r.status, JSON.parse(r.text)], [403, answer], answer.error);
+    const page = await s.go("/agents/submit", form);
+    assert.equal(page.status, 403, answer.error);
+    assert.match(page.text, /<h1>Not queued<\/h1>/, answer.error);
+    assert.ok(page.text.includes("The scorer intake refused this link's token.") && /Nothing was queued\./.test(page.text) && !/State:|undefined|<form\b/.test(page.text), answer.error);
+    t.mock.restoreAll();
+  }
 });
 
 // ── terms from the intake's board (#81 at 796fec43) ────────────────────────────────────────────────────────────────

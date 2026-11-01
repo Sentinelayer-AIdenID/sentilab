@@ -1,7 +1,8 @@
 // node web/test/door-mutants.mjs
 // Mutants of the agent door: the scoped purpose token's verification and scope (src/door/token.js), the door's token
 // gate, and every repair of the review round at 75aed822 (root's three P2s, warden's P2 and P3s, the seven mutants
-// that survived warden's run, the staging environment). Each runs in a disposable copy of web/ (the working checkout
+// that survived warden's run, the staging environment) and of root's repair review at df1189c4 (only an outcome the
+// door can name is definite after its POST). Each runs in a disposable copy of web/ (the working checkout
 // is never modified) against the door's tests, and must fail an assertion there: a mutant that survives, or that only
 // breaks an import, fails this script. (Dropping equalHex's length term is an equivalent mutant: TOKEN_PATTERN already
 // fixes the MAC at 32 hex characters, so no input can tell the two apart. It is not listed.)
@@ -69,6 +70,23 @@ const groups = {
     ["not-confirmed page says nothing was sent", RENDER, '<p class="fine">Sending it again is safe:', '<p class="fine">Nothing was sent. Ask your assistant for a new link. Sending it again is safe:'],
     ["not-confirmed retry drops the token", RENDER, RETRY_FORM, RETRY_FORM.replace('<input type="hidden" name="t" value="${esc(token)}">\n', "")],
   ],
+  "root repair P2, only a named outcome is definite": [
+    ["a schema tag alone is definite (the code at df1189c4)", DOOR, "  const outcome = knownOutcome(answer);\n",
+      "  const outcome = answer.ok && answer.json?.schema === SUBMIT_SCHEMA && answer.status < 500 ? { refusal: null, state: answer.json.state, runId: answer.json.run_id ?? null, codes: [] } : knownOutcome(answer);\n"],
+    ["a state outside the lifecycle names a run", DOOR, 'const run = value.state !== "rejected" && STATES.has(value.state) && typeof value.run_id', 'const run = value.state !== "rejected" && typeof value.run_id'],
+    ["a run needs no run id", DOOR, ' && typeof value.run_id === "string" && RUN_ID.test(value.run_id);', ";"],
+    ["any run id string names a run", DOOR, ' && typeof value.run_id === "string" && RUN_ID.test(value.run_id);', ' && typeof value.run_id === "string";'],
+    ["a run under any status", DOOR, "  if (ACCEPTED_STATUS.has(answer.status)) {\n", '  if (value.state !== "rejected") {\n'],
+    ["a refusal under any status", DOOR, "const refused = REFUSAL_STATUS.has(answer.status) && ", "const refused = "],
+    ["a refusal with no codes", DOOR, "value.codes.length > 0", "value.codes.length >= 0"],
+    ["a refusal with some contract code", DOOR, "&& value.codes.every((c) =>", "&& value.codes.some((c) =>"],
+    ["a refusal with any code", DOOR, 'typeof c === "object" && REASON_CODES.has(c.code));', 'typeof c === "object" && typeof c.code === "string");'],
+    ["any token_ error is the intake's token refusal", DOOR, "TOKEN_REFUSALS.has(value.error) ?", '/^token_[a-z]+$/.test(value.error ?? "") ?'],
+    ["the vocabulary misses a contract code", DOOR, '"edited_before_ingest", "unattributable", ', '"edited_before_ingest", '],
+    ["cross_checked has no words", RENDER, '  cross_checked: "independently verified", ', "  "],
+    ["a refusal page promises the same run", RENDER, '${accepted ? "Pressing the button again returns the same run." : "Nothing was queued."}', "Pressing the button again returns the same run."],
+    ["the token refusal page is skipped", RENDER, "  if (outcome.refusal) {\n", "  if (false) {\n"],
+  ],
   "terms from the intake's board": [
     ["the first accepted version, not the highest", DOOR, "number(v) > number(best)", "false"],
   ],
@@ -104,6 +122,8 @@ const groups = {
 const tests = ["door-token.test.mjs", "door-routes.test.mjs", "door-submit.test.mjs", "door-review.test.mjs", "door-hold.test.mjs",
   "door-json.test.mjs", "door-layout.test.mjs"];
 const web = new URL("../", import.meta.url);
+const repo = new URL("../", web);
+const CONTRACT_FILES = ["contracts/open-proposal-v1/reason-codes.json", "contracts/open-proposal-v1/schemas/common.schema.json"];
 const only = process.argv[2];
 let killed = 0;
 let total = 0;
@@ -111,10 +131,14 @@ for (const [group, mutants] of Object.entries(groups)) {
   if (only && !group.startsWith(only)) continue;
   for (const [name, rel, before, after] of mutants) {
     total += 1;
-    const dir = mkdtempSync(join(tmpdir(), "door-mutant-"));
+    // The copy keeps the repository's shape (<root>/web next to <root>/contracts): the door's tests read the contract's
+    // lifecycle states and reason codes from contracts/open-proposal-v1.
+    const root = mkdtempSync(join(tmpdir(), "door-mutant-"));
+    const dir = join(root, "web");
     try {
       for (const part of ["src", "public", "test", "scripts"]) cpSync(new URL(`${part}/`, web), join(dir, part), { recursive: true });
       cpSync(new URL("wrangler.jsonc", web), join(dir, "wrangler.jsonc"));
+      for (const rel of CONTRACT_FILES) cpSync(new URL(rel, repo), join(root, ...rel.split("/")));
       const file = join(dir, ...rel.split("/"));
       const source = readFileSync(file, "utf8");
       assert.equal(source.split(before).length, 2, `unique mutation point: ${name}`);
@@ -126,7 +150,7 @@ for (const [group, mutants] of Object.entries(groups)) {
       console.log(`KILLED [${group}] ${name}: ${first}`);
       killed += 1;
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(root, { recursive: true, force: true });
     }
   }
 }

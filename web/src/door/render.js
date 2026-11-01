@@ -156,7 +156,7 @@ const CODE_TEXT = Object.freeze({
   margin: "too close to the interposer edge (die plus halo)", halo_overlap: "halos overlap", min_spacing: "dies closer than 0.1 mm",
   rotation_not_allowed: "rotation not allowed for this die", out_of_frame: "centre outside the 45 mm frame", die_count: "not eight dies",
   die_order: "dies out of order", lattice: "centre off the 0.5 mm lattice", schema_invalid: "not in the layout format",
-  unknown_field: "a field the layout does not have",
+  unknown_field: "a field the layout does not have", queue_full: "the scorer's queue is full",
 });
 export const codeText = (found) => `${found.code}${found.dies ? ` (${found.dies.map((d) => DIES[d]?.id ?? d).join(", ")})` : ""}: ${CODE_TEXT[found.code] ?? "refused"}`;
 
@@ -243,16 +243,26 @@ export function notConfirmedHtml({ token, compact, cause }) {
 <p class="fine">Sending it again is safe: it repeats this exact request, with the same token and layout, so the intake returns the same run and charges it once. Keep using this page and this link rather than starting over.</p>`);
 }
 
+// Every state of the contract's lifecycle (schemas/common.schema.json lifecycle_state).
 const STATE_TEXT = Object.freeze({ queued: "queued for the scorer", held: "held", evaluating: "being simulated", evaluated: "simulated",
   replaying: "being replayed in a fresh process", reproduced: "reproduced in a fresh process", not_reproduced: "not reproduced",
-  rejected: "rejected before any solve", failed: "failed", cancelled: "cancelled", expired: "expired", queue_full: "not queued: the queue is full" });
+  cross_checked: "independently verified", rejected: "rejected before any solve", failed: "failed", cancelled: "cancelled", expired: "expired" });
 
+// The intake's definite answer to the button (door.js knownOutcome): a run it holds, a refusal before any run, or its
+// token refusal. An answer that names none of these never reaches this page; it gets notConfirmedHtml.
 export function resultHtml(origin, token, outcome) {
-  const accepted = outcome.state && outcome.state !== "rejected" && outcome.state !== "queue_full";
+  const eyebrow = `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>`;
+  if (outcome.refusal) {
+    return page("SentiLab: not queued", `${eyebrow}
+<h1>Not queued</h1>
+<p>The scorer intake refused this link's token. ${esc(ERROR_TEXT[outcome.refusal])}</p>
+<p class="fine">Nothing was queued. ${esc(NEXT_STEP[outcome.refusal])}</p>`);
+  }
+  const accepted = outcome.state !== "rejected";
   const run = outcome.runId ? `<p>Run <code>${esc(outcome.runId)}</code>. Its state: <a href="${esc(`${origin}/agents/status/${outcome.runId}?t=${token}`)}">status</a>.</p>` : "";
   const list = outcome.codes.length ? `<ul class="codes">\n${outcome.codes.map((c) => `<li>${esc(codeText(c))}</li>`).join("\n")}\n</ul>\n` : "";
-  return page(accepted ? "SentiLab: sent to the scorer" : "SentiLab: not sent", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
+  return page(accepted ? "SentiLab: sent to the scorer" : "SentiLab: not queued", `${eyebrow}
 <h1>${accepted ? "Sent to the scorer" : "Not queued"}</h1>
-<p>State: ${esc(STATE_TEXT[outcome.state] ?? "unknown")}.</p>
-${run}${list}<p class="fine">Pressing the button again returns the same run. Simulated, not silicon.</p>`);
+<p>State: ${esc(STATE_TEXT[outcome.state])}.</p>
+${run}${list}<p class="fine">${accepted ? "Pressing the button again returns the same run." : "Nothing was queued."} Simulated, not silicon.</p>`);
 }

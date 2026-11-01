@@ -58,7 +58,9 @@ export const API = Object.freeze({
 export const CLASSES = Object.freeze(["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown"]);
 export const OPERATORS = Object.freeze(["openai", "google", "meta", "anthropic", "perplexity", "microsoft", "apple", "amazon", "bytedance", "commoncrawl", "deepseek", "unknown"]);
 const STATES = new Set(["rejected", "queued", "held", "evaluating", "evaluated", "failed", "replaying", "reproduced", "not_reproduced", "cross_checked", "cancelled", "expired"]);
-const REASON_CODES = new Set(["oversize", "not_utf8", "malformed_json", "duplicate_key", "nonfinite_number", "too_deep", "unknown_field",
+// The contract's 48 reason codes (contracts/open-proposal-v1/reason-codes.json), in its order.
+const REASON_CODES = new Set(["oversize", "not_utf8", "edited_before_ingest", "unattributable", "private_requires_sealed", "unsealable",
+  "transport_key_mismatch", "malformed_json", "duplicate_key", "nonfinite_number", "too_deep", "unknown_field",
   "schema_invalid", "unknown_manifest", "manifest_mismatch", "manifest_closed", "not_open_yet", "terms_not_accepted", "die_count",
   "die_order", "out_of_frame", "rotation_not_allowed", "lattice", "margin", "halo_overlap", "min_spacing", "keepout",
   "geometry_hash_mismatch", "idempotency_conflict", "unknown_parent", "unknown_proposal", "participant_suspended",
@@ -499,15 +501,31 @@ function fieldsOf(text, form) {
   return { t: value.t, layout: value.layout, requestKey: value.request_key ?? null };
 }
 
-// What a person sees after the confirm page's button: only the state, the run id and codes from fixed lists.
-function outcomeOf(answer) {
-  const value = answer.json ?? {};
-  const state = STATES.has(value.state) || value.state === "queue_full" ? value.state : null;
-  const runId = typeof value.run_id === "string" && RUN_ID.test(value.run_id) ? value.run_id : null;
-  const raw = Array.isArray(value.codes) ? value.codes : Array.isArray(value.violations) ? value.violations : [];
-  const codes = raw.filter((c) => c && REASON_CODES.has(c.code)).slice(0, 16)
-    .map((c) => ({ code: c.code, ...(Array.isArray(c.dies) && c.dies.every((d) => Number.isInteger(d) && d >= 0 && d < 8) ? { dies: c.dies } : {}) }));
-  return { state, runId, codes };
+// The outcomes the door can name after its POST, exactly as the intake gives them (#81 app/door/service.py submit):
+//   a run it holds: 202 when new, 200 when the same request comes again, with a lifecycle state other than rejected
+//     and the run's id;
+//   a refusal before any run: a refusal status, state "rejected" and one or more codes, every one the contract's;
+//   its token refusal: 403 with token_scope, token_expired or token_invalid.
+// Anything else (a schema tag without a state, a state outside the lifecycle, a run with no id, a status that does not
+// go with its state, a code outside the contract) names no outcome: null, and delivery stays unknown. What a person
+// sees is built only from these fields and fixed lists.
+const ACCEPTED_STATUS = new Set([200, 202]);
+const REFUSAL_STATUS = new Set([400, 409, 413, 422, 429, 503]);
+const TOKEN_REFUSALS = new Set(["token_scope", "token_expired", "token_invalid"]);
+const shownDies = (c) => (Array.isArray(c.dies) && c.dies.every((d) => Number.isInteger(d) && d >= 0 && d < 8) ? { dies: c.dies } : {});
+
+function knownOutcome(answer) {
+  const value = answer.ok && answer.json !== null && typeof answer.json === "object" && !Array.isArray(answer.json) ? answer.json : null;
+  if (value === null) return null;
+  if (answer.status === 403) return TOKEN_REFUSALS.has(value.error) ? { refusal: value.error, state: null, runId: null, codes: [] } : null;
+  if (value.schema !== SUBMIT_SCHEMA) return null;
+  if (ACCEPTED_STATUS.has(answer.status)) {
+    const run = value.state !== "rejected" && STATES.has(value.state) && typeof value.run_id === "string" && RUN_ID.test(value.run_id);
+    return run ? { refusal: null, state: value.state, runId: value.run_id, codes: [] } : null;
+  }
+  const refused = REFUSAL_STATUS.has(answer.status) && value.state === "rejected" && Array.isArray(value.codes) && value.codes.length > 0
+    && value.codes.every((c) => c !== null && typeof c === "object" && REASON_CODES.has(c.code));
+  return refused ? { refusal: null, state: "rejected", runId: null, codes: value.codes.slice(0, 16).map((c) => ({ code: c.code, ...shownDies(c) })) } : null;
 }
 
 // A form post must come from this site's own confirm page: the browser says so with Sec-Fetch-Site (same-origin, or
@@ -563,18 +581,16 @@ async function submit(request, env, ctx, url) {
   const answer = await callApi(env, API.submit, { method: "POST", body: payload, host: url.host, timeoutMs: 8000 });
   // Not attempted (no intake configured): nothing was sent.
   if (!answer.attempted) return refuse(request, format, 503, { error: "intake_unavailable" });
-  const value = answer.ok && answer.json && typeof answer.json === "object" && !Array.isArray(answer.json) ? answer.json : null;
-  // The intake's own answers only: its submit schema below 500 (or its 503 refusal while closed), or its token
-  // refusal. Anything else after the POST (no answer, a timeout, a crash, another service) cannot say whether the
-  // layout was queued: delivery is unknown, and the same request is the safe retry.
-  const own = (value?.schema === SUBMIT_SCHEMA && (answer.status < 500 || (answer.status === 503 && value.state === "rejected")))
-    || (answer.status === 403 && /^token_[a-z]+$/.test(value?.error ?? ""));
-  if (!own) {
+  // Only an outcome the door can name is definite. Anything else after the POST (no answer, a timeout, a crash,
+  // another service, or a submit-schema answer that names no known outcome) cannot say whether the layout was queued:
+  // delivery is unknown, and the same request is the safe retry.
+  const outcome = knownOutcome(answer);
+  if (outcome === null) {
     const cause = !answer.ok ? (answer.reason === "timeout" ? "timeout" : "no_answer") : "unrecognized_answer";
     return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, requestKey, cause });
   }
-  if (form) return html(request, answer.status < 300 ? 200 : answer.status, resultHtml(url.origin, auth.token, outcomeOf(answer)));
-  return json(request, answer.status, value);
+  if (form) return html(request, answer.status < 300 ? 200 : answer.status, resultHtml(url.origin, auth.token, outcome));
+  return json(request, answer.status, answer.json);
 }
 
 const ROUTES = Object.freeze({
