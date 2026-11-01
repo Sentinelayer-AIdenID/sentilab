@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DECK_ROOT, NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 import { readQr } from "./qr-read.mjs";
@@ -79,16 +79,30 @@ export function loadMetrics(path = FOUNDER_METRICS) {
   const raw = JSON.parse(bytes.toString("utf8"));
   const list = Array.isArray(raw.items) ? raw.items : Array.isArray(raw.metrics) ? raw.metrics : [];
   const byId = new Map();
+  const from = basename(path);
   for (const m of list) {
     const id = m.key ?? m.id;
     if (m.value === null || m.value === undefined) continue;
     const window = m.window ?? (m.window_end ? `${m.window_start ?? "?"} to ${m.window_end}` : null);
     for (const [k, v] of [["key", id], ["definition", m.definition], ["scope", m.scope], ["window", window], ["source", m.source]]) {
-      if (v === undefined || v === null || v === "") throw new FounderError(`METRICS.json: ${id ?? "an item"} has no ${k}`);
+      if (v === undefined || v === null || v === "") throw new FounderError(`${from}: ${id ?? "an item"} has no ${k}`);
     }
-    byId.set(id, { ...m, id, window, display: String(m.display ?? fmt(m.value)) });
+    byId.set(id, { ...m, id, window, display: String(m.display ?? fmt(m.value)), from });
   }
   return { sha256: sha256(bytes), byId };
+}
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// A measured tile's time window as the slide prints it, from the item's own window: "Nov 1, 07:13–14:20 UTC" within a
+// day, "Oct 31, 13:46 – Nov 1, 14:20 UTC" across days, "as of Nov 1, 14:20 UTC" with no start; else the window as given.
+export function windowShown(m) {
+  const at = (iso) => {
+    const d = new Date(iso ?? NaN);
+    return Number.isNaN(d.getTime()) ? null : { day: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`, hm: d.toISOString().slice(11, 16) };
+  };
+  const a = at(m.window_start), b = at(m.window_end);
+  if (a && b) return a.day === b.day ? `${b.day}, ${a.hm}–${b.hm} UTC` : `${a.day}, ${a.hm} – ${b.day}, ${b.hm} UTC`;
+  if (b) return `as of ${b.day}, ${b.hm} UTC`;
+  return m.window;
 }
 // A fact tied to the metrics file: the number the slide shows must be the file's value, or a stated derivation of it.
 export function metricValue(fact, metrics, where) {
@@ -134,7 +148,7 @@ function shownText(c) {
   const parts = [c.title, c.caption, c.footer, c.line, c.apps, c.punch, c.text, c.label, c.still?.label];
   for (const k of ["chips", "points", "flow", "items"]) parts.push(...(c[k] ?? []));
   for (const s of c.steps ?? []) parts.push(s.verb, s.what);
-  for (const t of [...(c.tiles ?? []), ...(c.stats ?? [])]) parts.push(t.value, t.label, t.head, t.body);
+  for (const t of [...(c.tiles ?? []), ...(c.stats ?? [])]) parts.push(t.value, t.label, t.when, t.head, t.body);
   for (const b of c.bars ?? []) parts.push(b.show, b.label);
   for (const t of c.times ?? []) parts.push(t.show, t.what);
   return parts.filter((x) => x !== undefined && x !== null && x !== "").join(" \n ");
@@ -170,7 +184,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     if (!Object.hasOwn(wanted, id)) throw new FounderError(`${where}: metric ${id} is not one the deck asks for`);
     const m = metrics.byId.get(wanted[id].key ?? id);
     if (!m) placeholders.push({ id, where, label: wanted[id].label, need: wanted[id].need, dropped: final });
-    return m ? { value: m.display, label: wanted[id].label, metric: id, measuring: false, window: m.window } : { value: v4.metrics.placeholder, label: wanted[id].label, metric: id, measuring: true };
+    return m ? { value: m.display, label: wanted[id].label, metric: id, measuring: false, when: windowShown(m) } : { value: v4.metrics.placeholder, label: wanted[id].label, metric: id, measuring: true };
   };
   const ids = new Set();
   for (const id of S.main) if (!v4.slides.some((s) => s.id === id)) throw new FounderError(`slot ${slot}: no slide ${id}`);
@@ -250,7 +264,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
         if (f.shows[0] !== v) throw new FounderError(`${where} shows ${f.shows[0]} for ${[].concat(f.metric).join(" - ")}, but METRICS.json gives ${v}`);
       }
       const declared = new Set((s.facts ?? []).flatMap((f) => (f.source || f.metric ? f.shows : [])));
-      const measured = new Set((content.tiles ?? []).filter((t) => t.metric && !t.measuring).flatMap((t) => numberTokens(t.value)));
+      const measured = new Set((content.tiles ?? []).filter((t) => t.metric && !t.measuring).flatMap((t) => numberTokens(`${t.value} ${t.when}`)));
       for (const n of numberTokens(shown)) if (!declared.has(n) && !measured.has(n)) throw new FounderError(`${where} shows ${n}, which none of its facts declares`);
     }
     // The spoken words, with each metric read out or marked for the presenter. A metric counts as one word, measured or
@@ -273,11 +287,15 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: s.cue ?? null };
     }
     const main = S.main.length;
-    // For SOURCES.md: a metrics fact is described by the file's own definition, window and scope.
-    const facts = (s.facts ?? []).map((f) => (f.metric ? {
-      shows: f.shows,
-      source: `METRICS.json ${[].concat(f.metric).map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
-    } : f));
+    // For SOURCES.md: a metrics fact, and each measured tile, is described by its file's own definition, window and scope.
+    const receipt = (keys) => `${[...new Set(keys.map((k) => metrics.byId.get(k).from))].join(" and ")} ${keys.map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}`;
+    const facts = [
+      ...(s.facts ?? []).map((f) => (f.metric ? {
+        shows: f.shows,
+        source: `${receipt([].concat(f.metric))}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
+      } : f)),
+      ...(content.tiles ?? []).filter((t) => t.metric && !t.measuring).map((t) => ({ shows: [t.value, t.when], source: `${receipt([wanted[t.metric].key ?? t.metric])}.` })),
+    ];
     // The script's heading for the slide: its source heading, else its on-screen title, else its kicker; never empty.
     const heading = [s.heading, content.title, s.kicker].find((x) => typeof x === "string" && x.trim());
     if (!heading) throw new FounderError(`${where} has no heading, title or kicker for the script`);

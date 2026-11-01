@@ -7,7 +7,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import {
   FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, countWords, fillInTable, founderPdfName,
-  loadFounder, outputsMatch, scriptPath, serialize, speakerScript,
+  loadFounder, outputsMatch, scriptPath, serialize, sourcesList, speakerScript, windowShown,
 } from "./build-deck-founder.mjs";
 import { PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 
@@ -345,7 +345,7 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
 
 test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
   const { readQr } = await import("./qr-read.mjs");
-  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window: "w", source: "x" }];
+  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_start: "2026-11-01T07:13:20Z", window_end: "2026-11-01T14:20:05Z", window: "2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
   const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
   const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
   for (const [name, keys] of Object.entries(cases)) {
@@ -358,14 +358,28 @@ test("at the freeze, slide 9 keeps each measured tile and always the QR code and
     const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
     assert.match(section, /data-still="qr"/, `${name}: the QR code is drawn`);
     assert.doesNotMatch(html(d), /measuring…|DRAFT/, name);
+    const receipts = sourcesList(d).split("## invite")[1]?.split("\n## ")[0] ?? "";
     if (name === "none") {
       assert.equal(inv.content.layout, "fallback");
       assert.equal(inv.content.figure.id, "plain8", "the fallback picture only when nothing is measured");
       assert.equal(inv.content.tiles, undefined);
+      assert.equal(receipts, "", "no tile, no receipt");
     } else {
       assert.equal(inv.content.layout, "numbers");
       assert.equal(inv.content.figure, undefined, `${name}: no fallback picture while a number is measured`);
       assert.deepEqual(inv.content.tiles.map((t) => t.metric), loaded.v4.slides.find((x) => x.id === "invite").tiles.map((t) => t.metric).filter((id) => keys.includes(loaded.v4.metrics.wanted[id].key ?? id)), `${name}: each measured tile, in order`);
+      // The footer's promise: each count is shown with its time window; and each has its receipt in SOURCES.md.
+      for (const t of inv.content.tiles) assert.equal(t.when, "Nov 1, 07:13–14:20 UTC", `${name}: ${t.metric} shows its window`);
+      assert.equal((section.match(/<span class="tw">Nov 1, 07:13–14:20 UTC<\/span>/g) ?? []).length, keys.length, `${name}: one window per tile`);
+      for (const k of keys) assert.match(receipts, new RegExp(`METRICS-FREEZE\\.json ${k.replace(/\./g, "\\.")} = \\d+ \\(d; window 2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z; scope s\\)`), `${name}: ${k}'s receipt`);
     }
   }
+});
+
+test("a measured tile's time window, as the slide prints it", () => {
+  assert.equal(windowShown({ window_start: "2026-11-01T07:13:20.235Z", window_end: "2026-11-01T14:20:05Z" }), "Nov 1, 07:13–14:20 UTC");
+  assert.equal(windowShown({ window_start: "2026-10-31T13:46:10.752Z", window_end: "2026-11-01T07:39:30.156Z" }), "Oct 31, 13:46 – Nov 1, 07:39 UTC");
+  assert.equal(windowShown({ window_end: "2026-11-01T14:20:05Z" }), "as of Nov 1, 14:20 UTC");
+  assert.equal(windowShown({ window_start: "2026-10-31T04:55:00.660910+00:00", window_end: "2026-11-01T07:41:05.745Z" }), "Oct 31, 04:55 – Nov 1, 07:41 UTC");
+  assert.equal(windowShown({ window: "the door's first hour" }), "the door's first hour");
 });

@@ -25,8 +25,8 @@
     const w = Math.round(f.width * f.scale), h = Math.round(f.height * f.scale);
     return `<figure class="fig"><img src="${esc(f.src)}" alt="${esc(f.alt)}" width="${w}" height="${h}" data-fig="${esc(f.id)}" data-min-font="${esc(f.minFont)}" data-natural-width="${esc(f.width)}"></figure>`;
   };
-  // A number tile; one not measured yet says so, in its own style.
-  const tile = (t) => `<div class="tile${t.measuring ? " is-measuring" : ""}"><b class="${t.measuring ? "measuring" : "tv"}">${esc(t.value)}</b><span class="tl">${esc(t.label)}</span></div>`;
+  // A number tile; one not measured yet says so, in its own style; a measured one prints its time window.
+  const tile = (t) => `<div class="tile${t.measuring ? " is-measuring" : ""}"><b class="${t.measuring ? "measuring" : "tv"}">${esc(t.value)}</b><span class="tl">${esc(t.label)}</span>${t.when ? `<span class="tw">${esc(t.when)}</span>` : ""}</div>`;
 
   const LAYOUTS = {
     joke(c) {
