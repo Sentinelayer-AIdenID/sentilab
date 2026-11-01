@@ -163,6 +163,11 @@ if (ready) {
   check("POST /api/open/v1/door/here with the API off: 503 presence_unavailable, no-store, no CSP", here.status === 503
     && (await here.json().catch(() => ({}))).error === "presence_unavailable" && here.headers.get("cache-control") === "no-store"
     && here.headers.get("content-security-policy") === null, `${here.status}`);
+  // The limit is consulted before the body: a malformed heartbeat answers 400 only when the runtime's rate-limit binding
+  // DOOR_HERE_LIMITER is bound and allowed it (without it, or on its error, the answer is 503).
+  const hereBad = await fetch(`${BASE}/api/open/v1/door/here`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  check("POST /api/open/v1/door/here with a malformed body: 400, so the runtime's DOOR_HERE_LIMITER binding was consulted and allowed it",
+    hereBad.status === 400 && (await hereBad.json().catch(() => ({}))).error === "bad_heartbeat", `${hereBad.status}`);
   const hereGet = await fetch(`${BASE}/api/open/v1/door/here`);
   check("GET /api/open/v1/door/here: 405, allow POST", hereGet.status === 405 && hereGet.headers.get("allow") === "POST", `${hereGet.status}`);
   check("the wall offers no opt-in without the intake's notice", !wallText.includes('name="notice_version"')
