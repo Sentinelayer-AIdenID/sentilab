@@ -29,9 +29,12 @@ copy, `{ ...LABELS.accepted }`, `null`, a string, `undefined`. It throws for `Na
 through `resolveLabel()`: AC-06.)
 
 **AC-02 No temperature text outside `temps.mjs`** (static). In `web/public/sentilab/package3d/*.{js,mjs}`: no
-`toFixed(` outside `temps.mjs` and `quantity.mjs` (non-temperature quantities), no `°C`, `℃` or `degC` literal outside
-`temps.mjs` (one exception: the adopted `field-validator.mjs`, while its sha256 equals AC-46 (a)'s pin, compares the
-unit alias `°C` and never shows it), no `fillText`/`strokeText` (no canvas text at all), no import that bypasses
+`toFixed(` outside `temps.mjs` and `quantity.mjs` (non-temperature quantities), no `°C`, `℃` or `degC` anywhere in a
+file's text outside `temps.mjs`, comments included (one exception: the adopted `field-validator.mjs`, while its sha256
+equals AC-46 (a)'s pin, compares the unit alias `°C` and never shows it). Serialized unit data is kept apart from
+display: a result value's unit tag (`degC`, SPEC.md §5.6) is `temps.mjs`'s exported `TEMP_UNIT`, which `results.mjs`
+writes and `twin.mjs` compares by that name and which is never shown, while every temperature a person reads, with its
+unit, is `formatTemp`'s text. Also no `fillText`/`strokeText` (no canvas text at all), no import that bypasses
 `temps.mjs` to format a value. The page is added to the existing "every page takes its notice and labels from this one
 module" test (main:web/test/temperature-label.test.mjs:320-341): `package3d.js` gets `NOTICE` through `temps.mjs` from
 `../../temperature-label.mjs`, holds no copy of the notice text, and `index.html` has the exact slot
@@ -432,14 +435,21 @@ classes against a named workload, device and browser, with traces attached; a mi
 and the three owners' disposition (D4), never silently relaxed. The renderer's own caps (DPR 2; 1,000,000 pixels on
 phones) are settings, verified rather than measured.
 
-**AC-35 No WebGL, lost context, no WebCrypto** (browser). Chromium with WebGL disabled: the SVG cross-section, part
-tree, detail panel, legend with its label state and notice appear; zero errors. `WEBGL_lose_context.loseContext()`
-mid-session: the fallback appears within one frame with the selection and playhead kept, and GL object counts drop to
-zero; `restoreContext()`: the 3D view returns with the same model, explode amount, section and field, with no refetch
-(network log) and no re-verification (counter). An insecure origin: Results draws nothing with the Package view's
-sentence; Anatomy and Model draw with the `file check unavailable` chip (D14). Cleanup over 100 switches (A#57218):
-100 consecutive mode switches (Anatomy, Model, Results with a field shown and an explode in each) return, after
-every switch, the GL object count, in-flight fetches (abort spy), event listeners and timers to their baseline
+**AC-35 No WebGL, lost context, no WebCrypto** (browser, node). Chromium with WebGL disabled: the SVG cross-section,
+part tree, detail panel, legend with its label state and notice appear; zero errors.
+`WEBGL_lose_context.loseContext()` mid-session: the fallback appears within one frame with the selection and playhead
+kept, and GL object counts drop to zero; `restoreContext()`: the 3D view returns with the same model, explode amount,
+section and field, with no refetch (network log) and no re-verification (counter). An insecure origin: Results draws
+nothing with the Package view's sentence; Anatomy and Model draw with the `file check unavailable` chip (D14). The
+reader itself, in node without `globalThis.crypto`: the static loader passes `digest: null`; `readAnatomy`,
+`readAssembly`, `readModelStack` and `readLayouts` return their data, `readAssembly` with `file_check: "unavailable"`,
+while spies on `crypto.subtle.digest` and `sha256Hex` record zero calls and nothing throws; `buildRenderModel` carries
+`file_check: "unavailable"` and the figure's chip reads `file check unavailable here (needs a secure connection)`;
+nothing in that state is labelled checked. With a digest, the same files give `file_check: "verified"`, and an
+assembly whose `geometry_sha256` was altered is refused `hash_mismatch`; without one that change cannot be detected,
+which is what the chip says. Results keeps its refusal: without WebCrypto it draws nothing. Cleanup over 100 switches
+(A#57218): 100 consecutive mode switches (Anatomy, Model, Results with a field shown and an explode in each) return,
+after every switch, the GL object count, in-flight fetches (abort spy), event listeners and timers to their baseline
 (`__package3d.facts()`), leave one live RenderModel and no duplicate live-region entries, and keep the JS heap after
 the 100th switch within 5% of its value after the first (forced garbage collection in the test browser). Pass: all.
 

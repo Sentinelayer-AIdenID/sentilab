@@ -304,7 +304,9 @@ nothing about the chip's own operation is implied (L3:ARCHITECTURE §6.4).
   RenderModel; nothing is refetched or re-verified.
 - **No WebCrypto (insecure context):** Results shows nothing, with the Package view's sentence (package.js:644-648).
   Anatomy and Model still render, with the chip `file check unavailable here (needs a secure connection)` because their
-  pinned-hash check cannot run (D14).
+  pinned-hash check cannot run (D14). That is an explicit static-only path with its own status: the page decides once
+  whether it has a digest, the readers then hash nothing (the assembly's `geometry_sha256` is not recomputed), and the
+  RenderModel carries `file_check: unavailable` to the chip; Results never takes it (PSEUDOCODE §2, §13; AC-35).
 
 ### 4.8 Agent experience (S8)
 

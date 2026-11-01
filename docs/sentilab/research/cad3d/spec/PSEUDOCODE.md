@@ -60,9 +60,10 @@ Import rules (static test, AC-02):
   `../evidence-projection.mjs`, `../lab-model.mjs`, `../view-core.mjs`, `../canonical.mjs`, `../runs-list.mjs`,
   `../../temperature-label.mjs`. No DOM, no clock, no randomness, no WebGL.
 - Only `render3d.mjs` and what it wraps call WebGL: the vendored three.js core under option B (D5), `gl.mjs` under
-  option A. Only `temps.mjs` turns a temperature into text. No `toFixed(` on a
-  temperature and no `°C` outside `temps.mjs`, except in the adopted `field-validator.mjs` at its pinned hash, where
-  `°C` is a unit alias it compares and never text it shows (AC-02, AC-46).
+  option A. Only `temps.mjs` turns a temperature into text. No `toFixed(` on a temperature, and no `°C`, `℃` or `degC`
+  outside `temps.mjs`, comments included: a result's serialized unit tag is `temps.mjs`'s `TEMP_UNIT`, imported by
+  name. The one exception is the adopted `field-validator.mjs` at its pinned hash, where `°C` is a unit alias it
+  compares and never text it shows (AC-02, AC-46).
 - `package3d.js` gets verified data only through `../package/source.mjs` (source.mjs:1-12) and never computes
   LIVE or STALE itself (source.mjs:172-182).
 
@@ -168,7 +169,6 @@ export function geometryPreimage(frame, instances) {
 import { readQuantity, drawnMm } from "./quantity.mjs";
 import { findBareTemperatures, TEMP_KEY } from "./temps.mjs";
 import { INSTANCE_ID, typeOfId, geometryPreimage } from "./ids.mjs";
-import { sha256Hex } from "../view-core.mjs";                     // web/public/sentilab/view-core.mjs:44
 
 export const ANATOMY_SCHEMA = "sentilab-anatomy/1";
 export const ASSEMBLY_SCHEMA = "sentilab-assembly/1";
@@ -190,12 +190,15 @@ export function readAnatomy(json) {
   return { anatomy: deepFreeze(json), error: null };
 }
 
-// json: the parsed assembly; anatomy: from readAnatomy. Async only because it recomputes geometry_sha256.
+// json: the parsed assembly; anatomy: from readAnatomy; digest: the page's sha256 (view-core.mjs sha256Hex, :44, which
+// calls crypto.subtle.digest) when crypto.subtle exists, else null. Async only because it recomputes geometry_sha256.
+// Returns { assembly, error, file_check }: "verified" once the recomputed hash matched; "unavailable" without a
+// digest, the static-only path of D14: nothing is hashed or called, and nothing in that state is called checked.
 // Refuses: id grammar or duplicates, parent not an ancestor path, type unknown, a drawn box inverted or disagreeing
 // with its quantities (sourced value or range, or render hint), a box, basis or array on an undrawn instance, an
 // undrawn instance whose every dimension is drawable, a drawn child outside its nearest drawn ancestor's footprint,
 // an edge whose type_edge is not in anatomy.type_edges, geometry_sha256 mismatch, a retired id in use.
-export async function readAssembly(json, anatomy) {
+export async function readAssembly(json, anatomy, { digest = null } = {}) {
   if (json?.schema !== ASSEMBLY_SCHEMA || json.content !== "anatomy") return no("schema");
   if (json.anatomy_sha256 !== anatomy.sha256) return no("binding_mismatch", "assembly built for another anatomy");   // anatomy.sha256: the file's PINS hash, attached by the loader, not a schema field
   const ids = new Set();
@@ -219,8 +222,9 @@ export async function readAssembly(json, anatomy) {
   // ... parents exist and are path prefixes; a drawn child lies inside its nearest DRAWN ancestor's footprint; edges
   //     resolve, and an edge may name an undrawn instance (its connections are kept)
   const geometry = geometryPreimage(json.frame, json.instances);    // sorted by id: source order never matters (AC-14)
-  if ((await sha256Hex(new TextEncoder().encode(geometry))) !== json.geometry_sha256) return no("hash_mismatch", "geometry_sha256");
-  return { assembly: deepFreeze(json), error: null };
+  if (digest === null) return { assembly: deepFreeze(json), error: null, file_check: "unavailable" };   // no WebCrypto (D14)
+  if ((await digest(new TextEncoder().encode(geometry))) !== json.geometry_sha256) return no("hash_mismatch", "geometry_sha256");
+  return { assembly: deepFreeze(json), error: null, file_check: "verified" };
 }
 ```
 
@@ -274,7 +278,7 @@ export function standsForIndex(stack) { /* -> Map<typeId, Array<{ grid_index, na
 // verified prefix only. It never computes status: lifecycle and validity come from scene.mjs (which runs project()),
 // labels from temperature-label.mjs, the mode from source.mjs.
 import { labelFor } from "../../temperature-label.mjs";           // web/public/temperature-label.mjs:38-53, :84
-import { serializeLabel } from "./temps.mjs";                      // labels leave as records (SPEC.md §7 PL-2)
+import { serializeLabel, TEMP_UNIT } from "./temps.mjs";           // labels leave as records (SPEC.md §7 PL-2); the unit tag
 import { fixtureFor, inputsVerification } from "./modelstack.mjs";
 
 export const STATISTICS = Object.freeze({
@@ -316,7 +320,7 @@ export function resultView({ verification, scene, track, ids, mode, stack, layou
     const identity = ids.get(m);
     const statistic = BY_METRIC[metricIdOf(verification, m)] ?? null;           // semantics.metric_id (conductor.py:342)
     if (!statistic) refused.push({ node: m, field: "J", code: "statistic_unknown", detail: String(metricIdOf(verification, m)) });
-    else values.push(freezeValue({ quantity: "J", statistic, value: L.J.value, unit: "degC", declared_unit: L.J.declared_unit,
+    else values.push(freezeValue({ quantity: "J", statistic, value: L.J.value, unit: TEMP_UNIT, declared_unit: L.J.declared_unit,
       association: { layer: 4, scope: "chip layer, all cells" }, measurement: { node: m, receipt: receiptOf(verification.prefixEnvelopes, verification.projection?.rejected, m) },
       evaluator_identity: identity ?? null, label: serializeLabel(labelFor(identity)), validity: L.metric.state, as_of_seq: seqOf(verification, m) }));
   }
@@ -373,8 +377,9 @@ export const KINDS = Object.freeze(["anatomy", "model", "result"]);
 //   model:   { stack, fixtureId, layoutId, layouts }              -> the 8 grid layers + the layout's dies, halos, edge strips
 //   result:  { stack, result }                                    -> the run's signed geometry on its fixture's stack
 export function buildRenderModel({ kind, anatomy = null, assembly = null, variant = "lidded", stack = null, fixtureId = null,
-                                   layoutId = null, layouts = null, result = null }) {
+                                   layoutId = null, layouts = null, result = null, fileCheck = null }) {
   if (!KINDS.includes(kind)) return no("malformed", "kind");
+  if (kind !== "result" && fileCheck !== "verified" && fileCheck !== "unavailable") return no("malformed", "fileCheck");   // stated, never assumed
   const given = { anatomy: Boolean(anatomy || assembly), model: Boolean(layoutId || fixtureId) && !result, result: Boolean(result) };
   if (Object.entries(given).some(([k, on]) => on && k !== kind)) return no("mixed_content", "one content kind per model");   // X1
   const out = kind === "anatomy" ? anatomyBoxes(anatomy, assembly, variant)
@@ -384,6 +389,7 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
   return { model: deepFreeze({
     v: MODEL_VERSION, kind,
     status_text: out.status_text,                    // the mode banner, verbatim (SPEC.md §3)
+    file_check: kind === "result" ? "verified" : fileCheck,   // "unavailable" -> the chip of D14 (AC-35); Results needs WebCrypto
     units: "mm", frame: out.frame,
     boxes: out.boxes,                                // DRAWN instances only: [{ id, type, parent, level, inner_index, x0..z1, basis: {position, footprint, thickness} }]
     arrays: out.arrays,                              // parametric interconnect arrays (anatomy) or none
@@ -517,6 +523,10 @@ export function overlayFor(model, { kind, anatomy = null, stack = null, fixture 
 import { LABELS, labelFor, labelForAll, envelopeEvaluator, needsNotice, NOTICE } from "../../temperature-label.mjs";
 
 const RULE_LABELS = new Set(Object.values(LABELS));            // identity, not shape: a look-alike object fails
+
+// The serialized unit tag of a Celsius value in result data (SPEC.md §5.6 `unit`): data, never display text. Every
+// module that writes or compares the tag imports this name; what a person reads comes only from formatTemp() (AC-02).
+export const TEMP_UNIT = "degC";
 
 // valueC: finite °C (already converted by scene.mjs rules, scene.mjs:134-145). label: one of LABELS.
 export function formatTemp(valueC, label, { digits = 1 } = {}) {
@@ -719,29 +729,29 @@ export function createDoorbell({ url, feed }) { /* L3:PSEUDOCODE §7, unchanged 
 ```js
 // twin.mjs (PURE). The same RenderModel and result view the page draws, as data (PL-22). No pixels, no view state.
 import { canonical } from "../canonical.mjs";
-import { formatTemp, resolveValueLabel } from "./temps.mjs";
+import { formatTemp, resolveValueLabel, TEMP_UNIT } from "./temps.mjs";
 export const TWIN_SCHEMA = "sentilab-twin/1";
 export const VIEW_TRANSFORMS = "Explode, readable thickening and section are view transforms. Every coordinate here is assembled.";
 
 // model: from buildRenderModel; ctx: { builtFrom: [{ path, sha256, commit? }], anatomy?, stack?, fixture?, layout?,
-// result?, omitted: [...], derivatives: [...] }. Throws if any degC value's label record differs from
+// result?, omitted: [...], derivatives: [...] }. Throws if any TEMP_UNIT value's label record differs from
 // serializeLabel(labelFor(value.evaluator_identity)) (PL-2), and if static content (anatomy, model) contains a bare
 // temperature (PL-4).
 export function twinOf(model, ctx) {
   const data = model.kind === "anatomy" ? anatomyData(model, ctx) : model.kind === "model" ? modelData(model, ctx) : ctx.result;
   const twin = { schema: TWIN_SCHEMA, content: model.kind, status_text: model.status_text, built_from: ctx.builtFrom,
     frame: model.frame, view_transforms: VIEW_TRANSFORMS, data, labels: labelsUsed(data), omitted: ctx.omitted, derivatives: ctx.derivatives ?? [] };
-  assertTwinLabels(twin);                      // every { unit: "degC" } value: resolveValueLabel(v) succeeds (temps.mjs R1-R5)
+  assertTwinLabels(twin);                      // every value whose unit is TEMP_UNIT: resolveValueLabel(v) succeeds (temps.mjs R1-R5)
   return twin;
 }
 // Byte-reproducible text: canonical key order (canonical.mjs:4-10), one trailing LF.
 export const twinJsonText = (twin) => `${canonical(twin)}\n`;
-// The reader: bytes -> strictJson -> schema (sentilab-twin/1, SPEC.md §5.8) -> resolveValueLabel(v) for every degC
-// value (temps.mjs R1-R5, without a verified identity). All or nothing: one label_mismatch refuses the twin.
+// The reader: bytes -> strictJson -> schema (sentilab-twin/1, SPEC.md §5.8) -> resolveValueLabel(v) for every
+// TEMP_UNIT value (temps.mjs R1-R5, without a verified identity). All or nothing: one label_mismatch refuses the twin.
 export function readTwin(bytes) { /* -> { twin, error } */ }
 // Markdown from a twin returned by readTwin(); the CLI and the dialog run result -> twinJsonText -> bytes -> readTwin ->
 // twinMarkdown. Same banner, qualifiers and label texts; tables for instances, layers and values; a temperature cell
-// always reads "<value> °C <short>" through formatTemp(v.value, resolveValueLabel(v).label) (the only formatter).
+// is formatTemp(v.value, resolveValueLabel(v).label)'s text and the label's short qualifier (the only formatter).
 export function twinMarkdown(twin) { /* deterministic; LF only */ }
 ```
 
@@ -806,9 +816,14 @@ import { sectionAt } from "./section.mjs";
 import { overlayFor } from "./flows.mjs";
 import { twinOf, twinJsonText } from "./twin.mjs";
 import { PINS } from "./pins.mjs";
+import { sha256Hex } from "../view-core.mjs";               // view-core.mjs:44; passed as the readers' digest only when crypto.subtle exists
 
-// 1. Static data: fetch data/*.json (same origin), check sha256 against PINS when crypto.subtle exists; without it,
-//    draw Anatomy and Model with the chip "file check unavailable here (needs a secure connection)" (D14).
+// 1. Static data: fetch data/*.json (same origin). digest = crypto.subtle ? sha256Hex : null, decided once (D14). With a
+//    digest: each file's sha256 against PINS, then the readers (readAssembly recomputes geometry_sha256), fileCheck
+//    "verified". Without one: the same readers on the same bytes with digest null, nothing hashed and no
+//    crypto.subtle call, fileCheck "unavailable", and Anatomy and Model draw with the chip "file check unavailable
+//    here (needs a secure connection)" (AC-35). Results never takes this path: without crypto.subtle it draws nothing
+//    (step 3).
 // 2. Mode switch: dispose the renderer's GL objects and the field feed, rebuild ONE RenderModel for the new kind (X1).
 // 3. Results: exactly the Package view's trust and adapter path (package.js:644-660): no crypto.subtle -> nothing drawn;
 //    setupTrust(); the demo replay by default, ?src=live for live; every verification change -> reconcile()
@@ -888,7 +903,7 @@ def test_w4_geometry_vectors():                                    # C#57232 vec
 | File | Covers |
 |---|---|
 | `web/test/package3d-quantity.test.mjs` | AC-10, AC-13 (lengths, with the W4 centre vector), AC-14 (grammar) |
-| `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
+| `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-35 (the readers without WebCrypto: `digest: null`, zero digest calls, `file_check: "unavailable"`), AC-40; `scripts/package3d.mjs check` |
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24 (with the terminal states), AC-25, AC-26 (with late results), AC-41, AC-42 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
