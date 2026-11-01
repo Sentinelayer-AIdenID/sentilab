@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -462,6 +462,7 @@ class AgentState:
     number: int
     cap: int
     prompt_bound: int
+    initial_prompt_bound: int = field(init=False)
     charged_tokens: int = 0
     successful_responses: int = 0
     retried: bool = False
@@ -471,15 +472,16 @@ class AgentState:
     def __post_init__(self):
         if type(self.cap) is not int or self.cap <= 0 or type(self.prompt_bound) is not int or self.prompt_bound < 0:
             raise InputError("agent cap and initial prompt bound must be explicit nonnegative integers")
+        self.initial_prompt_bound = self.prompt_bound
 
 
 class RequestEngine:
     """One request lifecycle, shared by all arms; charges use provider usage.
 
     The caller must supply the initial prompt bound. Its protocol source is
-    deliberately not defaulted here. Reservations also cover the complete
-    serialized message list, conservatively allowing one token per JSON byte.
-    This is a reservation floor, never a reported/measured token count.
+    deliberately not defaulted here. Token stopping uses provider usage plus
+    appended content; only dollar reservations apply a serialized-byte floor.
+    Neither bound is a reported/measured token count.
     """
 
     def __init__(self, model, ledger: Ledger, *, max_tokens_per_reply: int,
@@ -503,13 +505,15 @@ class RequestEngine:
                 agent.stop_reason = "wall_time"
                 return None
             remaining_tokens = agent.cap - agent.charged_tokens
-            prompt_bound = max(agent.prompt_bound, len(message_bytes))
+            token_prompt_bound = (agent.prompt_bound if agent.successful_responses
+                                  else agent.initial_prompt_bound)
             max_tokens = min(self.reply_limit, remaining_tokens)
-            if max_tokens <= 0 or prompt_bound + max_tokens > remaining_tokens:
+            if max_tokens <= 0 or token_prompt_bound + max_tokens > remaining_tokens:
                 agent.stop_reason = "token_cap"
                 return None
             attempt = self.ledger.reserve(job_id, agent.number, "retry" if retry else scope,
-                                          prompt_bound=prompt_bound, max_tokens=max_tokens,
+                                          prompt_bound=max(agent.prompt_bound, len(message_bytes)),
+                                          max_tokens=max_tokens,
                                           agent_cap=agent.cap, tokens_before=agent.charged_tokens)
             if attempt is None:
                 agent.stop_reason = "dollar_cap"
@@ -830,6 +834,10 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
             messages.extend([{"role": "assistant", "content": reply.content},
                              {"role": "user", "content": continue_prompt}])
             agent.prompt_bound += usage_counts(reply.usage)[2]
+            # Count only new framing/instructions as bytes, never reply text
+            # already covered by the provider's completion usage.
+            agent.prompt_bound += sum(len(canonical(message)) + 1 for message in (
+                {"role": "assistant", "content": ""}, {"role": "user", "content": continue_prompt}))
         return empty_set()
 
     try:
@@ -850,19 +858,25 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                         continue
                     messages = histories[agent.number]
                     shared = transcript[cursors[agent.number]:]
+                    shared_text = [f"Agent {number}:\n{text}" for number, text in shared]
                     if messages[-1]["role"] == "user":
                         if shared:
-                            messages[-1]["content"] += "\n\n" + "\n\n".join(shared)
+                            messages[-1]["content"] += "\n\n" + "\n\n".join(shared_text)
                     else:
-                        messages.append({"role": "user", "content": "\n\n".join(shared + [c_turn_prompts[agent.number]])})
+                        messages.append({"role": "user", "content": "\n\n".join(shared_text + [c_turn_prompts[agent.number]])})
+                        overhead = "\n\n".join([f"Agent {number}:\n" for number, _ in shared] +
+                                               [c_turn_prompts[agent.number]])
+                        agent.prompt_bound += len(canonical({"role": "user", "content": overhead})) + 1
                     reply = engine.request(job["job_id"], agent, messages, deadline=deadline,
                                            scope=scope, record=writer.record)
                     writer.complete_c_turn(agent)
                     if reply is None:
                         continue
-                    labelled = f"Agent {agent.number}:\n{reply.content}"
-                    transcript.append(labelled)
+                    label = f"Agent {agent.number}:\n"
+                    labelled = label + reply.content
+                    transcript.append((agent.number, reply.content))
                     messages.append({"role": "assistant", "content": labelled})
+                    agent.prompt_bound += len(canonical({"role": "assistant", "content": label})) + 1
                     cursors[agent.number] = len(transcript)
                     # Each next prompt includes every reply since that agent's
                     # last request, including its own newly appended reply.

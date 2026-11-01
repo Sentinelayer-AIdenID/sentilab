@@ -1,6 +1,6 @@
 # Collaboration study runner
 
-`study_runner.py` runs protocol v2 with Amendments 1–3, using Python 3.12 and
+`study_runner.py` runs protocol v2 with Amendments 1–4, using Python 3.12 and
 `requests`. Packets are UTF-8 text only: the runner never imports or executes
 their `model.py`. The tests and example use synthetic packets exclusively.
 The operator obtains participant packets through the separate private handoff.
@@ -109,16 +109,20 @@ late or failed responses remain in the history but cannot supply the result.
 Each arm has one 900-second deadline. Jobs start in order with at most `--parallel` arm workers
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
-Before each attempt, the prompt reservation and bounded output must fit the
-agent's remaining cap. The reservation is the larger of the usage-based bound
-(last reported prompt or explicit initial bound, plus subsequently appended
-reply usage) and the byte length of the complete ASCII-escaped JSON message
-list. This conservative one-token-per-serialized-byte floor includes the system
-and packet, all earlier replies and continue/turn prompts, roles, peer labels,
-and separators. It is a reservation, not a measured token count; charged tokens
-still come exclusively from provider usage, except labelled unknown charges.
-A thread-safe ledger
-also reserves the maximum dollar cost, including other in-flight calls. If that
+Before each attempt, the token prompt bound and bounded output must fit the
+agent's remaining cap. Its first request uses the sealed `initial_prompt_tokens`
+bound. Later requests use its last provider-reported prompt usage, plus reported
+completion tokens for its own and all peer replies appended since that request,
+plus the serialized bytes of newly appended framing, labels, separators and
+continue/turn prompts. Earlier text is already covered by the reported prompt
+usage; reply text uses reported completion tokens, not its byte length.
+
+Dollar reservations separately use the larger of the usage-based bound and the
+byte length of the complete ASCII-escaped JSON message list. This conservative
+byte floor covers the entire request but never drives token-cap stopping.
+Neither bound is a measured token count; charged tokens still come exclusively
+from provider usage, except labelled unknown charges. A thread-safe ledger
+reserves the maximum dollar cost, including other in-flight calls. If that
 would cross the dollar cap, all subsequent calls stop; remaining jobs receive
 empty findings and stop receipts. Provider prompt counts can grow beyond the
 previous count: any resulting over-reservation, token overspend, or dollar
