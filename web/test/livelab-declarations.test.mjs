@@ -128,6 +128,7 @@ function installPage(t, answer) {
   define("fetch", async (input) => {
     const url = new URL(String(input), "https://sentilab.aidenid.com");
     const body = answer(url);
+    if (body === "network") throw new TypeError("network error");
     if (body === undefined) return new Response("{}", { status: 502 });
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   });
@@ -324,3 +325,55 @@ test("the declarations list says when it is partial or unavailable", async (t) =
   for (let k = 0; k < 6; k += 1) { t.mock.timers.tick(1000); await settle(); }
   assert.match(dom.part("declList").text.join(" "), /unavailable/i, "a failing feed reads unavailable, not an empty list");
 });
+
+// Root's security P2 (17:47Z): after a failed visitors refresh the page kept the last good names and reasons on screen,
+// unlabelled, until the 10 s freshness limit. Entries show only while the last read succeeded (d.ok) and is fresh; a
+// failed read shows the unavailable state with no declared text at once, and a good read brings them back.
+for (const kind of ["502", "404", "network"]) {
+  test(`root's security P2: good -> failed (${kind}) -> recovered; no declared text while failed, a hide still propagates`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:50:00Z") });
+    const results = doc("results.json"), events = doc("events.json"), board = doc("board.json");
+    let visitors = doc("visitors-declarations.json");
+    let mode = "good";
+    const answered = [];
+    const dom = installPage(t, (url) => {
+      const after = Number(url.searchParams.get("after") ?? 0);
+      if (url.pathname === "/api/open/v1/door/results") return after >= results.next_after ? { ...results, items: [], has_more: false } : results;
+      if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
+      if (url.pathname === "/api/open/v1/door/board") return board;
+      if (url.pathname === "/api/open/v1/door/visitors") {
+        answered.push({ mode, at: Date.now() });
+        if (mode === "502") return undefined;
+        if (mode === "404") return null;
+        if (mode === "network") return "network";
+        return after >= visitors.next_after ? { ...visitors, items: [], has_more: false } : visitors;
+      }
+      return null;
+    });
+    const all = () => { const p = dom.page(); return [...p.text, ...p.attrs, ...p.html].join(" | "); };
+    const tickUntil = async (cond, maxMs) => { for (let ms = 0; ms < maxMs && !cond(); ms += 100) { t.mock.timers.tick(100); await settle(); } };
+    await import(`${LIVE}?declarations=ok-${kind}`);
+    await tickUntil(() => all().includes("Ortho Placer"), 8000);
+    assert.ok(all().includes("Ortho Placer"), "good: the declaration is listed");
+    // The feed fails.
+    mode = kind;
+    await tickUntil(() => answered.some((a) => a.mode === kind), 8000);
+    const failedAt = answered.find((a) => a.mode === kind).at;
+    await tickUntil(() => Date.now() >= failedAt + 3000, 4000);
+    const during = all();
+    for (const text of ["Ortho Placer", "Testing whether spreading the DRAM out cools the CPUs", "An older name", "Ωmega", "<img src=x onerror=alert(1)>"]) {
+      assert.equal(during.includes(text), false, `+3 s after a ${kind}: no declared text anywhere (${text.slice(0, 16)})`);
+    }
+    assert.match(dom.part("declList").text.join(" "), kind === "404" ? /NOT AVAILABLE/ : /UNAVAILABLE/, "the unavailable state shows");
+    // The feed recovers: the entries come back.
+    mode = "good";
+    await tickUntil(() => all().includes("Ortho Placer"), 90000);
+    assert.ok(all().includes("Ortho Placer"), "recovered: the entries are back");
+    // A hide still propagates.
+    visitors = { ...visitors, items: visitors.items.map((x) => (x.seq === 102 ? { seq: 102, at: x.at, class: x.class, purpose: x.purpose, short_id: x.short_id,
+      label: x.label, event_kind: "declaration", declaration: null, hidden: "privacy" } : x)) };
+    await tickUntil(() => !all().includes("Ortho Placer"), 15000);
+    assert.equal(all().includes("Ortho Placer"), false, "the hidden declaration is gone");
+    assert.ok(dom.part("declList").text.join(" ").includes(HIDDEN));
+  });
+}

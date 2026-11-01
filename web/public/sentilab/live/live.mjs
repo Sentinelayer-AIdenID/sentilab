@@ -693,20 +693,21 @@ async function pollVisitors() {
     const got = await M.fetchVisitorsWindow({ fetchImpl: gate.fetch, latest });
     if (mine !== visitorsEpoch) return;
     if (got.ok) S.decl = { ok: true, partial: got.partial, list: M.declarationList(got.items), error: "", at: Date.now(), through: got.through ?? S.decl.through };
-    else { S.decl = { ...S.decl, ok: false, error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
+    else { S.decl = { ...S.decl, ok: false, list: [], error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
     renderDeclarations();
   }
   visitorsTimer = setTimeout(pollVisitors, next);
 }
 // The declarations list (live-model.mjs declarationList): its own list, newest first, never attached to a run, with
-// explicit states: unavailable (the read failed, or the last good read is too old to show: a hide may be missed, so no
-// text is kept), partial (the window was not read to its end), none, or the entries.
+// explicit states: unavailable (the last read failed, or the last good read is too old to show: a hide may be missed,
+// so no declared text is shown or kept), partial (the window was not read to its end), none, or the entries. Entries
+// show only while the last read succeeded AND is fresh (a failed refresh drops the held list at once).
 function renderDeclarations() {
   const d = S.decl, box = $("declList");
   const fresh = d.at && Date.now() - d.at <= M.VISITORS_FRESH_MS;
   const window = `THE LATEST ${M.VISITORS_WINDOW.toLocaleString("en-US")} DOOR RECORDS`;
   box.hidden = d.ok === null;
-  if (!fresh) {
+  if (d.ok !== true || !fresh) {
     box.replaceChildren(h("p", { class: "decl-head" }, d.ok === false && d.error === "answered 404" ? "DECLARATIONS · NOT AVAILABLE ON THIS API"
       : `DECLARATIONS · UNAVAILABLE${d.error ? ` · ${d.error.toUpperCase()}` : ""}`));
     return;

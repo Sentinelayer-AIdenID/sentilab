@@ -528,3 +528,59 @@ test("root's dispatch P2 (b): a reserved request is dispatched in its own turn; 
   pending.get("three")(new Response("{}", { status: 200 }));
   await Promise.all([two, three]);
 });
+
+// Root's three dispatch witnesses (pr103-gate-dispatch-1733; zip sha256 7cdae9be…, README and dispatch-regression.mjs
+// read as data and ported here against the real createGate). They fail at 6e94dfc and pass from 065b14e. Native
+// microtask order is kept; advancing the injected clock models time spent by unrelated synchronous work.
+function witnessClock() {
+  let time = 0;
+  const sleepers = [];
+  const settle = async () => { for (let i = 0; i < 30; i += 1) await Promise.resolve(); };
+  const due = (at) => { for (const s of [...sleepers].filter((x) => x.at <= at)) { sleepers.splice(sleepers.indexOf(s), 1); s.resolve(); } };
+  return {
+    now: () => time, jump: (v) => { time = v; }, settle, sleepers, due,
+    sleep: (ms) => new Promise((resolve) => sleepers.push({ at: time + ms, resolve })),
+    drain: async () => { for (let i = 0; i < 10 && sleepers.length; i += 1) { time = Math.max(time, Math.min(...sleepers.map((x) => x.at))); due(time); await settle(); } },
+  };
+}
+const witnessOk = () => ({ status: 200, headers: { get: () => null } });
+for (const delay of [137, 500]) {
+  test(`root's witness: actual dispatch stays spaced after an unrelated ${delay} ms microtask`, async () => {
+    const c = witnessClock(), calls = [];
+    const gate = M.createGate({ now: c.now, sleep: c.sleep, random: () => 0,
+      fetchImpl: (url) => { calls.push({ url, at: c.now() }); return Promise.resolve(witnessOk()); } });
+    const first = gate.fetch("first"), second = gate.fetch("second");
+    queueMicrotask(() => c.jump(c.now() + delay));
+    await c.settle();
+    await c.drain();
+    assert.equal(calls.length, 2, "both callers eventually dispatch");
+    await Promise.all([first, second]);
+    assert.ok(calls[1].at - calls[0].at >= 300, `actual starts ${JSON.stringify(calls)} must be at least 300 ms apart`);
+  });
+}
+test("root's witness: a reserved request dispatches before a new 429 is processed, or waits its full embargo", async () => {
+  const c = witnessClock(), calls = [], trace = [];
+  let finishOld;
+  const gate = M.createGate({ now: c.now, sleep: c.sleep, random: () => 0,
+    fetchImpl: (url) => {
+      const row = { kind: "dispatch", url, at: c.now() };
+      calls.push(row); trace.push(row);
+      return url === "old" ? new Promise((resolve) => { finishOld = resolve; }) : Promise.resolve(witnessOk());
+    } });
+  const old = gate.fetch("old");
+  await c.settle();
+  const next = gate.fetch("reserved-next"), third = gate.fetch("still-queued");
+  await c.settle();
+  c.jump(300);
+  // This order: wake the waiting slot, then resolve the older answer (a 429 with Retry-After: 60).
+  c.due(c.now());
+  finishOld({ status: 429, headers: { get: () => { trace.push({ kind: "429 processed", at: c.now(), embargoUntil: c.now() + 60000 }); return "60"; } } });
+  await c.settle();
+  await c.drain();
+  assert.equal(calls.length, 3, "all callers eventually dispatch");
+  await Promise.all([old, next, third]);
+  const i = trace.findIndex((x) => x.kind === "429 processed");
+  assert.ok(i >= 0);
+  const early = trace.slice(i + 1).filter((x) => x.kind === "dispatch" && x.at < trace[i].embargoUntil);
+  assert.deepEqual(early, [], `after the 429 is processed, no queued dispatch before ${trace[i].embargoUntil}; trace=${JSON.stringify(trace)}`);
+});
