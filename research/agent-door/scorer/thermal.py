@@ -48,6 +48,12 @@ class Thermal:
                 or manifest['fixture']['config_sha256'] != p.config_sha256
                 or manifest['fixture']['frame_um'] != 45000 or len(manifest['dies']) != 8):
             raise ValueError('manifest does not bind micro150-45mm')
+        if (manifest['netlist']['matrix'] != [list(row) for row in p.connections]
+                or manifest['fixture']['ambient_c'] != p.ambient_c
+                or manifest['fixture']['link_type'] != p.link_type
+                or manifest['statistic']['grid'] != 64
+                or manifest['statistic']['record_field'] != 'chiplet_centre_mapping.max_C'):
+            raise ValueError('manifest physics or selector differs from gate zero')
         for i, die in enumerate(manifest['dies']):
             expected = (i, round(p.widths_mm[i] * 1000), round(p.heights_mm[i] * 1000),
                         p.powers_w[i], round(p.bump_halos_mm[i] * 1000), [0, 90] if i < 4 else [0])
