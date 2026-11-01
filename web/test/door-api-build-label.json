@@ -9,7 +9,7 @@
    "arrival": 1,
    "seq": 6,
    "status": "reproduced",
-   "summary": "independently verified",
+   "summary": "reproduced by a fresh-process replay",
    "codes": [],
    "reason": null,
    "position": null,
@@ -305,7 +305,7 @@
    "arrival": 12,
    "seq": 16,
    "status": "reproduced",
-   "summary": "independently verified",
+   "summary": "reproduced by a fresh-process replay",
    "codes": [
     "binding_mismatch"
    ],
@@ -454,7 +454,7 @@
    "arrival": 17,
    "seq": 21,
    "status": "reproduced",
-   "summary": "independently verified",
+   "summary": "reproduced by a fresh-process replay",
    "codes": [],
    "reason": null,
    "position": null,
