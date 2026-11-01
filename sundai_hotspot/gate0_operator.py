@@ -31,9 +31,10 @@ A call whose validate-reference printed no settlement is settled by the operator
 relaunched. Its status is supervisor_meter_failed when the meter failed (the errors are kept), supervisor_cap when
 the cap killed it, and supervisor_unknown when it died on its own. It is charged its full envelope, or the CPU
 measured after the reap if that is larger. If the meter failed after the reap as well, the call's usage is unknown.
-It is charged its full envelope (the reservation stays consumed, never zero, never refunded), the cumulative total is
-recorded as unknown, and every later run refuses until the operator reconciles it by hand. A run in which the meter
-failed stops after that call.
+It is then charged its full envelope or the CPU already read for it, whichever is larger (root #57510). The
+reservation stays consumed, and the charge is never zero, never refunded, and never below what was read. The
+cumulative total is recorded as unknown, and every later run refuses until the operator reconciles it by hand. A run
+in which the meter failed stops after that call.
 
 Never prints the key, the token or the anchor credential.
 """
@@ -231,20 +232,24 @@ class OwnedProcesses:
             time.sleep(0.01)
 
 
-def supervisor_settlement(killed: str | None, envelope_cpu_s: float, cpu_s: float | None,
-                          meter_errors: list[dict]) -> dict:
+def supervisor_settlement(killed: str | None, envelope_cpu_s: float, cpu_s: float | None, meter_errors: list[dict],
+                          lower_bound_cpu_s: float = 0.0) -> dict:
     """The operator's settlement of a call whose validate-reference printed none (contract item 6). The call stays
     consumed and is never relaunched.
 
     Its status is supervisor_meter_failed when the CPU meter failed (root #57472; the errors are kept),
     supervisor_cap when the cap killed it, and supervisor_unknown otherwise. It is charged its full envelope, or the
     CPU measured after the reap if that is larger. If the meter failed after the reap too (cpu_s None), the call's
-    actual usage is unknown. The charge then stays the full envelope: the reservation stays consumed, and it is never
-    zero and never refunded."""
+    actual usage is unknown, and the CPU already read for it before the failure is a lower bound (root #57510). The
+    charge is then the full envelope or that lower bound, whichever is larger. The reservation stays consumed, and the
+    charge is never zero, never refunded and never below what was already read."""
+    used = lower_bound_cpu_s if cpu_s is None else cpu_s
     settlement = {"status": "supervisor_meter_failed" if meter_errors else
                   "supervisor_cap" if killed else "supervisor_unknown",
-                  "charged_cpu_s": round(envelope_cpu_s if cpu_s is None else max(envelope_cpu_s, cpu_s), 3),
+                  "charged_cpu_s": round(max(envelope_cpu_s, used), 3),
                   "usage": "unknown" if cpu_s is None else "measured"}
+    if cpu_s is None:
+        settlement["lower_bound_cpu_s"] = round(lower_bound_cpu_s, 3)
     if meter_errors:
         settlement["meter_errors"] = meter_errors
     return settlement
@@ -310,6 +315,7 @@ def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None
         meter_errors.append(_meter_error("after the reap", exc))
         final = None
     cpu_s = None if final is None else final - start
+    lower_bound = max(0.0, last_read - (budget["carried"] + start))  # what was read for this call before any failure
     used_now = None if final is None else budget["carried"] + final
     save_cpu(used_now, lower_bound=round(last_read, 6))
     stdout = stdout_path.read_text(encoding="utf-8", errors="replace")
@@ -324,11 +330,12 @@ def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None
             summary = candidate
             break
     settlement = None if summary else supervisor_settlement(
-        killed, float(call["accounting"]["reserved_cpu_s"]), cpu_s, meter_errors)
+        killed, float(call["accounting"]["reserved_cpu_s"]), cpu_s, meter_errors, lower_bound)
     return {"out": str(out), "exit": child.returncode, "summary": summary, "killed": killed,
             "meter_errors": meter_errors, "usage": "unknown" if final is None else "measured", "reaped": reaped,
             "survivors": survivors, "settlement": settlement,
             "cpu_s_this_call": None if cpu_s is None else round(cpu_s, 3),
+            "lower_bound_cpu_s_this_call": round(lower_bound, 3),
             "cumulative_cpu_s": None if used_now is None else round(used_now, 3),
             "stderr_tail": stderr.strip().splitlines()[-3:]}
 
@@ -385,7 +392,9 @@ def cmd_run(args) -> int:
                 args.ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256), cid))
             log("no_settlement_printed", call=cid, exit=result["exit"], killed=result["killed"], admitted=admitted,
                 meter_errors=result["meter_errors"], usage=result["usage"], reaped=result["reaped"],
-                stderr_tail=result["stderr_tail"], out=result["out"], cumulative_cpu_s=result["cumulative_cpu_s"])
+                stderr_tail=result["stderr_tail"], out=result["out"], cpu_s_this_call=result["cpu_s_this_call"],
+                lower_bound_cpu_s_this_call=result["lower_bound_cpu_s_this_call"],
+                cumulative_cpu_s=result["cumulative_cpu_s"])
             if admitted:
                 settlement = result["settlement"]
                 message = gate0_anchor.tag_message("settle", args.grant_id, manifest_sha256, cid,

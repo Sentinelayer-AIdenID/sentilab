@@ -73,8 +73,11 @@ while time.monotonic() < end:
 # cap before the solver is up. In production the meter is the container's cgroup. With meter_failure set, reads start
 # failing:
 # - "transient": one read once the solver is up; later reads would succeed;
-# - "persistent": every read once the solver is up, including the one after the reap.
-# The supervisor then reports whether any child or descendant is left and whether a next run would start.
+# - "persistent": every read once the solver is up, including the one after the reap;
+# - "late": every read once the solver is up and this call has used fail_after_cpu_s, including the one after the
+#   reap.
+# The supervisor records each reading it returned, then reports whether any child or descendant is left and whether a
+# next run would start.
 SUPERVISOR = r'''
 import json, os, pathlib, subprocess, sys
 from sundai_controller import process_budget
@@ -82,7 +85,7 @@ from sundai_hotspot import gate0_operator
 spec = json.loads(sys.argv[1])
 here = pathlib.Path(spec["dir"])
 gate0_operator.CPU_FILE = here / "cpu-used.json"
-failed = []
+failed, readings = [], []
 
 
 def started_cpu():
@@ -92,9 +95,11 @@ def started_cpu():
 
 def meter():
     value, up, mode = started_cpu(), (here / "solver.pid").exists(), spec["meter_failure"]
-    if (mode == "transient" and up and not failed) or (mode == "persistent" and up):
+    if ((mode == "transient" and up and not failed) or (mode == "persistent" and up)
+            or (mode == "late" and (failed or up and value - readings[0] >= spec["fail_after_cpu_s"]))):
         failed.append(value)
         raise OSError(5, "synthetic cpu.stat read failure")
+    readings.append(value)
     return value
 
 
@@ -121,6 +126,7 @@ else:
     except ChildProcessError:
         result["children_left"] = False
     result["descendants_left"] = sorted(process_budget.tree_snapshot()[1])
+    result["readings"] = readings
     try:
         result["next_run"] = gate0_operator.carried_cpu_s()
     except SystemExit as exc:
@@ -133,7 +139,7 @@ else:
                      "and cgroup v2")
 class CapPathTests(unittest.TestCase):
     def supervise(self, mode: str, *, cap: float = 600.0, carried: float = 0.0, envelope: float = 58.5,
-                  meter_failure: str | None = None) -> tuple:
+                  meter_failure: str | None = None, fail_after_cpu_s: float | None = None) -> tuple:
         """One run_call in a fresh supervisor process: (its result, the run's directory, the solver's pid, session and
         group, when a solver started)."""
         temporary = tempfile.TemporaryDirectory(prefix="gate0-operator-")
@@ -141,7 +147,8 @@ class CapPathTests(unittest.TestCase):
         here = Path(temporary.name)
         self.addCleanup(self.kill_leftover_solver, here)
         spec = {"dir": str(here), "mode": mode, "cap": cap, "carried": carried, "envelope": envelope,
-                "meter_failure": meter_failure, "parent": PARENT, "solver": SOLVER}
+                "meter_failure": meter_failure, "fail_after_cpu_s": fail_after_cpu_s, "parent": PARENT,
+                "solver": SOLVER}
         done = subprocess.run([sys.executable, "-c", SUPERVISOR, json.dumps(spec)], cwd=REPO, timeout=180,
                               capture_output=True, text=True)
         self.assertEqual(done.returncode, 0, done.stderr[-2000:])
@@ -243,11 +250,36 @@ class CapPathTests(unittest.TestCase):
         self.assertLess(self.solver_cpu(here), 1.0)  # stopped at once
         self.assertEqual((result["usage"], result["cpu_s_this_call"], result["cumulative_cpu_s"]),
                          ("unknown", None, None))
+        lower = round(max(0.0, result["readings"][-1] - result["readings"][0]), 3)  # read before the meter broke
+        self.assertEqual(result["lower_bound_cpu_s_this_call"], lower)
+        self.assertLess(lower, 58.5)
         self.assertEqual(result["settlement"], {"status": "supervisor_meter_failed", "usage": "unknown",
-                                                "charged_cpu_s": 58.5, "meter_errors": result["meter_errors"]})
+                                                "lower_bound_cpu_s": lower, "charged_cpu_s": 58.5,
+                                                "meter_errors": result["meter_errors"]})
         saved = json.loads((here / "cpu-used.json").read_text(encoding="utf-8"))
         self.assertEqual((saved["used_cpu_s"], saved["usage"]), (None, "unknown"))
         self.assertGreaterEqual(saved["lower_bound_cpu_s"], 0.0)
+        self.assertRegex(str(result["next_run"]), "^refused: the cumulative CPU used is unknown")
+
+    def test_a_late_meter_failure_is_charged_at_least_what_was_already_read(self):
+        """root (#57510): the meter reads this call well above its 0.05 CPU-s envelope, then fails for good,
+        including the read after the reap. Usage stays unknown, but what was already read is a lower bound. The
+        settlement cmd_run sends charges that lower bound, not the smaller envelope. The errors, the consumed
+        reservation, the unknown total and the refusal of the next run are kept."""
+        result, here, solver = self.supervise("waits", envelope=0.05, meter_failure="late", fail_after_cpu_s=0.3)
+        self.assertEqual([(error["where"], error["type"]) for error in result["meter_errors"]],
+                         [("while the call ran", "OSError"), ("after the reap", "OSError")])
+        self.assertRegex(result["killed"] or "", "^the CPU meter failed while the call ran")
+        self.assert_nothing_owned_is_left(result, solver)
+        lower = round(max(0.0, result["readings"][-1] - result["readings"][0]), 3)  # the last successful reading
+        self.assertGreater(lower, 0.2)  # read well above the envelope before the meter broke
+        self.assertEqual((result["usage"], result["cpu_s_this_call"], result["lower_bound_cpu_s_this_call"]),
+                         ("unknown", None, lower))
+        self.assertEqual(result["settlement"], {"status": "supervisor_meter_failed", "usage": "unknown",
+                                                "lower_bound_cpu_s": lower, "charged_cpu_s": lower,
+                                                "meter_errors": result["meter_errors"]})
+        saved = json.loads((here / "cpu-used.json").read_text(encoding="utf-8"))
+        self.assertEqual((saved["used_cpu_s"], saved["usage"]), (None, "unknown"))
         self.assertRegex(str(result["next_run"]), "^refused: the cumulative CPU used is unknown")
 
     def test_a_supervisor_that_already_has_a_child_refuses_and_leaves_it_alone(self):
