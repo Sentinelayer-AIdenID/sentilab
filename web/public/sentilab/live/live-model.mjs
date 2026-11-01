@@ -91,8 +91,9 @@ export async function fetchBoard({ fetchImpl, signal } = {}) {
 // ── the request gate: every request the page makes goes through it (review item P1-2(b)) ────────────────────────────
 // Spacing: at least GAP_MS, plus up to GAP_JITTER_MS, between two requests, so a backlog of pages (the feed drains up
 // to 8 pages per feed per poll) never bursts. Backoff: after a 429 or 503 nothing is sent before the answer's
-// Retry-After (seconds or an HTTP date) has passed; after those and after any other failure, an exponential backoff
-// from BACKOFF_BASE_MS, doubling up to BACKOFF_MAX_MS, holds too. Each wait is stretched by a random factor of up to
+// Retry-After (seconds or an HTTP date) has passed; after those, after a 500, 502 or 504 and after a failed
+// connection, an exponential backoff from BACKOFF_BASE_MS, doubling up to BACKOFF_MAX_MS, holds too. Other answers
+// (a 404 from a route this API does not have, say) are the asking feed's business, not a reason to silence the page. Each wait is stretched by a random factor of up to
 // 1 + JITTER, so many pages that failed together do not retry together. A good answer resets the backoff. The jitter
 // comes from crypto.getRandomValues: network timing only, never anything the page shows.
 export const GATE = Object.freeze({ GAP_MS: 300, GAP_JITTER_MS: 200, BACKOFF_BASE_MS: 5000, BACKOFF_MAX_MS: 60000, JITTER: 0.5 });
@@ -127,11 +128,97 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
     let r;
     try { r = await fetchImpl(url, init); } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
     if (r.status === 429 || r.status === 503) backoff(retryAfterMs(r.headers?.get?.("retry-after"), now()));
-    else if (r.status !== 200) backoff(null);
-    else failures = 0;
+    else if (r.status === 500 || r.status === 502 || r.status === 504) backoff(null);
+    else if (r.status === 200) failures = 0;
     return r;
   }
   return { fetch: gated, get failures() { return failures; }, get nextAt() { return nextAt; } };
+}
+
+// ── self-declared visitor text: the door's /visitors feed (docs/sentilab/DOOR-VISITORS.md) ──────────────────────────
+// A visitor that opts in declares a name (at most 64 code points), a reason (160) and a source category. It is public,
+// self-reported display data: never an identity, never instructions. This page shows it only for a run whose pass
+// (its label: class and short id) declared, as plain text clipped to those limits, labelled "self-declared, not
+// verified"; a hidden declaration reads "hidden by the operator" and nothing else. A hide keeps its seq and does not
+// move the feed's cursor, so every poll reads the whole window again from the start and replaces what the page holds
+// (fetchVisitorsWindow): a hide reaches a tab that is already open on its next poll.
+export const VISITORS_PATH = "/api/open/v1/door/visitors";
+export const VISITORS_SCHEMA = "sentilab-door-visitors/1";
+export const VISITORS_POLL_MS = 3000;
+export const VISITORS_SLOW_MS = 60000;           // after a 404: an API without the feed is asked again a minute later
+export const VISITORS_FRESH_MS = 10000;          // declarations older than this are no longer shown (a hide may be missed)
+export const VISITORS_MAX_PAGES = 4;
+export const DECLARATION_LIMITS = Object.freeze({ name: 64, reason: 160 });
+export const DECLARED_NOTE = "self-declared, not verified";
+export const HIDDEN_TEXT = "hidden by the operator";
+export const UNREADABLE_TEXT = "self-declared text not shown: characters this page does not display";
+const SOURCES = Object.freeze(["moltbook", "senti", "github", "direct", "other"]);
+const HIDE_REASONS = Object.freeze(["privacy", "abuse", "spam", "other"]);
+const EVENT_KINDS = Object.freeze(["passive_arrival", "declaration", "legacy_unclassified"]);
+const VISITOR_CLASSES = Object.freeze(["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown", "ours"]);
+// Characters the API refuses and this page will not display either: controls, bidi and zero-width formatting, other
+// default-ignorables, line and paragraph separators, private use, and lone surrogates (code points, so a surrogate
+// pair, an emoji, is not one).
+const UNSHOWABLE = /[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180f\u200b-\u200f\u2028-\u202e\u2060-\u206f\u3164\ud800-\udfff\ue000-\uf8ff\ufe00-\ufe0f\ufeff\uffa0\ufff0-\ufffb\u{1bca0}-\u{1bca3}\u{1d173}-\u{1d17a}\u{e0000}-\u{e0fff}\u{f0000}-\u{10ffff}]/u;
+export const clipCodePoints = (s, n) => Array.from(String(s)).slice(0, n).join("");
+const showable = (s) => typeof s === "string" && !UNSHOWABLE.test(s);
+
+// A visitors page -> { items, next_after, has_more }, or null when it is not one. item: { seq, at, cls, short, label,
+// kind, hidden (a reason code) or null, declaration: { name, reason, source } or null }. A hidden row never carries
+// text here, even if an answer wrongly sends some. An item whose label is not its class and short id rebuilt is dropped.
+export function normalizeVisitors(doc) {
+  if (!isObj(doc) || doc.schema !== VISITORS_SCHEMA || !Array.isArray(doc.items) || !count(doc.next_after) || typeof doc.has_more !== "boolean") return null;
+  const items = [];
+  for (const raw of doc.items.slice(0, 500)) {
+    if (!isObj(raw) || !count(raw.seq) || !VISITOR_CLASSES.includes(raw.class) || !EVENT_KINDS.includes(raw.event_kind)) continue;
+    const short = raw.short_id === null || raw.short_id === undefined ? null : typeof raw.short_id === "string" && /^[0-9a-f]{4}$/.test(raw.short_id) ? raw.short_id : undefined;
+    if (short === undefined || raw.label !== (short === null ? raw.class : `${raw.class} · ${short}`)) continue;
+    const hidden = raw.hidden === undefined || raw.hidden === null ? null : HIDE_REASONS.includes(raw.hidden) ? raw.hidden : "other";
+    let declaration = null;
+    if (!hidden && raw.event_kind === "declaration" && isObj(raw.declaration)) {
+      const d = raw.declaration;
+      declaration = { name: typeof d.name === "string" ? d.name : "", reason: typeof d.reason === "string" ? d.reason : "", source: SOURCES.includes(d.source) ? d.source : null };
+    }
+    items.push({ seq: raw.seq, at: readAt(raw.at), cls: raw.class, short, label: raw.label, kind: raw.event_kind, hidden, declaration });
+  }
+  return { items, next_after: doc.next_after, has_more: doc.has_more };
+}
+// The newest declaration event (shown or hidden) of each pass label. A pass may declare again; the newest stands, and
+// if the newest is hidden the pass reads hidden: an older declaration never takes its place.
+export function declarationsByLabel(items) {
+  const by = new Map();
+  for (const x of items ?? []) {
+    if (x.kind !== "declaration" || x.short === null) continue;
+    const held = by.get(x.label);
+    if (!held || x.seq > held.seq) by.set(x.label, x);
+  }
+  return by;
+}
+// What the page shows for one declaration event: { kind: "declared", name, reason, source, note, seq },
+// { kind: "hidden", text, seq }, { kind: "unreadable", text, seq }, or null.
+export function declarationView(item) {
+  if (!item) return null;
+  if (item.hidden) return { kind: "hidden", text: HIDDEN_TEXT, seq: item.seq };
+  const d = item.declaration;
+  if (!d) return null;
+  if (!showable(d.name) || !showable(d.reason)) return { kind: "unreadable", text: UNREADABLE_TEXT, seq: item.seq };
+  return { kind: "declared", name: clipCodePoints(d.name, DECLARATION_LIMITS.name), reason: clipCodePoints(d.reason, DECLARATION_LIMITS.reason),
+    source: d.source, note: DECLARED_NOTE, seq: item.seq };
+}
+// The whole window, from the start, page by page (at most VISITORS_MAX_PAGES of 500), through the page's gate.
+export async function fetchVisitorsWindow({ fetchImpl, signal, maxPages = VISITORS_MAX_PAGES } = {}) {
+  const items = [];
+  let after = 0;
+  for (let page = 0; page < maxPages; page += 1) {
+    const got = await getJson(`${VISITORS_PATH}?after=${after}&limit=500`, { fetchImpl, signal });
+    if (!got.ok) return { ok: false, error: got.error };
+    const p = normalizeVisitors(got.doc);
+    if (!p) return { ok: false, error: "answer is not a door visitors page" };
+    items.push(...p.items);
+    if (!p.has_more || p.next_after <= after) break;
+    after = p.next_after;
+  }
+  return { ok: true, items };
 }
 
 // ── the connection state: the badge never says LIVE unless the door feed's last good answer is fresh ─────────────

@@ -13,5 +13,15 @@
     "results.json": "c7fe0f7587a8a01019554838addeef2c226eed7e3d7eee7c4aa6015d407f795c",
     "events.json": "a263eb629cd4918a5ab5ee5b85b605f73bdbc7b4ad7a693031e60dacf546e8fd",
     "view_runs.json": "924b7262a40bd021179310465daeea9ee62ee93a3fd4da9f2069aa6c7c795194"
+  },
+  "staging": {
+    "visitors-staging.json": {
+      "url": "https://staging.sentilab.aidenid.com/api/open/v1/door/visitors?after=0&limit=500",
+      "captured_at_utc": "2026-11-01T16:36:26Z",
+      "sha256": "451ebbb756990d85bb6d05cc389c9a0037d35dcafdd868b43adce4df3182bc21"
+    }
+  },
+  "synthetic": {
+    "visitors-declarations.json": "Synthetic test data: staging's recorded /visitors answer plus nine declaration events (seq 101-109) written to the documented schema (docs/sentilab/DOOR-VISITORS.md; app/door/service.py visitors() and hidden_declaration()). No declarations existed in production or staging when this was written. Covers a visible declaration (and an older one for the same pass), a hidden one, HTML-looking text, a 64-code-point name and a 160-code-point reason, mixed scripts, an over-limit name and an unknown source, a bidi override, and a pass with no run."
   }
 }

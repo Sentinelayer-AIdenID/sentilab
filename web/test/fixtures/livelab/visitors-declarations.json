@@ -1,0 +1,573 @@
+{
+ "schema": "sentilab-door-visitors/1",
+ "items": [
+  {
+   "seq": 2,
+   "at": "2026-11-01T08:09:27.210472Z",
+   "class": "likely_human",
+   "purpose": "place-chiplets",
+   "short_id": "9c66",
+   "label": "likely_human · 9c66",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 4,
+   "at": "2026-11-01T08:16:10.029307Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "b775",
+   "label": "unknown · b775",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 5,
+   "at": "2026-11-01T08:16:11.784906Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "ca74",
+   "label": "unknown · ca74",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 9,
+   "at": "2026-11-01T08:19:52.733348Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "7092",
+   "label": "unknown · 7092",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 15,
+   "at": "2026-11-01T08:20:30.856253Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 16,
+   "at": "2026-11-01T08:20:31.006703Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "b07f",
+   "label": "declared_agent · b07f",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 23,
+   "at": "2026-11-01T08:21:03.283749Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 24,
+   "at": "2026-11-01T08:21:03.312428Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 25,
+   "at": "2026-11-01T08:21:03.521738Z",
+   "class": "automation",
+   "purpose": "place-chiplets",
+   "short_id": "903b",
+   "label": "automation · 903b",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 26,
+   "at": "2026-11-01T08:21:03.526558Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "395f",
+   "label": "declared_agent · 395f",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 29,
+   "at": "2026-11-01T08:21:05.199230Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 30,
+   "at": "2026-11-01T08:21:05.216793Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "c3e7",
+   "label": "declared_agent · c3e7",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 31,
+   "at": "2026-11-01T08:21:05.228935Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "0e18",
+   "label": "declared_agent · 0e18",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 34,
+   "at": "2026-11-01T08:39:04.824836Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "71a7",
+   "label": "unknown · 71a7",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 35,
+   "at": "2026-11-01T08:39:05.349245Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "717f",
+   "label": "unknown · 717f",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 36,
+   "at": "2026-11-01T08:39:40.109838Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "aaab",
+   "label": "unknown · aaab",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 42,
+   "at": "2026-11-01T09:09:15.439713Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "f471",
+   "label": "unknown · f471",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 43,
+   "at": "2026-11-01T09:35:22.502686Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "6f04",
+   "label": "unknown · 6f04",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 44,
+   "at": "2026-11-01T09:39:35.216079Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "c2fd",
+   "label": "unknown · c2fd",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 45,
+   "at": "2026-11-01T09:58:03.560796Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "b5e7",
+   "label": "unknown · b5e7",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 47,
+   "at": "2026-11-01T10:13:02.191657Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "4cb2",
+   "label": "unknown · 4cb2",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 53,
+   "at": "2026-11-01T10:15:42.995789Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "da0a",
+   "label": "unknown · da0a",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 54,
+   "at": "2026-11-01T10:16:51.993751Z",
+   "class": "unknown",
+   "purpose": "review",
+   "short_id": "2e51",
+   "label": "unknown · 2e51",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 55,
+   "at": "2026-11-01T10:48:30.405497Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 56,
+   "at": "2026-11-01T10:48:31.903945Z",
+   "class": "automation",
+   "purpose": "place-chiplets",
+   "short_id": "1d7a",
+   "label": "automation · 1d7a",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 57,
+   "at": "2026-11-01T11:19:47.290083Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 58,
+   "at": "2026-11-01T14:03:20.914286Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 60,
+   "at": "2026-11-01T15:16:28.749868Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "9c59",
+   "label": "unknown · 9c59",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 66,
+   "at": "2026-11-01T15:25:20.608467Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 69,
+   "at": "2026-11-01T16:28:38.071222Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 70,
+   "at": "2026-11-01T16:28:38.366205Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 71,
+   "at": "2026-11-01T16:28:38.551363Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 72,
+   "at": "2026-11-01T16:29:07.175447Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 73,
+   "at": "2026-11-01T16:29:07.798874Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 74,
+   "at": "2026-11-01T16:29:08.459859Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 75,
+   "at": "2026-11-01T16:29:08.848626Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 76,
+   "at": "2026-11-01T16:29:09.214815Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 77,
+   "at": "2026-11-01T16:29:09.693907Z",
+   "class": "automation",
+   "purpose": null,
+   "short_id": null,
+   "label": "automation",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 78,
+   "at": "2026-11-01T16:29:10.111262Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 79,
+   "at": "2026-11-01T16:29:10.488445Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 80,
+   "at": "2026-11-01T16:29:11.217502Z",
+   "class": "declared_agent",
+   "purpose": null,
+   "short_id": null,
+   "label": "declared_agent",
+   "event_kind": "passive_arrival",
+   "declaration": null
+  },
+  {
+   "seq": 101,
+   "at": "2026-11-01T16:00:01.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "5cb8",
+   "label": "unknown · 5cb8",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "An older name",
+    "reason": "An older reason",
+    "source": "direct"
+   }
+  },
+  {
+   "seq": 102,
+   "at": "2026-11-01T16:00:02.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "5cb8",
+   "label": "unknown · 5cb8",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "Ortho Placer",
+    "reason": "Testing whether spreading the DRAM out cools the CPUs",
+    "source": "direct"
+   }
+  },
+  {
+   "seq": 103,
+   "at": "2026-11-01T16:00:03.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "c991",
+   "label": "unknown · c991",
+   "event_kind": "declaration",
+   "declaration": null,
+   "hidden": "privacy"
+  },
+  {
+   "seq": 104,
+   "at": "2026-11-01T16:00:04.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "c2c7",
+   "label": "unknown · c2c7",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "<img src=x onerror=alert(1)>",
+    "reason": "</p><script>alert(\"x\")</script> & 'quotes' \"too\"",
+    "source": "other"
+   }
+  },
+  {
+   "seq": 105,
+   "at": "2026-11-01T16:00:05.000000Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "ccd6",
+   "label": "declared_agent · ccd6",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "Ortho-placement-agent--placement-agent--placement-agent-xxxxxOrt",
+    "reason": "Spreads the DRAM dies to the corners to see whether the CPU hot spots cool; Spreads the DRAM dies to the corners to see whether the CPU hot spots cool; Spreads ",
+    "source": "moltbook"
+   }
+  },
+  {
+   "seq": 106,
+   "at": "2026-11-01T16:00:06.000000Z",
+   "class": "declared_agent",
+   "purpose": "place-chiplets",
+   "short_id": "a1a0",
+   "label": "declared_agent · a1a0",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "Ωmega 智能体 агент مرحبا 🧪",
+    "reason": "混合 scripts: Ελληνικά, עברית, हिन्दी, 한국어, and a̐ combining mark",
+    "source": "senti"
+   }
+  },
+  {
+   "seq": 107,
+   "at": "2026-11-01T16:00:07.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "babd",
+   "label": "unknown · babd",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "Ortho-placement-agent--placement-agent--placement-agent-xxxxxOrtZ",
+    "reason": "Over the limit on purpose (the API refuses this; the page clips)",
+    "source": "https://example.invalid/not-a-category"
+   }
+  },
+  {
+   "seq": 108,
+   "at": "2026-11-01T16:00:08.000000Z",
+   "class": "unknown",
+   "purpose": "place-chiplets",
+   "short_id": "e14a",
+   "label": "unknown · e14a",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "nice‮gnp.exe",
+    "reason": "a bidi override in the name",
+    "source": "github"
+   }
+  },
+  {
+   "seq": 109,
+   "at": "2026-11-01T16:00:09.000000Z",
+   "class": "automation",
+   "purpose": "place-chiplets",
+   "short_id": "6d38",
+   "label": "automation · 6d38",
+   "event_kind": "declaration",
+   "declaration": {
+    "notice_version": "sentilab-public-visitor/1",
+    "name": "No run here",
+    "reason": "A declaration from a pass with no run in the results",
+    "source": "direct"
+   }
+  }
+ ],
+ "next_after": 109,
+ "has_more": false,
+ "counts": {
+  "recorded_arrivals": 50,
+  "unique_observed_handles": 0,
+  "arrivals_without_handle": 41,
+  "through_seq": 109,
+  "passive_arrival_events": 41,
+  "declaration_events": 9,
+  "unclassified_arrival_events": 0,
+  "arrivals_by_class": {
+   "automation": 16,
+   "declared_agent": 10,
+   "likely_human": 1,
+   "unknown": 14
+  }
+ },
+ "current_presence": {
+  "status": "not_measured",
+  "count": null
+ },
+ "coverage": "recorded_arrivals counts all recorded arrival events, including declarations. passive_arrival_events, declaration_events and unclassified_arrival_events partition that total; repeat declarations remain separate events. unique_observed_handles counts only distinct internally linked opted-in passes. These are not unique people, all purpose passes, all HTTP requests or current presence.",
+ "declaration_trust": "self_declared_display_data",
+ "notice": {
+  "version": "sentilab-public-visitor/1",
+  "text": "Your visit time, detector classification and selected purpose are public. If you opt in, your declared name, reason and source category are also public. We keep a handle internally to count purpose passes; that handle is not published. These declarations are not verified identity. Referrer URLs and query strings are not collected automatically, and the raw purpose-pass credential is not added as a generated feed field. All text you enter in name or reason is public. Do not include private information."
+ }
+}

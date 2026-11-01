@@ -59,7 +59,7 @@ function installPage(t, requests) {
   define("requestAnimationFrame", (f) => setTimeout(() => f(Date.now()), 16));
   define("cancelAnimationFrame", (id) => clearTimeout(id));
   const answers = { "/api/open/v1/door/results": "results.json", "/api/open/v1/door/events": "events.json", "/api/open/v1/door/board": "board.json",
-    "/api/view/runs": "view_runs.json" };
+    "/api/open/v1/door/visitors": "visitors-staging.json", "/api/view/runs": "view_runs.json" };
   define("fetch", async (input, init = {}) => {
     const url = new URL(String(input), "https://sentilab.aidenid.com");
     requests.push({ path: url.pathname, method: init.method ?? "GET" });
@@ -67,6 +67,7 @@ function installPage(t, requests) {
     if (!name) return new Response("not found", { status: 404 });
     let body = readFileSync(join(FIX, name));
     const after = Number(url.searchParams.get("after") ?? 0);
+    if (name === "visitors-staging.json" && after >= JSON.parse(body.toString("utf8")).next_after) body = Buffer.from(JSON.stringify({ ...JSON.parse(body.toString("utf8")), items: [], has_more: false }));
     if (name === "results.json" || name === "events.json") {
       const d = JSON.parse(body.toString("utf8"));
       if (after >= d.next_after) body = Buffer.from(JSON.stringify({ ...d, [name === "results.json" ? "items" : "events"]: [], has_more: false }));
@@ -95,8 +96,8 @@ test("loading Live Lab and leaving it open past 30 s never asks /api/view/runs (
   assert.ok(paths.includes("/api/open/v1/door/events") && paths.includes("/api/open/v1/door/board"), "events and board too");
   assert.deepEqual(paths.filter((p) => p === "/api/view/runs"), [], "no request to /api/view/runs, at load or later");
   assert.ok(requests.every((r) => r.method === "GET"), "read-only");
-  assert.deepEqual([...new Set(paths)].sort(), ["/api/open/v1/door/board", "/api/open/v1/door/events", "/api/open/v1/door/results"],
-    "the door's three feeds are the only requests");
+  assert.deepEqual([...new Set(paths)].sort(), ["/api/open/v1/door/board", "/api/open/v1/door/events", "/api/open/v1/door/results", "/api/open/v1/door/visitors"],
+    "the door's read-only feeds are the only requests");
 });
 
 // Warden's P1-1: pagehide stops the feed and the timers; a page restored from the back/forward cache (pageshow with
