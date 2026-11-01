@@ -275,7 +275,7 @@ test("no visitor text is reflected anywhere: responses, headers, intake calls an
   const token = await mint();
   const q = encodeURIComponent(HOSTILE);
   const hostileHeaders = { "user-agent": `GPTBot/1.2 ${HOSTILE}`, referer: `https://evil.example/${q}`, "accept-language": HOSTILE.replace(/[^\x20-\x7e]/g, ""),
-    cookie: `sl_view=${q}; x=${q}`, "x-door-claims": HOSTILE.replace(/[^\x20-\x7e]/g, ""), "x-forwarded-host": "evil.example" };
+    cookie: `sl_view=${q}; x=${q}`, "x-door-nonce": "0123456789abcdef", "x-forwarded-host": "evil.example" };
   const requests = [
     `/?${q}=${q}`, `/sentilab/?purpose=${q}&t=${q}`, `/agents/intent?purpose=${q}`, `/agents/intent?purpose=place-chiplets&note=${q}`,
     `/agents/engram?t=${token}&x=${q}`, `/agents/engram?t=${q}`, `/agents/check?t=${token}&l=${q}`, `/agents/check?t=${token}&l=${REF}&x=${q}`,

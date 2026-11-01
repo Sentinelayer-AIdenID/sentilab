@@ -339,7 +339,7 @@ test("methods: the door's only new write is POST /agents/submit; every other met
     }
   }
   // The API stays read-only from outside, the door's intake path included.
-  for (const path of ["/api/open/v1/door/submit", "/api/open/v1/door/arrivals", "/api/runs", "/api/view/events"]) {
+  for (const path of ["/api/open/v1/door/submit", "/api/open/v1/door/arrival", "/api/runs", "/api/view/events"]) {
     for (const method of ["POST", "PUT", "DELETE"]) {
       const r = await s.go(path, { method, body: "{}" });
       assert.deepEqual([r.status, JSON.parse(r.text).error], [405, "read_only"], `${method} ${path}`);
