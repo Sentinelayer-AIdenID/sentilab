@@ -1,6 +1,6 @@
 // The off switch for declarations (warden, 13:29Z on #90: without one, any Worker deploy from main would turn them on).
 // DOOR_DECLARATIONS must be exactly "on". Anything else (missing, "off", "On", ...) is off, the default that
-// wrangler.jsonc ships in both environments until the paired deploy after root's #97:
+// wrangler.jsonc ships in both environments until warden explicitly authorizes turning it on:
 //   - POST /agents/declare (a person's confirm form, an agent's JSON) and any other method on it answer as they did
 //     before Amendment 4's opt-in: the path is not the door's, so it gets what any path the door doesn't own gets (404);
 //   - no page or JSON the door renders (the wall, the purpose pages, their next links, the ENGRAM view, the 405 text)
@@ -124,10 +124,15 @@ test("DOOR_DECLARATIONS on (positive control): the same probes find the opt-in, 
   assert.deepEqual(declaredArrivals(calls).map((c) => c.body.declaration.name), ["off-canary", "off-canary"]);
 });
 
-test("wrangler.jsonc ships declarations off, in production and in staging, until the paired deploy after #97", () => {
+test("wrangler.jsonc ships declarations off, in production and in staging, until warden explicitly authorizes them", () => {
   const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
   const config = JSON.parse(text.replace(/^\s*\/\/.*$/gm, ""));
   assert.equal(config.vars.DOOR_DECLARATIONS, "off");
   assert.equal(config.env.staging.vars.DOOR_DECLARATIONS, "off");
-  assert.match(text, /paired deploy after root's #97/);
+  // The rule is warden's explicit authorization, after the two conditions: no merge or deploy of another PR turns it
+  // on.
+  assert.match(text, /until warden explicitly authorizes turning it on/);
+  assert.match(text, /hide is confirmed on both public feeds on every serving revision/);
+  assert.match(text, /one pass or one network prefix can be stopped/);
+  assert.doesNotMatch(text, /#97|paired deploy/);
 });

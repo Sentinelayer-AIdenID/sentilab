@@ -87,8 +87,8 @@ export function installApi(t, routes = {}) {
 }
 
 // A fresh Worker environment and execution context; extra overrides env (undefined values delete keys). Declarations
-// are on here (DOOR_DECLARATIONS "on"), as the paired deploy after root's #97 runs them, so the door's tests exercise
-// them; wrangler.jsonc ships them off, and door-declarations-off.test.mjs checks that default.
+// are on here (DOOR_DECLARATIONS "on"), so the door's tests exercise them as they would run once warden authorizes
+// turning them on; wrangler.jsonc ships them off, and door-declarations-off.test.mjs checks that default.
 export function setup(extra = {}) {
   resetDoorState();
   const pending = [];

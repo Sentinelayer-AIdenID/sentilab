@@ -175,10 +175,11 @@ if (ready) {
     hereBad.status === 400 && (await hereBad.json().catch(() => ({}))).error === "bad_heartbeat", `${hereBad.status}`);
   const hereGet = await fetch(`${BASE}/api/open/v1/door/here`);
   check("GET /api/open/v1/door/here: 405, allow POST", hereGet.status === 405 && hereGet.headers.get("allow") === "POST", `${hereGet.status}`);
-  // Amendment 4's opt-in as shipped: off (wrangler.jsonc DOOR_DECLARATIONS "off" until the paired deploy after root's
-  // #97). The wall takes no declaration fields; the token page has no form, notice or opt-in, even for a crafted link,
-  // and stays no-referrer; /agents/declare is not the door's, so a POST and a GET get what a path the door never had
-  // gets. (web/test/door-declarations-off.test.mjs checks every page; the door's other tests run declarations on.)
+  // Amendment 4's opt-in as shipped: off (wrangler.jsonc DOOR_DECLARATIONS "off" until warden explicitly authorizes
+  // turning it on). The wall takes no declaration fields; the token page has no form, notice or opt-in, even for a
+  // crafted link, and stays no-referrer; /agents/declare is not the door's, so a POST and a GET get what a path the
+  // door never had gets. (web/test/door-declarations-off.test.mjs checks every page; the door's other tests run
+  // declarations on.)
   check("the wall takes no declaration fields", !wallText.includes('name="notice_version"') && !wallText.includes('name="name"'));
   const tokenPage = await fetch(`${BASE}/agents/intent?purpose=read&name=crafted&notice_version=sentilab-public-visitor%2F1`, { headers: { accept: "text/html" } });
   const tokenText = await tokenPage.text();
