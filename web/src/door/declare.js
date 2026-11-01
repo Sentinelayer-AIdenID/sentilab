@@ -10,7 +10,8 @@
 //     text is otherwise passed on exactly as written (no trimming, no normalising). Lengths count code points.
 //   - ?via=<source> on a landing page only pre-fills source: the form's selected option and the declare template. It
 //     never records anything; at the opt-in only the visitor's own source field counts.
-//   - The door never echoes a declaration: the token page says only whether one was sent.
+//   - The door never echoes a declaration. The token page says what the intake did with it, from the intake's own
+//     answer to the arrival (door.js deliverArrival): recorded, not recorded, or unconfirmed; never "sent" on a guess.
 // A module of its own because worker.js may export nothing but its default handler.
 
 export const SOURCES = Object.freeze(["moltbook", "senti", "github", "direct", "other"]);
@@ -25,7 +26,11 @@ export const OPT_IN_LINE = "Optional: you can also tell us who you are, why you'
 
 // What the token page says about a declaration, by outcome; fixed text, never the visitor's.
 export const DECLARATION_TEXT = Object.freeze({
-  sent: "Your declaration was sent with this visit. It's public, shown as you wrote it, not checked by us, and we may hide it.",
+  recorded: "Your declaration was recorded with this visit. It's public, shown as you wrote it, not checked by us, and we may hide it.",
+  busy: "Your declaration was not recorded: too many visits from your network just now. Your purpose pass works as usual.",
+  refused: "Your declaration was not recorded: the intake refused it. Your purpose pass works as usual.",
+  intake_unavailable: "Your declaration was not recorded: the intake can't be reached. Your purpose pass works as usual.",
+  unconfirmed: "Your declaration was sent with this visit, but no confirmation came back, so it may or may not appear on the public feed. Your purpose pass works as usual.",
   not_opted_in: "You didn't opt in, so nothing you typed was recorded.",
   notice_unavailable: "Declarations can't be accepted right now: the notice could not be loaded. Nothing you typed was recorded.",
   notice_changed: "The notice has changed since you read it, so nothing you typed was recorded. Read the current notice and try again.",
@@ -58,7 +63,8 @@ export function viaSource(params) {
 }
 
 // The purpose step's opt-in: { status: "not_given", typed } (no notice_version: nothing is read, typed says whether a
-// name or reason was typed anyway), { status: "sent", declaration }, or { status: "not_sent", code }.
+// name or reason was typed anyway), { status: "opted_in", declaration }, or { status: "not_sent", code } (refused here,
+// so nothing is sent).
 export function readOptIn(params, notice) {
   const versions = params.getAll("notice_version");
   if (versions.length === 0) {
@@ -76,12 +82,23 @@ export function readOptIn(params, notice) {
     if (problem) return { status: "not_sent", code: problem };
     declaration[field] = values[0];
   }
-  return { status: "sent", declaration };
+  return { status: "opted_in", declaration };
 }
 
-// What the token page shows about the opt-in: { status, code?, detail? }.
-export function declarationOutcome(optIn) {
-  if (optIn.status === "sent") return { status: "sent", detail: DECLARATION_TEXT.sent };
+// What the token page shows about the opt-in: { status, code?, detail? }. An opt-in's status comes from its delivery
+// (door.js deliverArrival), and only the intake's acceptance reads "recorded".
+const DELIVERED = Object.freeze({
+  recorded: { status: "recorded" },
+  skipped: { status: "not_recorded", code: "busy" },
+  rate_limited: { status: "not_recorded", code: "busy" },
+  refused: { status: "not_recorded", code: "refused" },
+  not_sent: { status: "not_recorded", code: "intake_unavailable" },
+});
+export function declarationOutcome(optIn, delivery = null) {
+  if (optIn.status === "opted_in") {
+    const known = typeof delivery === "string" && Object.hasOwn(DELIVERED, delivery) ? DELIVERED[delivery] : { status: "unconfirmed" };
+    return { ...known, detail: DECLARATION_TEXT[known.code ?? known.status] };
+  }
   if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code, detail: DECLARATION_TEXT[optIn.code] };
   return optIn.typed ? { status: "not_given", detail: DECLARATION_TEXT.not_opted_in } : { status: "not_given" };
 }

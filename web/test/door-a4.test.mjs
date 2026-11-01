@@ -12,8 +12,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { BROWSER, NAMES, UA, agent, installApi, mint, postJson, setup } from "./door-harness.mjs";
-import { DECLARATION_TEXT, OPT_IN_LINE, SOURCES, declareObject, displayTextProblem, noticeFrom, readOptIn, viaSource } from "../src/door/declare.js";
-import { HERE_LIMIT, HERE_PAGES, HERE_PATH, hereLimiterEntries } from "../src/door/door.js";
+import { DECLARATION_TEXT, OPT_IN_LINE, SOURCES, declarationOutcome, declareObject, displayTextProblem, noticeFrom, readOptIn,
+  viaSource } from "../src/door/declare.js";
+import { HERE_LIMITER, HERE_PAGES, HERE_PATH, deliverArrival } from "../src/door/door.js";
 import { HERE_LINE } from "../public/sentilab/here.mjs";
 import { RECORDED } from "../src/door/render.js";
 
@@ -76,12 +77,12 @@ test("an opt-in exists only when the visitor sends the notice version they were 
   assert.deepEqual(read("name=a&reason=b&source=moltbook&via=moltbook"), { status: "not_given", typed: true });
   assert.deepEqual(read("via=moltbook&source=moltbook"), { status: "not_given", typed: false });
   assert.deepEqual(read(""), { status: "not_given", typed: false });
-  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}`), { status: "sent", declaration: { notice_version: V } });
+  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}`), { status: "opted_in", declaration: { notice_version: V } });
   assert.deepEqual(read(new URLSearchParams({ notice_version: V, name: HOSTILE.mix, reason: HOSTILE.emoji, source: "github", via: "moltbook" }).toString()),
-    { status: "sent", declaration: { notice_version: V, name: HOSTILE.mix, reason: HOSTILE.emoji, source: "github" } });
+    { status: "opted_in", declaration: { notice_version: V, name: HOSTILE.mix, reason: HOSTILE.emoji, source: "github" } });
   // via never fills source at the opt-in: only the visitor's own source field counts.
-  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}&via=moltbook`), { status: "sent", declaration: { notice_version: V } });
-  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}&name=&reason=&source=`), { status: "sent", declaration: { notice_version: V } });
+  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}&via=moltbook`), { status: "opted_in", declaration: { notice_version: V } });
+  assert.deepEqual(read(`notice_version=${encodeURIComponent(V)}&name=&reason=&source=`), { status: "opted_in", declaration: { notice_version: V } });
   const refused = (query, code) => assert.deepEqual(read(query), { status: "not_sent", code }, query);
   refused(`notice_version=${encodeURIComponent(V)}&name=${"x".repeat(65)}`, "too_long");
   refused(`notice_version=${encodeURIComponent(V)}&reason=${"x".repeat(161)}`, "too_long");
@@ -212,7 +213,7 @@ test("an opt-in is passed on exactly as written and never echoed by the door", a
     assert.equal(res.status, 200);
     views.push(res.text);
   }
-  assert.deepEqual(JSON.parse(views[0]).declaration, { status: "sent", detail: DECLARATION_TEXT.sent });
+  assert.deepEqual(JSON.parse(views[0]).declaration, { status: "recorded", detail: DECLARATION_TEXT.recorded });
   for (const view of views) {
     for (const value of Object.values(declared).slice(0, 2)) assert.ok(!view.includes(value));
     for (const piece of ["onerror", "<script", "javascript:", "evil", "x.example", "Zalgo"]) assert.ok(!view.includes(piece), piece);
@@ -252,7 +253,7 @@ test("a declaration never changes the token, the check or the submission", async
   const { go } = setup();
   const hostile = JSON.parse((await go(intent({ purpose: "place-chiplets", notice_version: V, name: HOSTILE.script, reason: HOSTILE.url, source: "other" }), json())).text);
   const plain = JSON.parse((await go(intent({ purpose: "place-chiplets" }), json())).text);
-  assert.equal(hostile.declaration.status, "sent");
+  assert.equal(hostile.declaration.status, "recorded");
   const strip = (token, value) => JSON.parse(JSON.stringify(value).split(token).join("<t>"));
   const layout = "36.35.0,54.35.0,54.55.0,36.55.0,17.35.0,73.35.0,73.55.0,17.55.0";
   const checks = [];
@@ -270,6 +271,91 @@ test("a declaration never changes the token, the check or the submission", async
 });
 
 // ── the agent view ────────────────────────────────────────────────────────────────────────────────────────────────
+// ── what became of an opt-in: only the intake's own answer says ─────────────────────────────────────────────────
+const OPT_IN = { purpose: "place-chiplets", notice_version: V, name: "a visitor", source: "other" };
+const arrivalAnswer = (status, value) => async () => (value === undefined ? new Response(null, { status }) : Response.json(value, { status }));
+
+test("what the token page says about an opt-in, by its delivery: recorded only on the intake's acceptance", () => {
+  const opted = { status: "opted_in", declaration: { notice_version: V } };
+  assert.deepEqual(declarationOutcome(opted, "recorded"), { status: "recorded", detail: DECLARATION_TEXT.recorded });
+  for (const delivery of ["skipped", "rate_limited"]) {
+    assert.deepEqual(declarationOutcome(opted, delivery), { status: "not_recorded", code: "busy", detail: DECLARATION_TEXT.busy });
+  }
+  assert.deepEqual(declarationOutcome(opted, "refused"), { status: "not_recorded", code: "refused", detail: DECLARATION_TEXT.refused });
+  assert.deepEqual(declarationOutcome(opted, "not_sent"),
+    { status: "not_recorded", code: "intake_unavailable", detail: DECLARATION_TEXT.intake_unavailable });
+  for (const delivery of ["unconfirmed", null, undefined, "anything", Promise.resolve("recorded")]) {
+    assert.deepEqual(declarationOutcome(opted, delivery), { status: "unconfirmed", detail: DECLARATION_TEXT.unconfirmed });
+  }
+  assert.deepEqual(declarationOutcome({ status: "not_given", typed: false }), { status: "not_given" });
+  assert.deepEqual(declarationOutcome({ status: "not_given", typed: true }), { status: "not_given", detail: DECLARATION_TEXT.not_opted_in });
+  assert.deepEqual(declarationOutcome({ status: "not_sent", code: "too_long" }), { status: "not_sent", code: "too_long", detail: DECLARATION_TEXT.too_long });
+  assert.equal(DECLARATION_TEXT.sent, undefined, "no outcome says sent on a guess");
+});
+
+test("an opt-in is reported from the intake's own answer, and the pass is minted whatever it says", async (t) => {
+  const unconfirmed = { status: "unconfirmed", detail: DECLARATION_TEXT.unconfirmed };
+  const cases = [
+    ["accepted", { arrival: arrivalAnswer(204) }, {}, { status: "recorded", detail: DECLARATION_TEXT.recorded }, 1],
+    ["refused by the intake", { arrival: arrivalAnswer(400, { schema: "sentilab-door-arrival/1", state: "rejected",
+      codes: [{ code: "schema_invalid", path: "/declaration/name", keyword: "pattern" }] }) }, {},
+    { status: "not_recorded", code: "refused", detail: DECLARATION_TEXT.refused }, 1],
+    ["the intake's own limit", { arrival: arrivalAnswer(429, { schema: "sentilab-door-arrival/1", state: "rejected", codes: [{ code: "rate_limited" }] }) },
+      {}, { status: "not_recorded", code: "busy", detail: DECLARATION_TEXT.busy }, 1],
+    ["skipped by the door's arrival limit", {}, { DOOR_READ_LIMITER: { limit: async () => ({ success: false }) } },
+      { status: "not_recorded", code: "busy", detail: DECLARATION_TEXT.busy }, 0],
+    ["the intake unreachable", { arrival: async () => { throw new Error("down"); } }, {}, unconfirmed, 1],
+    ["a server error", { arrival: arrivalAnswer(502, { error: "bad_gateway" }) }, {}, unconfirmed, 1],
+    ["a 400 that names no refusal", { arrival: arrivalAnswer(400, { error: "something else" }) }, {}, unconfirmed, 1],
+    ["a 200 it can't name", { arrival: arrivalAnswer(200, { ok: true }) }, {}, unconfirmed, 1]];
+  for (const [name, routes, env, expected, posted] of cases) {
+    const calls = withNotice(t, routes);
+    const { go } = setup(env);
+    const res = await go(intent(OPT_IN), json());
+    assert.equal(res.status, 200, name);
+    const token = JSON.parse(res.text);
+    assert.match(token.t, /^spt1\.place-chiplets\.cpu-dram\.[0-9]{10}\.[0-9a-f]{16}\.[0-9a-f]{32}$/, name);
+    assert.deepEqual(token.declaration, expected, name);
+    const sent = arrivals(calls);
+    assert.equal(sent.length, posted, `${name}: answered only after its arrival was posted`);
+    if (posted) assert.deepEqual(sent[0].declaration, { notice_version: V, name: "a visitor", source: "other" }, name);
+    t.mock.restoreAll();
+  }
+});
+
+test("an arrival's delivery, branch by branch, from what the door and the intake did", async (t) => {
+  const request = new Request("https://sentilab.aidenid.com/agents/intent?purpose=read", { headers: { "user-agent": UA.curl, "cf-connecting-ip": "203.0.113.7" } });
+  const url = new URL(request.url);
+  const arrival = { purpose: "read", nonce: "0123456789abcdef", expiresAt: "2026-11-01T20:00:00Z", declaration: { notice_version: V } };
+  const env = (extra = {}) => ({ API_ORIGIN: "https://sentilab-api.example.test", ORIGIN_TOKEN: "o", ...extra });
+  const deliver = (e) => deliverArrival(request, e, { waitUntil: () => undefined }, url, arrival);
+  assert.equal(await deliver({ DOOR_READ_LIMITER: { limit: async () => ({ success: false }) } }), "skipped");
+  assert.equal(await deliver({}), "not_sent", "no intake configured: nothing was sent");
+  for (const [answer, expected] of [[arrivalAnswer(204), "recorded"], [arrivalAnswer(429, { state: "rejected", codes: [{ code: "rate_limited" }] }), "rate_limited"],
+    [arrivalAnswer(400, { state: "rejected", codes: [{ code: "schema_invalid" }] }), "refused"], [arrivalAnswer(400, { error: "x" }), "unconfirmed"],
+    [arrivalAnswer(503), "unconfirmed"], [arrivalAnswer(200, {}), "unconfirmed"], [async () => { throw new Error("down"); }, "unconfirmed"]]) {
+    installApi(t, { arrival: answer });
+    assert.equal(await deliver(env()), expected);
+    t.mock.restoreAll();
+  }
+});
+
+test("only an opt-in waits for its arrival's answer; a pick without one answers at once", async (t) => {
+  const neverAnswers = async (call) => new Promise((_, reject) => call.signal.addEventListener("abort", () => reject(new Error("aborted"))));
+  const calls = withNotice(t, { arrival: neverAnswers });
+  const { go, drain } = setup();
+  let started = Date.now();
+  const plain = JSON.parse((await go(intent({ purpose: "read" }), json())).text);
+  assert.ok(Date.now() - started < 900, "no wait without an opt-in");
+  assert.deepEqual(plain.declaration, { status: "not_given" });
+  started = Date.now();
+  const opted = JSON.parse((await go(intent(OPT_IN), json())).text);
+  assert.ok(Date.now() - started >= 1000, "an opt-in waits for the intake, up to the arrival's deadline");
+  assert.deepEqual(opted.declaration, { status: "unconfirmed", detail: DECLARATION_TEXT.unconfirmed });
+  await drain();
+  assert.equal(arrivals(calls).length, 2);
+});
+
 test("the agent view's declare object: the notice, the template for a new pass, and via pre-filling source", async (t) => {
   withNotice(t);
   const { go } = setup();
@@ -332,10 +418,21 @@ const beat = (value, extra = {}) => ({ method: "POST", headers: { "content-type"
   "sec-fetch-dest": "empty", "sec-fetch-site": "same-origin", accept: "*/*", origin: "https://sentilab.aidenid.com", ...extra },
   body: typeof value === "string" ? value : JSON.stringify(value) });
 const hereCalls = (calls) => calls.filter((c) => c.path === HERE_PATH);
+// A stand-in for the platform's rate-limit binding: records every key and allows up to `limit` per key.
+function fakeLimiter(limit = Infinity) {
+  const keys = [];
+  const counts = new Map();
+  return { keys, binding: { limit: async ({ key }) => {
+    keys.push(key);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    return { success: counts.get(key) <= limit };
+  } } };
+}
+const OPEN = () => ({ [HERE_LIMITER]: fakeLimiter().binding });
 
 test("a heartbeat forwards exactly {page, tab, class} with fresh headers, and answers 204 no-store", async (t) => {
   const calls = installApi(t);
-  const { go } = setup();
+  const { go } = setup(OPEN());
   const res = await go(HERE_PATH, beat({ page: "live", tab: TAB }, { "cf-connecting-ip": "203.0.113.77", "x-forwarded-for": "198.51.100.9",
     cookie: "sl_view=human", referer: "https://sentilab.aidenid.com/sentilab/package/?t=spt1.x" }));
   assert.equal(res.status, 204);
@@ -351,7 +448,7 @@ test("a heartbeat forwards exactly {page, tab, class} with fresh headers, and an
 
 test("a heartbeat's class is the detector's, qualified to four values", async (t) => {
   const calls = installApi(t);
-  const { go } = setup();
+  const { go } = setup(OPEN());
   for (const [ua, klass] of [[UA.gptbot, "agent"], [UA.claudebot, "agent"], [UA.curl, "bot"], [UA.requests, "bot"]]) {
     assert.equal((await go(HERE_PATH, { method: "POST", headers: { "content-type": "application/json", "user-agent": ua },
       body: JSON.stringify({ page: "board", tab: TAB }) })).status, 204, ua);
@@ -363,7 +460,7 @@ test("a heartbeat's class is the detector's, qualified to four values", async (t
 
 test("a heartbeat of any other shape is refused before any call", async (t) => {
   const calls = installApi(t);
-  const { go } = setup();
+  const { go } = setup(OPEN());
   const bad = [{ page: "admin", tab: TAB }, { page: "live", tab: TAB.toUpperCase() }, { page: "live", tab: TAB.slice(1) }, { page: "live" },
     { tab: TAB }, { page: "live", tab: TAB, class: "likely_human" }, { page: "live", tab: TAB, ip: "203.0.113.77" }, [], "null", "{",
     `{"page":"live","page":"wall","tab":"${TAB}"}`, `{"page":"live","tab":"${TAB}"}${" ".repeat(300)}`];
@@ -390,29 +487,52 @@ test("a heartbeat of any other shape is refused before any call", async (t) => {
   assert.equal(hereCalls(calls).length, 0);
 });
 
-test("the per-IP limit lives in memory for at most 60 s and keys on the client's prefix only", async (t) => {
+test("the per-IP limit is the platform's rate-limit binding, keyed by the client's prefix, with no limiter of the Worker's own", async (t) => {
   const calls = installApi(t);
-  const { go } = setup();
-  let now = Date.parse("2026-11-01T19:30:00Z");
-  t.mock.method(Date, "now", () => now);
+  const { keys, binding } = fakeLimiter(2);
+  const { go } = setup({ [HERE_LIMITER]: binding });
   const from = (ip) => beat({ page: "live", tab: TAB }, { "cf-connecting-ip": ip });
-  for (let i = 0; i < HERE_LIMIT.limit; i += 1) assert.equal((await go(HERE_PATH, from("203.0.113.7"))).status, 204);
-  const limited = await go(HERE_PATH, from("203.0.113.99"));          // the same /24
+  assert.equal((await go(HERE_PATH, from("203.0.113.7"))).status, 204);
+  assert.equal((await go(HERE_PATH, from("203.0.113.99"))).status, 204);  // the same /24: its second
+  const limited = await go(HERE_PATH, from("203.0.113.8"));
   assert.equal(limited.status, 429);
   assert.equal(limited.headers.get("retry-after"), "60");
+  assert.equal(limited.headers.get("cache-control"), "no-store");
   assert.deepEqual(JSON.parse(limited.text), { error: "rate_limited" });
-  assert.equal((await go(HERE_PATH, from("198.51.100.7"))).status, 204);
-  assert.equal(hereCalls(calls).length, HERE_LIMIT.limit + 1);
-  const entries = hereLimiterEntries();
-  assert.deepEqual(entries.map(([key]) => key).sort(), ["here:198.51.100.0/24", "here:203.0.113.0/24"]);
-  for (const [, value] of entries) assert.deepEqual(Object.keys(value).sort(), ["count", "start"]);
-  now += HERE_LIMIT.periodMs - 1;
-  assert.equal((await go(HERE_PATH, from("203.0.113.7"))).status, 429);
-  now += 1;                                                           // the window has ended: nothing older is kept
-  assert.equal((await go(HERE_PATH, from("192.0.2.1"))).status, 204);
-  assert.deepEqual(hereLimiterEntries().map(([key]) => key), ["here:192.0.2.0/24"]);
-  assert.equal((await go(HERE_PATH, from("203.0.113.7"))).status, 204);
-  assert.equal(HERE_LIMIT.periodMs, 60000);
+  assert.equal((await go(HERE_PATH, from("2001:db8:1:2::7"))).status, 204);
+  assert.deepEqual(keys, ["here:203.0.113.0/24", "here:203.0.113.0/24", "here:203.0.113.0/24", "here:2001:db8:1::/48"]);
+  assert.equal(hereCalls(calls).length, 3, "a limited heartbeat reaches nothing");
+  // No limiter of the Worker's own: under a binding that always allows, more than the configured 300 a minute from one
+  // address all pass. The binding is the only limit.
+  const open = setup(OPEN());
+  for (let i = 0; i < 400; i += 1) assert.equal((await open.go(HERE_PATH, from("198.51.100.7"))).status, 204);
+  assert.equal(HERE_LIMITER, "DOOR_HERE_LIMITER");
+});
+
+test("without a working binding the heartbeat is refused, never let through", async (t) => {
+  for (const env of [{}, { [HERE_LIMITER]: {} }, { [HERE_LIMITER]: { limit: async () => { throw new Error("down"); } } },
+    { [HERE_LIMITER]: { limit: async () => ({}) } }, { [HERE_LIMITER]: { limit: async () => ({ success: "yes" }) } }]) {
+    const calls = installApi(t);
+    const { go } = setup(env);
+    const res = await go(HERE_PATH, beat({ page: "live", tab: TAB }));
+    assert.equal(res.status, 503, JSON.stringify(Object.keys(env)));
+    assert.deepEqual(JSON.parse(res.text), { error: "presence_unavailable" });
+    assert.equal(res.headers.get("cache-control"), "no-store");
+    assert.equal(hereCalls(calls).length, 0);
+    t.mock.restoreAll();
+  }
+});
+
+test("the binding is configured in production and staging: 300 a minute per key, in a namespace of its own", () => {
+  const config = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, ""));
+  for (const limits of [config.ratelimits, config.env.staging.ratelimits]) {
+    const here = limits.filter((binding) => binding.name === HERE_LIMITER);
+    assert.equal(here.length, 1);
+    assert.deepEqual(here[0].simple, { limit: 300, period: 60 });
+    assert.match(here[0].namespace_id, /^[1-9][0-9]*$/);
+  }
+  const ids = [...config.ratelimits, ...config.env.staging.ratelimits].map((binding) => binding.namespace_id);
+  assert.equal(new Set(ids).size, ids.length, "every binding counts in its own namespace");
 });
 
 test("the API's own answers: 429 passes on, anything else is presence_unavailable", async (t) => {
@@ -423,7 +543,7 @@ test("the API's own answers: 429 passes on, anything else is presence_unavailabl
     [async () => new Response("ok", { status: 200 }), 503, { error: "presence_unavailable" }],
     [async () => { throw new Error("down"); }, 503, { error: "presence_unavailable" }]]) {
     installApi(t, { here });
-    const { go } = setup();
+    const { go } = setup(OPEN());
     const res = await go(HERE_PATH, beat({ page: "live", tab: TAB }));
     assert.equal(res.status, status);
     assert.deepEqual(JSON.parse(res.text), body);
@@ -431,7 +551,7 @@ test("the API's own answers: 429 passes on, anything else is presence_unavailabl
     t.mock.restoreAll();
   }
   installApi(t);
-  const { go } = setup({ API_ORIGIN: undefined });
+  const { go } = setup({ ...OPEN(), API_ORIGIN: undefined });
   assert.equal((await go(HERE_PATH, beat({ page: "live", tab: TAB }))).status, 503);
 });
 
@@ -468,7 +588,7 @@ test("the heartbeat fixture (here.json) is what the door does", async (t) => {
   assert.equal(HERE.page_line, HERE_LINE);
   const answers = Object.fromEntries(HERE.responses.map((r) => [r.status, r]));
   const calls = installApi(t);
-  const { go } = setup();
+  const { go } = setup(OPEN());
   const ok = await go(HERE.request.path, beat(HERE.request.body, HERE.request.headers));
   assert.equal(ok.status, 204);
   assert.equal(answers[204].body, null);

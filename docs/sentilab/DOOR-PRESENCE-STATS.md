@@ -14,6 +14,17 @@ A lab page sends this every 60 s while it is visible (`web/public/sentilab/here.
 - **The Worker** checks the body and the per-IP limit, then forwards `{"page", "tab", "class"}` with fresh
   headers. `class` is the detector-qualified class: `likely_human`, `agent`, `bot` or `unknown`. It never
   forwards the client IP, user agent, cookie or Referer.
+- **The per-IP limit is the platform's rate-limit binding `DOOR_HERE_LIMITER`.** It is in `web/wrangler.jsonc`
+  `ratelimits` for production (namespace `2026110105`) and staging (`2026110115`), with `simple: {limit: 300, period: 60}`.
+  - The key is `here:<the client's /24 or /48 prefix>`.
+  - The Worker keeps no limiter state of its own and has no fallback. A missing binding, a binding error, or an
+    answer that isn't `{success: true|false}` refuses the heartbeat (`503 presence_unavailable`).
+  - What the platform documents (Rate Limiting API, last updated 2026-10-21):
+    - the period must be 10 or 60 seconds, and the limit is per Cloudflare location;
+    - counts are approximate and eventually consistent, so a burst can pass more than the limit;
+    - the docs say nothing about how long counters or keys are kept;
+    - the docs advise against IP keys, because shared networks are limited together, which is why the limit is a
+      generous 300 a minute per prefix.
 - **Answers** (all `cache-control: no-store`):
   - `204` when the tab is counted or refreshed.
   - `400 {"error": "bad_heartbeat"}`.
@@ -21,8 +32,8 @@ A lab page sends this every 60 s while it is visible (`web/public/sentilab/here.
   - `405` with `allow: POST`, to any other method.
   - `415 {"error": "unsupported_media_type"}`.
   - `429 {"error": "rate_limited"}`, with `Retry-After: 60`.
-  - `503 {"error": "presence_unavailable"}`, when presence isn't measured on this deployment or the API can't
-    be reached.
+  - `503 {"error": "presence_unavailable"}`, when the rate-limit binding is missing or failing, presence isn't
+    measured on this deployment, or the API can't be reached.
 - **The API's own answers to the Worker:** `204`; `400 {"error": "bad_heartbeat", "codes"}`; `429` with
   `Retry-After: 60`; `503 {"error": "presence_not_measured"}` without `DOOR_PRESENCE=on`. Only the exact path
   `/api/open/v1/door/here` takes a POST: any other spelling of it is the read-only API.
@@ -33,10 +44,21 @@ A lab page sends this every 60 s while it is visible (`web/public/sentilab/here.
 |---|---|---|
 | API memory | `tab -> {page, class, last_seen}` | 120 s after the tab's last heartbeat; a sweeper erases it within 1 s after that |
 | API memory | today's set of HMAC-SHA256(daily key, tab), first 16 bytes; the daily key is random | until the UTC day ends; set and key are dropped together |
-| Worker memory | per client /24 or /48 prefix: `{start, count}` for the rate limit | each heartbeat first drops every window that began 60 s or more ago; an isolate that gets no further request can run no timer, and keeps its last windows until it is recycled |
+| Platform rate-limit service | a count per `here:<prefix>` key, in 60 s windows, per location | the provider's policy; its documentation doesn't say |
+| Worker | nothing | |
 
-Nothing is written to disk. A restart starts the counts again. The hosting provider's network-level request logs
-may record IP addresses under that provider's own policy.
+Nothing is written to disk. A restart clears these records and starts the counts again. The hosting provider's
+network-level request logs may record IP addresses under that provider's own policy.
+
+**The page line** (`web/public/sentilab/here.mjs` `HERE_LINE`): the agreed text (aneta #57921 with root's 09:01Z edits),
+checked against this code clause by clause, and one sentence for the limiter that ships:
+
+> We count active tabs, not people. While a tab is open, we keep its random id, its page, a guess at its type and the
+> time it last checked in. Inactive entries are removed by a scheduled cleanup after the two-minute window. We keep a
+> keyed digest of the tab id until the next cleanup after 00:00 UTC, so we don't count that tab twice today. Restarting
+> the API clears these records. Our hosting provider's network logs may record IP addresses. To limit heartbeats, we pass
+> your network address prefix to our hosting provider's rate-limit service, which counts them in one-minute windows; we
+> keep no copy, and the provider's own policy governs how long its service keeps those counts.
 
 ## 2. `current_presence` in `sentilab-door-visitors/1`
 
@@ -85,8 +107,13 @@ These are counted from the events the feeds serve, up to and including `through_
   - the text is otherwise passed on exactly as written.
 
   Without that opt-in nothing typed is recorded. The pass is minted either way.
-- **The answer.** The token page's `declaration` is one of:
-  - `{"status": "sent", "detail"}`;
+- **The answer.** An opt-in's arrival is delivered before the token page answers. The page's `declaration` reports
+  what the intake did with it, from the intake's own answer, and is one of:
+  - `{"status": "recorded", "detail"}`: the intake accepted the arrival (204);
+  - `{"status": "not_recorded", "code", "detail"}`, where `code` is `busy` (the door's arrival limit held it back, or the
+    intake's answered 429), `refused` (the intake answered 400, rejected) or `intake_unavailable` (no intake configured);
+  - `{"status": "unconfirmed", "detail"}`: a timeout, no answer, or an answer the door can't name, so it may or may not
+    be published;
   - `{"status": "not_given"}`, with a `detail` when a name or reason was typed without the opt-in;
   - `{"status": "not_sent", "code", "detail"}`, where `code` is one of `notice_unavailable`, `notice_changed`,
     `field_repeated`, `too_long`, `control_character` or `source_unknown`.

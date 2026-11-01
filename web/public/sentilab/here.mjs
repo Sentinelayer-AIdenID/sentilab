@@ -17,7 +17,9 @@ export const PAGES = Object.freeze(["wall", "package3d", "live", "board", "resul
 export const HERE_PATH = "/api/open/v1/door/here";
 export const INTERVAL_MS = 60000;
 export const ACTIVE_LABEL = "active tabs (last 2 min)";
-export const HERE_LINE = "We count active tabs on each lab page. We keep a random tab id for up to a day to avoid double counting, and nothing else about you. Our hosting provider's network logs may record IP addresses.";
+// The agreed page text, checked clause by clause against the API's presence code (app/door/presence.py), and one sentence
+// for the limiter that ships: the platform's rate-limit binding (web/src/door/door.js HERE_LIMITER).
+export const HERE_LINE = "We count active tabs, not people. While a tab is open, we keep its random id, its page, a guess at its type and the time it last checked in. Inactive entries are removed by a scheduled cleanup after the two-minute window. We keep a keyed digest of the tab id until the next cleanup after 00:00 UTC, so we don't count that tab twice today. Restarting the API clears these records. Our hosting provider's network logs may record IP addresses. To limit heartbeats, we pass your network address prefix to our hosting provider's rate-limit service, which counts them in one-minute windows; we keep no copy, and the provider's own policy governs how long its service keeps those counts.";
 
 // 128 random bits as 32 lower-case hex.
 export function newTabId(random = globalThis.crypto) {

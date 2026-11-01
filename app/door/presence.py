@@ -1,24 +1,29 @@
 """Measured presence: active tabs on the lab's pages (AGENT-DOOR Amendment 4 rev 2, section 4.3).
 
 A visible lab page sends POST /api/open/v1/door/here {page, tab} every 60 s (web/public/sentilab/here.mjs). The Worker
-checks the body and its per-IP limit (in its own memory, for at most 60 s), adds the detector-qualified class and
-forwards {page, tab, class} with fresh headers: this service never receives a visitor's IP, user agent, cookie or
-Referer, so it cannot keep one.
+checks the body and the per-IP limit, which is the platform's rate-limit binding DOOR_HERE_LIMITER (the Worker keeps no
+limiter state, and refuses the heartbeat without a working binding), adds the detector-qualified class and forwards
+{page, tab, class} with fresh headers: this service never receives a visitor's IP, user agent, cookie or Referer, so it
+cannot keep one.
 
 What is kept, all of it in this process's memory, never on disk:
 - tab -> {page, class, last_seen} while the tab's last heartbeat is less than WINDOW_S (120 s) old. Every read and
   every heartbeat erases expired tabs first, and a sweeper thread erases them within SWEEP_S of expiry when nothing
   calls.
-- for "tabs seen today": the set of HMAC-SHA256(daily key, tab), first 16 bytes, so that a tab that comes back is not
-  counted twice. The daily key is random. The set and its key are dropped together when the UTC day ends.
+- for "tabs seen today": the set of HMAC-SHA256(daily key, tab), first 16 bytes (a keyed digest), so that a tab that
+  comes back is not counted twice. The daily key is random. The set and its key are dropped together at the first
+  cleanup after 00:00 UTC: the sweeper's, within SWEEP_S, or an earlier read or heartbeat.
 - the number of heartbeats in the current minute, for the overall limit (no IP: this service has none).
 
 Memory is bounded (max_active tabs, max_day marks a day). A heartbeat over a bound or a limit is refused and counted
 nowhere: once today's set is full, a tab not already in it is refused until the day ends, so every counted tab is in the
 set and tabs_seen_today is exact for the heartbeats accepted (root's P2 on #90 at 6438264c).
 
-These are tabs, not people: one browser can open many tabs, and a bot can POST here. A restart starts every count
-again. Turned on by DOOR_PRESENCE=on (service.Door.from_env); without it the door publishes #89's not_measured state.
+These are tabs, not people: one browser can open many tabs, and a bot can POST here. A restart clears these records and
+starts every count again. Turned on by DOOR_PRESENCE=on (service.Door.from_env); without it the door publishes #89's
+not_measured state. The page text that describes all this (web/public/sentilab/here.mjs HERE_LINE) is checked against
+this module clause by clause: entries removed by a scheduled cleanup after the two-minute window, the digest kept until
+the next cleanup after 00:00 UTC, a restart clearing both.
 """
 from __future__ import annotations
 

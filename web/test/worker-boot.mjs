@@ -46,8 +46,8 @@ rmSync(out, { recursive: true, force: true });
 const stagingOut = mkdtempSync(join(tmpdir(), "worker-dry-staging-"));
 const staging = spawnSync(npx, ["--yes", `wrangler@${VERSION}`, "deploy", "--dry-run", "--env", "staging", "--outdir", stagingOut], { cwd: WEB, env, encoding: "utf8", shell: process.platform === "win32" });
 const stagingLog = strip(`${staging.stdout}\n${staging.stderr}`);
-check(`wrangler ${VERSION} deploy --dry-run --env staging: API_ORIGIN "none" and the door's four limiters`, staging.status === 0
-  && /env\.API_ORIGIN \("none"\)/.test(stagingLog) && ["DOOR_NONCE_LIMITER", "DOOR_IP_LIMITER", "DOOR_READ_LIMITER", "DOOR_MINT_LIMITER"].every((name) => stagingLog.includes(`env.${name}`)),
+check(`wrangler ${VERSION} deploy --dry-run --env staging: API_ORIGIN "none" and the door's five limiters`, staging.status === 0
+  && /env\.API_ORIGIN \("none"\)/.test(stagingLog) && ["DOOR_NONCE_LIMITER", "DOOR_IP_LIMITER", "DOOR_READ_LIMITER", "DOOR_MINT_LIMITER", "DOOR_HERE_LIMITER"].every((name) => stagingLog.includes(`env.${name}`)),
   staging.status === 0 ? "" : stagingLog.slice(-1500));
 rmSync(stagingOut, { recursive: true, force: true });
 

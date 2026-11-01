@@ -154,8 +154,17 @@ test("the tab id lives in memory only: the module never touches cookies or stora
   }
 });
 
-test("the page line and label are the spec's words", () => {
-  assert.equal(HERE_LINE, "We count active tabs on each lab page. We keep a random tab id for up to a day to avoid double counting, and nothing else about you. Our hosting provider's network logs may record IP addresses.");
+// The page text: aneta's plainer version (#57921) with root's two 09:01Z edits, as the coordinator gave it; then one
+// sentence for the limiter that ships (the platform's rate-limit binding). Each clause is checked against the code:
+// app/door/presence.py (the 120 s window, the 1 s sweeper, the daily digest set ended at the first cleanup after 00:00
+// UTC, memory only) and web/src/door/door.js (DOOR_HERE_LIMITER, keyed by the /24 or /48 prefix, 60 s period).
+const PAGE_TEXT = "We count active tabs, not people. While a tab is open, we keep its random id, its page, a guess at its type and the time it last checked in. Inactive entries are removed by a scheduled cleanup after the two-minute window. We keep a keyed digest of the tab id until the next cleanup after 00:00 UTC, so we don't count that tab twice today. Restarting the API clears these records. Our hosting provider's network logs may record IP addresses.";
+const LIMITER_TEXT = "To limit heartbeats, we pass your network address prefix to our hosting provider's rate-limit service, which counts them in one-minute windows; we keep no copy, and the provider's own policy governs how long its service keeps those counts.";
+
+test("the page line is the agreed text plus one limiter sentence, and the label says tabs", () => {
+  assert.equal(HERE_LINE, `${PAGE_TEXT} ${LIMITER_TEXT}`);
+  assert.ok(!/nothing else about you/.test(HERE_LINE), "the retired claim is gone");
   assert.equal(ACTIVE_LABEL, "active tabs (last 2 min)");
-  assert.ok(!/people|humans online/i.test(`${HERE_LINE} ${ACTIVE_LABEL}`));
+  assert.ok(!/humans online/i.test(`${HERE_LINE} ${ACTIVE_LABEL}`));
+  assert.ok(HERE_LINE.startsWith("We count active tabs, not people."));
 });

@@ -16,12 +16,14 @@
   // 32 characters, its own per environment); without it the door stays closed. The terms a submission accepts come
   // from the intake's board (the signed manifest's accepted versions). Rate limits per token (nonce) and per client IP
   // prefix on its write route, per prefix on minting and on the routes that call the API; without these bindings each
-  // falls back to an in-memory window.
+  // falls back to an in-memory window. DOOR_HERE_LIMITER limits the lab pages' heartbeat (POST /api/open/v1/door/here)
+  // per client IP prefix and has no fallback: without it the heartbeat is refused (AGENT-DOOR Amendment 4).
   "ratelimits": [
     { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110101", "simple": { "limit": 10, "period": 60 } },
     { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110102", "simple": { "limit": 60, "period": 60 } },
     { "name": "DOOR_READ_LIMITER", "namespace_id": "2026110103", "simple": { "limit": 300, "period": 60 } },
-    { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110104", "simple": { "limit": 120, "period": 60 } }
+    { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110104", "simple": { "limit": 120, "period": 60 } },
+    { "name": "DOOR_HERE_LIMITER", "namespace_id": "2026110105", "simple": { "limit": 300, "period": 60 } }
   ],
   // Invocation logs record each request's URL, and the door's links carry the scoped purpose token as ?t=, so they
   // stay off; console logs (the door writes none with a token) are kept.
@@ -40,7 +42,8 @@
         { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },
         { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110112", "simple": { "limit": 60, "period": 60 } },
         { "name": "DOOR_READ_LIMITER", "namespace_id": "2026110113", "simple": { "limit": 300, "period": 60 } },
-        { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110114", "simple": { "limit": 120, "period": 60 } }
+        { "name": "DOOR_MINT_LIMITER", "namespace_id": "2026110114", "simple": { "limit": 120, "period": 60 } },
+        { "name": "DOOR_HERE_LIMITER", "namespace_id": "2026110115", "simple": { "limit": 300, "period": 60 } }
       ]
     }
   }

@@ -303,7 +303,6 @@ export function resetDoorState() {
   boardCache = null;
   noticeCache = null;
   windows.clear();
-  hereWindows.clear();
 }
 
 // Root's saved gate-zero record, read through the asset layer (never copied into this Worker).
@@ -367,6 +366,30 @@ function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce =
   } catch { /* a missing or broken execution context never breaks a page */ }
 }
 
+// An opt-in's arrival, sent now (the token page waits for it), and what became of it, from the intake's own answer only:
+//   "skipped"       the door's arrival limit held it back: nothing was sent
+//   "not_sent"      no intake is configured: nothing was sent
+//   "recorded"      the intake accepted it (204)
+//   "rate_limited"  the intake's own arrival limit refused it (429)
+//   "refused"       the intake refused it (400, state rejected)
+//   "unconfirmed"   it may have arrived: a timeout, no answer, or an answer the door can't name
+// The collector post, when on, stays in the background.
+export async function deliverArrival(request, env, ctx, url, { purpose, nonce, expiresAt, declaration }) {
+  if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return "skipped";
+  const who = await identityFor(request, env);
+  const event = arrivalOf(who, purpose, nonce, declaration);
+  if (typeof ctx?.waitUntil === "function") {
+    try { ctx.waitUntil(postCollector(request, env, who, event, expiresAt).catch(() => undefined)); } catch { /* never breaks a page */ }
+  }
+  const answer = await callApi(env, API.arrival, { method: "POST", body: event, host: url.host, timeoutMs: 1200 });
+  if (!answer.attempted) return "not_sent";
+  if (!answer.ok) return "unconfirmed";
+  if (answer.status === 204) return "recorded";
+  if (answer.status === 429) return "rate_limited";
+  if (answer.status === 400 && answer.json?.state === "rejected") return "refused";
+  return "unconfirmed";
+}
+
 // ── tokens on requests ────────────────────────────────────────────────────────────────────────────────────────────
 // { claims, token } for a valid token of the required purpose, or the refusal to send.
 async function authorize(request, env, url, values, required, format) {
@@ -407,12 +430,16 @@ async function intent(request, env, ctx, url) {
   const token = await mintToken(key, { purpose, site: url.host, now });
   const { claims } = await verifyToken(key, token, { site: url.host, now });
   // The opt-in is read only when the visitor sent a notice version, and is checked against the notice the door can
-  // show now. Whatever it says, the pass is minted the same way: a declaration never changes the token.
+  // show now. Whatever it says, the pass is minted the same way: a declaration never changes the token. An opt-in's
+  // arrival is delivered before the page answers, so the page says what the intake did with the declaration (recorded,
+  // not recorded, or unconfirmed), never "sent" on a guess; without one the arrival stays in the background.
   const optIn = readOptIn(url.searchParams, url.searchParams.has("notice_version") ? await sharedNotice(env, url) : null);
   const { admission } = await sharedBoard(env, url);
-  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at,
-    declaration: optIn.status === "sent" ? optIn.declaration : null });
-  const page = { declaration: declarationOutcome(optIn), source: viaSource(url.searchParams) };
+  const arrival = { purpose, nonce: claims.nonce, expiresAt: claims.expires_at };
+  let delivery = null;
+  if (optIn.status === "opted_in") delivery = await deliverArrival(request, env, ctx, url, { ...arrival, declaration: optIn.declaration });
+  else emitArrival(request, env, ctx, url, arrival);
+  const page = { declaration: declarationOutcome(optIn, delivery), source: viaSource(url.searchParams) };
   if (kind === "json") return json(request, 200, tokenJson(url.origin, claims, token, admission, page));
   if (kind === "md") return markdown(request, 200, tokenMarkdown(url.origin, claims, token, admission, page));
   return html(request, 200, tokenHtml(url.origin, claims, token, admission, page));
@@ -725,37 +752,27 @@ export async function serveWallOrAgentVersion(request, env, seam = {}) {
 // qualified to four values. The door stores nothing; the intake keeps tabs, not people (app/door/presence.py).
 export const HERE_PATH = "/api/open/v1/door/here";
 export const HERE_PAGES = Object.freeze(["wall", "package3d", "live", "board", "results"]);
-export const HERE_LIMIT = Object.freeze({ limit: 300, periodMs: 60000 });
+// The per-IP limit is the platform's rate-limit binding (wrangler.jsonc ratelimits: limit 300, period 60 s, its own
+// namespace), keyed by the client's /24 or /48 prefix. The Worker holds no limiter state of its own and has no fallback:
+// without a working binding a heartbeat is refused (503 presence_unavailable), never let through. The platform's
+// counts are approximate and per location (its documentation); how long it keeps them is the provider's policy.
+export const HERE_LIMITER = "DOOR_HERE_LIMITER";
 const HERE_TAB = /^[0-9a-f]{32}$/;
 const MAX_HERE_BYTES = 256;
-const MAX_HERE_WINDOWS = 20000;
 const HERE_HEADERS = Object.freeze({ "cache-control": "no-store", "x-content-type-options": "nosniff" });
 const TAB_CLASS = Object.freeze({ verified_agent: "agent", signed_agent: "agent", declared_agent: "agent", crawler_claimed: "bot",
   automation: "bot", likely_human: "likely_human" });
-// The per-IP limit: client prefix -> {start, count}, in this isolate's memory only. Windows are fixed, and kept in the
-// order they began, so each heartbeat first drops every window that began periodMs or more ago: while heartbeats
-// arrive, no prefix is kept past its window. An isolate that gets no further request can run no timer; it ends with it.
-const hereWindows = new Map();
 
-function hereAllow(key, now) {
-  for (const [old, window] of hereWindows) {
-    if (now - window.start < HERE_LIMIT.periodMs) break;
-    hereWindows.delete(old);
+// "allowed", "limited", or "unavailable" (no binding, a binding error, or an answer that isn't the binding's own).
+async function hereLimit(env, request) {
+  const limiter = env?.[HERE_LIMITER];
+  if (!limiter || typeof limiter.limit !== "function") return "unavailable";
+  try {
+    const { success } = await limiter.limit({ key: `here:${prefixOf(request)}` });
+    return success === true ? "allowed" : success === false ? "limited" : "unavailable";
+  } catch {
+    return "unavailable";
   }
-  let window = hereWindows.get(key);
-  if (!window) {
-    if (hereWindows.size >= MAX_HERE_WINDOWS) hereWindows.delete(hereWindows.keys().next().value);
-    window = { start: now, count: 0 };
-    hereWindows.set(key, window);
-  }
-  if (window.count >= HERE_LIMIT.limit) return false;
-  window.count += 1;
-  return true;
-}
-
-// Test hook: the limiter's entries, as copies.
-export function hereLimiterEntries() {
-  return [...hereWindows].map(([key, value]) => [key, { ...value }]);
 }
 
 function hereAnswer(request, status, value, extra = {}) {
@@ -787,7 +804,9 @@ export async function handleHere(request, env) {
   if (request.method !== "POST") return hereAnswer(request, 405, { error: "method_not_allowed" }, { allow: "POST" });
   if (!/^application\/json(;|$)/.test((request.headers.get("content-type") ?? "").toLowerCase())) return hereAnswer(request, 415, { error: "unsupported_media_type" });
   if (!ownPage(request, url)) return hereAnswer(request, 403, { error: "cross_site" });
-  if (!hereAllow(`here:${prefixOf(request)}`, Date.now())) return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });
+  const limit = await hereLimit(env, request);
+  if (limit === "unavailable") return hereAnswer(request, 503, { error: "presence_unavailable" });
+  if (limit === "limited") return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });
   const body = await readBody(request, MAX_HERE_BYTES);
   const beat = "text" in body ? heartbeatOf(body.text) : null;
   if (!beat) return hereAnswer(request, 400, { error: "bad_heartbeat" });

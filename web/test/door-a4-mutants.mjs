@@ -1,7 +1,8 @@
 // node web/test/door-a4-mutants.mjs [group-prefix]
 // Mutants of every new rule of AGENT-DOOR Amendment 4 rev 2 at the edge: the opt-in and its display-text rules and caps
 // (src/door/declare.js), the purpose step and the heartbeat proxy with its per-IP limit (src/door/door.js, src/worker.js),
-// the wall's copy and form (src/door/render.js), and the pages' heartbeat module (public/sentilab/here.mjs). Each runs in
+// the wall's copy and form (src/door/render.js), the heartbeat limiter's binding (wrangler.jsonc), the opt-in's delivery,
+// and the pages' heartbeat module (public/sentilab/here.mjs). Each runs in
 // a disposable copy of web/ (the working checkout is never modified) against the A4 tests, and must fail an assertion
 // there: a mutant that survives, or that only breaks an import or the syntax, fails this script.
 import assert from "node:assert/strict";
@@ -15,6 +16,7 @@ const DOOR = "src/door/door.js";
 const RENDER = "src/door/render.js";
 const WORKER = "src/worker.js";
 const HERE = "public/sentilab/here.mjs";
+const WRANGLER = "wrangler.jsonc";
 const B = String.fromCharCode(92);       // a backslash, so no escape in this file can turn into the character it names
 const refused = (ranges) => `const REFUSED = /[${ranges.map(([a, b]) => `${B}u${a}-${B}u${b}`).join("")}]/u;`;
 const ALL = [["0000", "001f"], ["007f", "009f"], ["202a", "202e"], ["2066", "2069"]];
@@ -39,12 +41,12 @@ const groups = {
     ["any source accepted", DECLARE, '(SOURCES.includes(values[0]) ? null : "source_unknown")', "null"],
     ["via fills an absent source", DECLARE, '    if (values.length === 0 || values[0] === "") continue;',
       '    if (values.length === 0 || values[0] === "") { if (field === "source" && viaSource(params)) declaration.source = viaSource(params); continue; }'],
-    ["the door declares on the visitor's behalf", DOOR, 'declaration: optIn.status === "sent" ? optIn.declaration : null });',
-      'declaration: optIn.status === "sent" ? optIn.declaration : { notice_version: "sentilab-public-visitor/1" } });'],
+    ["the door declares on the visitor's behalf", DOOR, "  else emitArrival(request, env, ctx, url, arrival);",
+      '  else emitArrival(request, env, ctx, url, { ...arrival, declaration: { notice_version: "sentilab-public-visitor/1" } });'],
     ["the opt-in accepted without the intake's notice", DOOR, 'url.searchParams.has("notice_version") ? await sharedNotice(env, url) : null',
       '{ version: url.searchParams.get("notice_version"), text: "x" }'],
-    ["the token page echoes the declaration", DOOR, "const page = { declaration: declarationOutcome(optIn), source: viaSource(url.searchParams) };",
-      "const page = { declaration: { ...declarationOutcome(optIn), echo: optIn.declaration ?? null }, source: viaSource(url.searchParams) };"],
+    ["the token page echoes the declaration", DOOR, "const page = { declaration: declarationOutcome(optIn, delivery), source: viaSource(url.searchParams) };",
+      "const page = { declaration: { ...declarationOutcome(optIn, delivery), echo: optIn.declaration ?? null }, source: viaSource(url.searchParams) };"],
     ["a notice with controls shown", DECLARE, " || text.length > MAX_NOTICE_CHARS || REFUSED.test(text)) return null;", " || text.length > MAX_NOTICE_CHARS) return null;"],
     ["a notice of version 0 shown", DECLARE, `const NOTICE_VERSION = /^sentilab-public-visitor${B}/[1-9][0-9]{0,5}$/;`, `const NOTICE_VERSION = /^sentilab-public-visitor${B}/[0-9]{1,6}$/;`],
   ],
@@ -77,11 +79,34 @@ const groups = {
     ["every spelling of the path", WORKER, "    if (pathname === HERE_PATH) return handleHere(request, env);", "    if (decodedPath(pathname) === HERE_PATH) return handleHere(request, env);"],
     ["the API's 429 hidden", DOOR, '  if (answer.ok && answer.status === 429) return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });\n', ""],
   ],
-  "the per-IP limit": [
-    ["windows never end", DOOR, "    if (now - window.start < HERE_LIMIT.periodMs) break;", "    break;"],
-    ["one window for everyone", DOOR, "if (!hereAllow(`here:${prefixOf(request)}`, Date.now()))", "if (!hereAllow(\"here:all\", Date.now()))"],
-    ["the limit off by one", DOOR, "  if (window.count >= HERE_LIMIT.limit) return false;", "  if (window.count > HERE_LIMIT.limit) return false;"],
-    ["a window of 120 s", DOOR, "export const HERE_LIMIT = Object.freeze({ limit: 300, periodMs: 60000 });", "export const HERE_LIMIT = Object.freeze({ limit: 300, periodMs: 120000 });"],
+  "the heartbeat limiter: the platform binding, no fallback": [
+    ["no binding lets heartbeats through", DOOR, 'if (!limiter || typeof limiter.limit !== "function") return "unavailable";',
+      'if (!limiter || typeof limiter.limit !== "function") return "allowed";'],
+    ["the in-memory fallback restored", DOOR, 'if (!limiter || typeof limiter.limit !== "function") return "unavailable";',
+      'if (!limiter || typeof limiter.limit !== "function") return (await allow(env, "DOOR_IP_LIMITER", `here:${prefixOf(request)}`)) ? "allowed" : "limited";'],
+    ["a binding error lets it through", DOOR, '    return "unavailable";', '    return "allowed";'],
+    ["the binding's refusal ignored", DOOR, 'return success === true ? "allowed" : success === false ? "limited" : "unavailable";', 'return "allowed";'],
+    ["a strange answer lets it through", DOOR, ': success === false ? "limited" : "unavailable";', ': success === false ? "limited" : "allowed";'],
+    ["one key for everyone", DOOR, "limiter.limit({ key: `here:${prefixOf(request)}` })", 'limiter.limit({ key: "here" })'],
+    ["unavailable answered as allowed", DOOR, '  if (limit === "unavailable") return hereAnswer(request, 503, { error: "presence_unavailable" });', ""],
+    ["the limit not applied", DOOR, '  if (limit === "limited") return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });', ""],
+    ["a 10 s period", WRANGLER, '{ "name": "DOOR_HERE_LIMITER", "namespace_id": "2026110105", "simple": { "limit": 300, "period": 60 } }',
+      '{ "name": "DOOR_HERE_LIMITER", "namespace_id": "2026110105", "simple": { "limit": 300, "period": 10 } }'],
+    ["staging shares production's namespace", WRANGLER, '"namespace_id": "2026110115"', '"namespace_id": "2026110105"'],
+  ],
+  "the opt-in's delivery: recorded only on the intake's acceptance": [
+    ["every opt-in reads recorded", DECLARE, 'const known = typeof delivery === "string" && Object.hasOwn(DELIVERED, delivery) ? DELIVERED[delivery] : { status: "unconfirmed" };',
+      "const known = DELIVERED.recorded;"],
+    ["an unknown delivery reads recorded", DECLARE, '? DELIVERED[delivery] : { status: "unconfirmed" };', "? DELIVERED[delivery] : DELIVERED.recorded;"],
+    ["the opt-in not awaited", DOOR, "delivery = await deliverArrival(", "delivery = deliverArrival("],
+    ["a skipped arrival reads recorded", DOOR, 'if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return "skipped";',
+      'if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return "recorded";'],
+    ["nothing sent reads unconfirmed", DOOR, '  if (!answer.attempted) return "not_sent";', ""],
+    ["a failure reads recorded", DOOR, '  if (!answer.ok) return "unconfirmed";', '  if (!answer.ok) return "recorded";'],
+    ["any 2xx reads recorded", DOOR, "  if (answer.status === 204) return \"recorded\";", "  if (answer.status < 300) return \"recorded\";"],
+    ["the intake's 429 reads recorded", DOOR, '  if (answer.status === 429) return "rate_limited";', '  if (answer.status === 429) return "recorded";'],
+    ["a refusal reads unconfirmed", DOOR, '  if (answer.status === 400 && answer.json?.state === "rejected") return "refused";', ""],
+    ["any 400 reads refused", DOOR, 'answer.status === 400 && answer.json?.state === "rejected"', "answer.status === 400"],
   ],
   "the open feeds": [
     ["visitors unfiltered", DOOR, "events|visitors|stats)$/", "events|stats)$/"],
