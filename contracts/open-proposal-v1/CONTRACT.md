@@ -191,11 +191,12 @@ carries no geometry and the fixed labels `routed wire only`, `no thermal solve`,
   readable fields first, then a seal over every field (image and centre mapping included), so any one field changed,
   the broad alias `hotspot6:<binary>:grid:64x64` and every near spelling read `unvalidated`. Beside the identity
   (outside the string) each build records `image_digest`, its image's sha256 digest. A run's image is proved by digest
-  alone: the door names the build only when the run's evaluation receipt `image_digest` and the signed grant's
-  `scorer_image_digest` are both well-formed (`sha256:` and 64 lower-case hex) and both equal the recorded
-  `image_digest`; a tag never counts. No digest was recorded for the gate-zero image (the evaluator binding packet has
-  `image_id_or_digest: null`), so its `image_digest` is null, a null digest is never matched, and every door result
-  reads `unvalidated` until one is recorded. The file also records the gate-zero
+  alone: the door names the build only when the run's evaluation receipt `image_digest`, the signed grant's
+  `scorer_image_digest` and the signed manifest's `statistic.evaluator.build` each equal the recorded `image_digest`
+  exactly, as full strings, and that digest is well-formed (`sha256:` and 64 lower-case hex). Nothing is trimmed or
+  case-folded, a tag never counts, and null never equals null. No digest was recorded for the gate-zero image (the
+  evaluator binding packet has `image_id_or_digest: null`), so its `image_digest` is null, a null digest is never
+  matched, and every door result reads `unvalidated` until one is recorded. The file also records the gate-zero
   receipt (room message 57377) and its independent re-derivation (57394) by message sha256, and both raw references
   with the native all-block maximum, the chiplet-centre mean and the active-layer peak kept apart. The label is the
   build's: it never clears a row's own claims, suppressions or sensitivities. `golden/build-labels.json` is the

@@ -2,11 +2,13 @@
 
 Every scored result's evaluator is the full identity string its run attests: the signed manifest's engine commit,
 grid and centre mapping; the bound receipt's binary and every configuration file hash; and the build's image, attested
-by digest alone (the receipt's image_digest and the signed grant's scorer_image_digest are both the digest builds.json
-records for the build; never a tag). It reads "reproduction_tested" only when all of them are the build's; any single
-field off is another string, which reads unvalidated. builds.json records no digest for the gate-zero image, so the
-real door reads every result unvalidated: the tests that need the build to match use a test-only registry (registry()),
-the build's identity with the test scorer image's digest recorded. The broad alias still reads unvalidated. Hard rule:
+by digest alone (the receipt's image_digest, the signed grant's scorer_image_digest and the signed manifest's
+statistic.evaluator.build are each exactly the digest builds.json records for the build; never a tag). It reads
+"reproduction_tested" only when all of them are the build's; any single field off is another string, which reads
+unvalidated. builds.json records no digest for the gate-zero image, so the real door reads every result unvalidated:
+the tests that need the build to match use a test-only registry (registry()), the build's identity with the test scorer
+image's digest recorded, which the test manifest, grant and receipts all carry. The broad alias still reads
+unvalidated. Hard rule:
 the label changes nothing else. A result's own qualifiers (replay status, binding basis and mismatch, a missing grid,
 the guard, the candidate verdict) stay exactly as its verification says.
 
@@ -172,10 +174,11 @@ class EvaluatorIdentityTests(unittest.TestCase):
 
 
 class ImageDigestTests(unittest.TestCase):
-    """warden's P1 on #85 (at 3c7b3062): the image a run attests is proved by digest, never by tag. A run is the build
-    only when the bound evaluation receipt's image_digest and the signed grant's scorer_image_digest are both
-    well-formed (sha256: and 64 lower-case hex), equal to each other, and equal to the image_digest builds.json records
-    for that build. In every other case the attested image is absent: another string, which reads unvalidated. The
+    """warden's P1 on #85 (at 3c7b3062) and root's (at ca3fc2be): the image a run attests is proved by digest, never by
+    tag. A run is the build only when the bound evaluation receipt's image_digest, the signed grant's
+    scorer_image_digest and the signed manifest's statistic.evaluator.build each equal, exactly, the well-formed
+    (sha256: and 64 lower-case hex) image_digest builds.json records for that build. In every other case the attested
+    image is absent: another string, which reads unvalidated. The test manifest's build is the test scorer image. The
     grants here are stand-ins shaped like P1's, each also carrying the tag that names the build, which must not help."""
 
     def setUp(self):

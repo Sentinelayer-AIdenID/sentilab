@@ -6,8 +6,9 @@ engine commit, binary, the configuration files' hashes, grid and the seal over e
   binary_sha256           the bound evaluation receipt's binary
   config_sha256           the bound evaluation receipt's input hashes, for exactly a registered build's config files
   image                   a registered build's image, attested by digest alone (image_attested): the bound receipt's
-                          image_digest and the signed grant's scorer_image_digest are that build's recorded
-                          image_digest; otherwise absent. No tag is read: a tag is mutable and proves no image
+                          image_digest, the signed grant's scorer_image_digest and the signed manifest's
+                          statistic.evaluator.build are each exactly that build's recorded image_digest; otherwise
+                          absent. No tag is read: a tag is mutable and proves no image
   grid, centre_mapping    the signed manifest's statistic
 never from constants here. When they are all a registered build's, the string is that build's, and label_for reads it
 "reproduction_tested"; any other run's string (another image digest or none, another or a missing config file, another
@@ -29,15 +30,19 @@ ENGINES = {"hotspot6": builds.ENGINE}
 ALIAS = f"hotspot6:{EVALUATOR_BINARY_SHA256}:grid:64x64"
 
 
-def image_attested(build: dict, receipt: dict, grant) -> bool:
-    """Whether this run proves, by digest, that it ran the build's image: the digest builds.json records for the build
-    is well-formed (sha256: and 64 lower-case hex), and the receipt's image_digest and the grant's scorer_image_digest
-    each equal it, so they equal each other. A null or malformed recorded digest matches nothing, not even a run that
-    carries no digest either."""
+def image_attested(build: dict, receipt: dict, grant, evaluator: dict) -> bool:
+    """Whether this run proves, by digest, that it ran the build's image. The digest builds.json records for the build
+    is well-formed (sha256: and 64 lower-case hex), and each of the run's three digests equals it exactly, as a full
+    string: the bound receipt's image_digest, the signed grant's scorer_image_digest and the signed manifest's
+    statistic.evaluator.build (evaluator: the manifest's statistic.evaluator). So all four agree. Nothing is trimmed or
+    case-folded and no tag counts; a null or malformed recorded digest matches nothing, not even a run whose digests
+    are all null too."""
     recorded = build.get("image_digest")
     if not isinstance(recorded, str) or not IMAGE.match(recorded):
         return False
-    return receipt.get("image_digest") == recorded and getattr(grant, "scorer_image_digest", None) == recorded
+    return (receipt.get("image_digest") == recorded
+            and getattr(grant, "scorer_image_digest", None) == recorded
+            and evaluator.get("build") == recorded)
 
 
 def attested(build: dict, receipt, manifest, grant) -> dict:
@@ -48,7 +53,7 @@ def attested(build: dict, receipt, manifest, grant) -> dict:
     inputs = receipt.get("input_sha256") if isinstance(receipt.get("input_sha256"), dict) else {}
     return {"schema": builds.BUILD_SCHEMA, "engine": ENGINES.get(evaluator.get("kind")),
             "engine_commit": evaluator.get("upstream"), "binary_sha256": receipt.get("binary_sha256"),
-            "image": build["identity"]["image"] if image_attested(build, receipt, grant) else None,
+            "image": build["identity"]["image"] if image_attested(build, receipt, grant, evaluator) else None,
             "config_sha256": {name: inputs.get(name) for name in build["identity"]["config_sha256"]},
             "grid": statistic.get("grid"), "centre_mapping": statistic.get("centre_mapping")}
 

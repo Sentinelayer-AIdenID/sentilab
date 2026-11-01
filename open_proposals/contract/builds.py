@@ -25,9 +25,9 @@ The gate-zero build is derived from the repository, not typed (derive_gate0_iden
 
 Beside the identity, outside the string, each build records image_digest: its image's sha256 digest, from the same
 packet (evaluator.image_id_or_digest), or null when none is recorded. It is the only proof of a run's image: the door
-names a build only when the run's evaluation receipt and its signed grant both carry exactly that digest
-(app/door/evaluator.py), and a null digest is never matched. The packet records none for the gate-zero image, so no
-door run is that build until a digest is recorded.
+names a build only when the run's evaluation receipt, its signed grant and its signed manifest
+(statistic.evaluator.build) each carry exactly that digest (app/door/evaluator.py), and a null digest is never
+matched. The packet records none for the gate-zero image, so no door run is that build until a digest is recorded.
 
   python -m open_proposals.contract.builds --write --receipts GATE0.json REDERIVATION.json --binding PACKET.json
   python -m open_proposals.contract.builds --check     # exit 1 unless builds.json matches its sources
@@ -69,8 +69,9 @@ RULE = ("Exact match only. A build's identity string is <engine>:<engine_commit>
         ":config_sha256:<sha256 of the config file map>:grid:<n>x<n>:build_sha256:<sha256 of the canonical identity>, "
         "the identity being schema, engine, engine_commit, binary_sha256, image, config_sha256, grid and "
         "centre_mapping. Any other string, the broad alias hotspot6:<binary>:grid:64x64 included, is another "
-        "evaluator. A run is a build only when its image is proved by digest: its evaluation receipt's image_digest "
-        "and its signed grant's scorer_image_digest are both the build's recorded image_digest. A tag never counts, "
+        "evaluator. A run is a build only when its image is proved by digest: its evaluation receipt's image_digest, "
+        "its signed grant's scorer_image_digest and its signed manifest's statistic.evaluator.build are each exactly "
+        "the build's recorded image_digest, as full strings. Nothing is trimmed or case-folded, a tag never counts, "
         "and a build whose image_digest is null is never matched. The label is the build's: it never clears a "
         "result's own qualifiers (diagnostic, unassociated, replay status).")
 TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+=-]{0,63}")

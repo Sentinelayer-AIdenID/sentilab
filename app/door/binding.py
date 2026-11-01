@@ -13,10 +13,10 @@ grant.json: {"grant": "<the manifest's refs.grant>", "cpu_cap_s": 3600, "token_c
 "enforcement_evidence_sha256": "<the scorer's whole-container cutoff evidence>",
 "scorer_image_digest": "sha256:<the scorer's gate-zero image digest>"}
 run_reserve_cpu_s 20 matches door-scorer, which reserves 10 CPU-s for a score and 10 for its replay. Results name the
-reproduction-tested build (contracts/open-proposal-v1/builds.json) only when scorer_image_digest and the evaluation
-receipt's image_digest are both the image_digest builds.json records for that build (app/door/evaluator.py). No tag
-counts. builds.json records no digest for the gate-zero image (null), so until one is recorded every result reads
-unvalidated.
+reproduction-tested build (contracts/open-proposal-v1/builds.json) only when scorer_image_digest, the evaluation
+receipt's image_digest and the signed manifest's statistic.evaluator.build are each exactly the image_digest
+builds.json records for that build (app/door/evaluator.py). No tag counts. builds.json records no digest for the
+gate-zero image (null), so until one is recorded every result reads unvalidated.
 """
 from __future__ import annotations
 
