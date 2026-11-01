@@ -13,6 +13,8 @@
 // nothing else (the speaker notes are in deck-data.json and the N panel, never printed):
 //   daytime     docs/sentilab/deck/SentiLab-deck-<packet date>-daytime-<HHMM>.pdf, named from the packet (pdfName)
 //   supplement  docs/sentilab/deck/SentiLab-deck-supplement-<date>-<HHMM>-v<n>.pdf (suppPdfName)
+//   founder     docs/sentilab/deck/founder-v4/SentiLab-founder-3min-<cutoff date>-<HHMM>-<draft|review>.pdf (founderPdfName),
+//               the founder pitch from build-deck-founder.mjs, held to the final deck's type floor and contrast checks
 //   final       docs/sentilab/deck/final-5min/SentiLab-5min-<cutoff date>-<HHMM>-<gate outcome>.pdf (finalPdfName); a
 //               preview build (PASS or FAIL without values) is refused: it screenshots, it never prints
 // The final deck also holds its main slides to a 28px type floor (the footer line keeps 22px) and every deck's text to a
@@ -31,6 +33,7 @@ import { pathToFileURL } from "node:url";
 import { DECK_DIR, DECK_ROOT, FROZEN_V1, PDF_DIR, REPO_ROOT, pdfName } from "./build-deck-data.mjs";
 import { FROZEN_DAYTIME, SUPP_DECK_DIR, suppPdfName } from "./build-deck-supplement.mjs";
 import { FINAL3_DECK_DIR, FINAL_DECK_DIR, FROZEN_FINAL_3MIN, finalPdfName } from "./build-deck-final.mjs";
+import { FOUNDER_DECK_DIR, founderPdfName } from "./build-deck-founder.mjs";
 
 const args = process.argv.slice(2);
 const deckAt = args.indexOf("--deck");
@@ -39,9 +42,10 @@ const DECKS = {
   supplement: { dir: SUPP_DECK_DIR, pdf: () => suppPdfName() },
   final: { dir: FINAL_DECK_DIR, pdf: (data) => finalPdfName(data), mainMinFont: 28 },
   final3min: { dir: FINAL3_DECK_DIR, pdf: () => { throw new Error("the three-minute deck is preserved as exported at 00:12 UTC; it is never re-exported"); }, mainMinFont: 28 },
+  founder: { dir: FOUNDER_DECK_DIR, pdf: (data) => founderPdfName(data), mainMinFont: 28, contrast: true },
 };
 const DECK_NAME = deckAt >= 0 ? args[deckAt + 1] : "daytime";
-if (!Object.hasOwn(DECKS, DECK_NAME)) { console.error(`unknown deck ${JSON.stringify(DECK_NAME)}: use --deck daytime, supplement, final or final3min`); process.exit(2); }
+if (!Object.hasOwn(DECKS, DECK_NAME)) { console.error(`unknown deck ${JSON.stringify(DECK_NAME)}: use --deck daytime, supplement, final, final3min or founder`); process.exit(2); }
 const DECK = DECKS[DECK_NAME];
 const FROZEN = { ...FROZEN_V1, ...FROZEN_DAYTIME };
 const OUT_DIR = PDF_DIR;
@@ -204,7 +208,7 @@ try {
           if (c.pending.length) fail(`${c.id}: missing values ${c.pending.join(", ")}`);
           if (c.minFont < MIN_FONT - 0.01) fail(`${c.id}: smallest text ${c.minFont.toFixed(1)}px < ${MIN_FONT}px at ${c.minFontAt}`);
           if (c.main && c.bodyMinFont < MAIN_MIN_FONT - 0.01) fail(`${c.id}: main-slide text ${c.bodyMinFont.toFixed(1)}px < ${MAIN_MIN_FONT}px at ${c.bodyMinFontAt}`);
-          if (DECK_NAME.startsWith("final") && c.minContrast < MIN_CONTRAST) fail(`${c.id}: contrast ${c.minContrast.toFixed(2)} < ${MIN_CONTRAST} at ${c.minContrastAt}`);
+          if ((DECK.contrast || DECK_NAME.startsWith("final")) && c.minContrast < MIN_CONTRAST) fail(`${c.id}: contrast ${c.minContrast.toFixed(2)} < ${MIN_CONTRAST} at ${c.minContrastAt}`);
         }
       }
       await ctx.close();

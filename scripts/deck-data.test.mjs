@@ -30,6 +30,7 @@ import "./deck-supplement.test.mjs";
 // The five-minute talk deck (deck/final-5min/) and the preserved three-minute deck (deck/final/) have their own tests
 // too, run in the same CI step.
 import "./deck-final.test.mjs";
+import "./deck-founder.test.mjs";
 
 const require = createRequire(import.meta.url);
 const Deck = require(join(DECK_DIR, "deck.js"));
@@ -717,7 +718,8 @@ test("deck v1 and its PDF stay byte-identical; the daytime PDF has its own packe
   assert.ok(existsSync(pdf), `${pdfName(PACKET)} is exported`);
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, rendered.length, "one PDF page per slide");
-  // Beside them only the dated supplement (its source files and its own PDF) and the two talk-deck folders (final-3min/,
-  // preserved byte for byte, and final-5min/: each a source, its renders and one PDF; deck-final.test.mjs pins both).
-  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", suppPdfName(), "final-3min", "final-5min", SUPPLEMENT.id]);
+  // Beside them only the dated supplement (its source files and its own PDF) and the talk-deck folders (final-3min/,
+  // preserved byte for byte, and final-5min/: each a source, its renders and one PDF; deck-final.test.mjs pins both;
+  // founder-v4/, the founder pitch, which deck-founder.test.mjs pins).
+  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", suppPdfName(), "final-3min", "final-5min", "founder-v4", SUPPLEMENT.id]);
 });

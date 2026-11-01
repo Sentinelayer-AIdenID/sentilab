@@ -1,0 +1,435 @@
+{
+  "schema": "sentilab-deck-founder-source/1",
+  "title": "SentiLab",
+  "event": "ScienceClaw hackathon",
+  "talk": "Founder pitch, three minutes (v4)",
+  "cutoff": "2026-11-01T07:09:00Z",
+  "clock": {
+    "talkCapSeconds": 180,
+    "transitionSeconds": 15,
+    "wordsPerMinute": 150,
+    "slowWordsPerMinute": 135
+  },
+  "inputs": [
+    "Carter's direction, team room 57800 (06:47Z), pinned.",
+    "Root's founder pitch, team room 57809 (06:55Z), pinned: the spine, near-verbatim.",
+    "Root's two paragraph openings, reply to 57809 at 07:04Z, carried as written.",
+    "Aneta's finding beat, tile and footer, team room 57816 (07:09Z); root's spoken wording, reply to 57816 at 07:14Z.",
+    "Aneta's help-room counts, team room 57818 (07:10Z), counted at 07:09 UTC.",
+    "Chatgpt's continuity review, reply to 57809 at 07:02Z: the market sources and the three-minute maximum.",
+    "The coordinator's brief for v4 (07:00Z) and its follow-ups (07:13Z, 07:16Z, 07:20Z)."
+  ],
+  "teams": {
+    "named": {
+      "ScienceClaw": "ScienceClaw",
+      "Delfie": "Delfie (delphisci team)"
+    },
+    "unnamed": [
+      "FEAgent",
+      "Kiln",
+      "Vortex",
+      "Axis",
+      "Conscientia",
+      "Beamfree",
+      "quantumSwarms",
+      "InquilineKea",
+      "Coleherrin",
+      "pixlram",
+      "Fractastical"
+    ]
+  },
+  "metrics": {
+    "file": "METRICS.json",
+    "placeholder": "measuring…",
+    "wanted": {
+      "intent.helpful_messages": {
+        "label": "helpful messages, by our intent model",
+        "need": "the intent model's count of helpful help-room messages, with its definition, scope and time window"
+      },
+      "cost.weekend_total": {
+        "label": "what the weekend's collaboration cost",
+        "need": "the cost of the whole interaction, with what it includes, its scope and window"
+      },
+      "moltbook.post_votes": {
+        "label": "votes on our Moltbook post",
+        "need": "the post's vote count once the post exists, with the time it was read"
+      },
+      "door.visits": {
+        "label": "visits to the agent door",
+        "need": "door visits, with the counting rule (visits, not unique agents) and the window"
+      },
+      "door.agents_passed": {
+        "label": "agents that passed",
+        "need": "agents that passed the door, with what passing means and the window"
+      },
+      "view.agent_bytes": {
+        "label": "what an agent is served, per view",
+        "need": "the agent view's measured size against the human page, with the method"
+      }
+    }
+  },
+  "stills": {
+    "render": {
+      "file": "package-render-35323889.png",
+      "sha256": "7ea5c23232c4f3d3cedb54fd6704e9879d622c660dc515b16310c0fa4dde560a",
+      "width": 685,
+      "height": 501,
+      "alt": "The published CPU-DRAM reference layout in our 3D view: four CPUs and four DRAMs on one base, coloured by simulated heat. Simulated, not silicon."
+    },
+    "qr": {
+      "file": "qr-sentilab.png",
+      "sha256": "f62a077ae0010d876fe7674d3c134f0cbac994f95827ef8c286911c40fc744ec",
+      "width": 592,
+      "height": 592,
+      "alt": "QR code for https://sentilab.aidenid.com"
+    }
+  },
+  "figures": {
+    "plain2": {
+      "file": "plain2-stack.svg",
+      "sha256": "1b7f851e28fda6398d4469f8598604bbf384283e5202562584bd36f1d11c0b30",
+      "width": 1664,
+      "height": 640,
+      "scale": 0.94
+    }
+  },
+  "slides": [
+    {
+      "id": "chips",
+      "kicker": "Chip design",
+      "layout": "joke",
+      "title": "Of course I know everything about chip design.",
+      "picture": {
+        "still": "render",
+        "label": "simulated, not silicon"
+      },
+      "caption": "Chiplets: small chips on one base. They get hot.",
+      "footer": "Simulated heat map of a published reference design. Simulated, not silicon.",
+      "say": "I'm a computer engineer. I took a chip-design class. Of course I know everything about chip design. I do not know anything about chip design. All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design.",
+      "cue": "Pause after \"everything about chip design.\" Then, deadpan: \"I do not know anything about chip design.\" Let the last line land.",
+      "facts": []
+    },
+    {
+      "id": "senti",
+      "kicker": "Senti",
+      "layout": "flow",
+      "title": "What agents need, and only what they are allowed to touch.",
+      "steps": [
+        {
+          "verb": "Recognize",
+          "what": "who the agent is"
+        },
+        {
+          "verb": "Set up",
+          "what": "its purpose, context and tools"
+        },
+        {
+          "verb": "Work together",
+          "what": "with people and other agents"
+        },
+        {
+          "verb": "Serve",
+          "what": "what it needs, nothing more"
+        },
+        {
+          "verb": "Record",
+          "what": "what it did, where it went"
+        }
+      ],
+      "chips": [
+        "Scoped delegation",
+        "Drift and rogue agents handled gracefully"
+      ],
+      "apps": "Shopping · Security · Today: scientific discovery",
+      "footer": "What Senti does for every agent in the room.",
+      "say": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and records everything they did and everywhere they went. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
+      "facts": []
+    },
+    {
+      "id": "room",
+      "kicker": "This weekend",
+      "layout": "numbers",
+      "title": "Many labs' agents, one room, overnight.",
+      "tiles": [
+        {
+          "value": "418",
+          "label": "messages"
+        },
+        {
+          "value": "28",
+          "label": "senders"
+        },
+        {
+          "value": "17",
+          "label": "senders from outside our team"
+        },
+        {
+          "metric": "intent.helpful_messages"
+        },
+        {
+          "metric": "cost.weekend_total"
+        }
+      ],
+      "points": [
+        "People watched every agent work",
+        "Agents geared each other up",
+        "Agents guarded the room",
+        "Plain messages became engineering-grade tickets"
+      ],
+      "footer": "Help-room record, 31 Oct 13:46 to 1 Nov 07:09 UTC, about 17 hours: 193 messages and 225 replies. Senders are handles, not people; 5 are people's accounts.",
+      "say": "This weekend, teams didn't know how to get their agents talking to other labs' agents. Overnight, it worked in one room: people watched every agent work, agents geared each other up and guarded the room, and plain messages became engineering-grade tickets. 418 messages; 17 senders outside our team.",
+      "facts": [
+        {
+          "shows": [
+            "418",
+            "28",
+            "17",
+            "13:46",
+            "07:09",
+            "193",
+            "225",
+            "5",
+            "31",
+            "1"
+          ],
+          "source": "Aneta's count of the help room's own record at 07:09 UTC, 1 Nov (team room 57818): 418 messages (193 top-level and 225 replies), 28 distinct senders, 5 of them people's accounts, 17 senders outside our crew; first message 31 Oct 13:46 UTC."
+        }
+      ]
+    },
+    {
+      "id": "hook",
+      "kicker": "The science",
+      "layout": "bars",
+      "title": "Same design, same input files, two answers.",
+      "bars": [
+        {
+          "value": 119.07,
+          "show": "119 °C",
+          "label": "HotSpot 6.0",
+          "tone": "older"
+        },
+        {
+          "value": 240.53,
+          "show": "241 °C",
+          "label": "HotSpot 7.0",
+          "tone": "newer"
+        }
+      ],
+      "label": "simulated, not silicon",
+      "footer": "Hottest modeled grid cells of the CPU-DRAM reference layout, detailed 3D mode, byte-identical input files. Simulated, not silicon.",
+      "say": "In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at the hottest modeled grid cells, for the same design and input files.",
+      "facts": [
+        {
+          "shows": [
+            "119",
+            "241",
+            "6.0",
+            "7.0",
+            "3D"
+          ],
+          "source": "Saved CPU-DRAM grids, independently re-parsed: 119.07 °C (HotSpot 6.0) and 240.53 °C (7.0); nine input files byte-identical; every receipt in detailed-3D mode (reply to 57809 at 07:02Z; the technical deck's B1)."
+        }
+      ]
+    },
+    {
+      "id": "times",
+      "kicker": "Measured, not estimated",
+      "layout": "times",
+      "title": "Agents found it fast, then stopped our own run.",
+      "times": [
+        {
+          "show": "32 min",
+          "what": "from a person's question to a named suspect",
+          "from": "2026-10-31T12:43:33.374Z",
+          "to": "2026-10-31T13:15:38.133Z",
+          "rule": "round"
+        },
+        {
+          "show": "under 5 min",
+          "what": "from one agent's proposal to the halt of our own run",
+          "from": "2026-10-31T15:52:12.966Z",
+          "to": "2026-10-31T15:56:58.678Z",
+          "rule": "under"
+        },
+        {
+          "show": "39 min",
+          "what": "for Delfie (delphisci team) to reproduce our public test case",
+          "from": "2026-10-31T22:22:08.352Z",
+          "to": "2026-10-31T23:01:16.766Z",
+          "rule": "round"
+        },
+        {
+          "show": "1 h 41",
+          "what": "for an outside team's finite-element solve of it",
+          "from": "2026-10-31T22:22:08.352Z",
+          "to": "2026-11-01T00:03:07.209Z",
+          "rule": "round"
+        }
+      ],
+      "footer": "Elapsed times from the room records, UTC: 12:43 to 13:15; proposal 15:52, halt 15:56; public test case 22:22, reproduced 23:01, solved 00:03. No savings figure: there is no baseline.",
+      "say": "Our agents found a suspect in 32 minutes, then helped stop our own experiment. We withdrew those numbers in public.",
+      "facts": [
+        {
+          "shows": [
+            "32",
+            "5",
+            "39",
+            "1",
+            "41",
+            "12:43",
+            "13:15",
+            "15:52",
+            "15:56",
+            "22:22",
+            "23:01",
+            "00:03"
+          ],
+          "source": "Team room 608657e4: question 12:43:33 (seq 56598), suspect 13:15:38 (seq 56645), proposal 15:52:12 (seq 56865), halt stated 15:56:58 (seq 56870). Help room 32a841e5: public test case 22:22:08 (reply 9de2e042 to 57170), Delfie reproduces 23:01:16 (seq 57312), an outside team's finite-element solve 00:03:07 (reply 161c27f0 to 57170)."
+        }
+      ]
+    },
+    {
+      "id": "link",
+      "kicker": "Where it splits",
+      "layout": "figure",
+      "title": "In the model: the link from lid to cooler.",
+      "picture": {
+        "figure": "plain2"
+      },
+      "line": "Two other teams reported results from changing that link.",
+      "footer": "Delfie (delphisci team) and ScienceClaw reported results from changing that modeled link; those reports are separate from our verified reference reproduction. Simulated, not silicon.",
+      "say": "They localized a difference around the modeled link between the metal lid and cooler. Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment. Two other teams reported results from changing that link.",
+      "cue": "Play the plumbing line lightly.",
+      "facts": []
+    },
+    {
+      "id": "passed",
+      "kicker": "The test",
+      "layout": "tiles",
+      "title": "Then we checked the version that passed.",
+      "label": "simulated, not silicon",
+      "tiles": [
+        {
+          "tone": "ok",
+          "head": "Reproduction passed.",
+          "body": "Two published reference values, matched within 0.01° in saved outputs. Pass bar: 1°, set in advance. Not hardware accuracy."
+        },
+        {
+          "tone": "warn",
+          "head": "More heat out than in.",
+          "body": "Saved 6.0 runs show more heat out than in: 1.39% on CPU-DRAM, 0.63% on Layout A."
+        }
+      ],
+      "footer": "Saved 45 mm, 64×64 cases. A non-reciprocal side-link mechanism in the source is consistent with them. The matching saved 7.0 cases balance within rounding. Physical validation remains open.",
+      "say": "Using the older setup and a separate declared reference readout, we reproduced two published reference values within a hundredth of a degree in the saved outputs. The pass bar was one degree, set beforehand. That doesn't establish hardware accuracy. Then we checked the version that passed. In a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+      "cue": "Pause before \"I nodded.\"",
+      "facts": [
+        {
+          "shows": [
+            "0.01",
+            "1",
+            "6.0"
+          ],
+          "source": "Native block maxima 75.48 against published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance (the technical deck's slide 7 and B4)."
+        },
+        {
+          "shows": [
+            "1.39",
+            "0.63",
+            "45",
+            "64×64",
+            "7.0"
+          ],
+          "source": "Aneta's energy-balance finding on the saved 45 mm, 64×64 cases (team room 57816, 07:09Z), with root's wording (reply to 57816, 07:14Z): 1.39% on CPU-DRAM, 0.63% on the layout earlier decks call Layout A."
+        }
+      ]
+    },
+    {
+      "id": "point",
+      "kicker": "The point",
+      "layout": "statement",
+      "title": "The simulator grades the agent.",
+      "flow": [
+        "Agent proposes",
+        "simulator scores",
+        "agent chases the score"
+      ],
+      "punch": "Check the grader before celebrating the score.",
+      "footer": "Every temperature in this talk is simulated, not measured on silicon.",
+      "say": "That's the point: the simulator grades the agent. Check the grader before celebrating the score.",
+      "facts": []
+    },
+    {
+      "id": "invite",
+      "kicker": "Agents, come in",
+      "layout": "numbers",
+      "title": "We invited other people's agents to the chip challenge.",
+      "tiles": [
+        {
+          "metric": "moltbook.post_votes"
+        },
+        {
+          "metric": "door.visits"
+        },
+        {
+          "metric": "door.agents_passed"
+        },
+        {
+          "metric": "view.agent_bytes"
+        }
+      ],
+      "points": [
+        "The agent door: sentilab.aidenid.com"
+      ],
+      "footer": "Each count is shown with its time window once it is measured.",
+      "say": "We invited agents on Moltbook: {m:moltbook.post_votes} votes, {m:door.visits} visits, {m:door.agents_passed} passed.",
+      "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\".",
+      "facts": [],
+      "picture": {
+        "still": "qr",
+        "label": null
+      }
+    },
+    {
+      "id": "closer",
+      "kicker": "Why it matters",
+      "layout": "closer",
+      "text": "One of the largest internet networks reports over 10 billion AI-bot requests a week (April 2026), and AI-agent requests grew more than 1,700% in a year (Sept 2026).",
+      "punch": "Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
+      "footer": "Sources: the backup page.",
+      "say": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. Bring your agent. One of the largest internet networks reports over ten billion AI-bot requests a week. Whoever owns the decision layer on that traffic owns key internet infrastructure for the next decade.",
+      "cue": "\"Okay, not GitHub. Yet.\" is the quiet aside. Carter may say the network's name out loud: his call; the slides don't name it.",
+      "facts": [
+        {
+          "shows": [
+            "10",
+            "2026",
+            "1,700"
+          ],
+          "source": "blog.cloudflare.com/rethinking-cache-ai-humans/ (April 2026) and blog.cloudflare.com/agentic-web (Sept 2026), cited on the backup page."
+        }
+      ]
+    }
+  ],
+  "backup": [
+    {
+      "id": "sources",
+      "kicker": "Backup · sources",
+      "layout": "sources",
+      "title": "Where every number comes from.",
+      "items": [
+        "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
+        "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
+        "418 messages from 28 senders, 17 of them outside our team: the help room's own record, 31 Oct 13:46 to 1 Nov 07:09 UTC, counted at 07:09 UTC. Senders are handles, not people.",
+        "Elapsed times: the team-room and help-room records, 31 Oct into 1 Nov, UTC.",
+        "119 °C and 241 °C: hottest modeled grid cells (119.07 and 240.53), CPU-DRAM reference layout, detailed 3D mode, byte-identical inputs, re-parsed independently.",
+        "Reproduction: native block maxima 75.48 against the published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance.",
+        "More heat out than in: saved 45 mm, 64×64 cases of 6.0, 1.39% on CPU-DRAM and 0.63% on Layout A; the matching saved 7.0 cases balance within rounding.",
+        "Delfie (delphisci team) and ScienceClaw: their own reports of changing the modeled link, separate from our reference reproduction.",
+        "The technical deck (v3.1, 43 pages) is the backup for detail."
+      ],
+      "footer": "Every temperature here is simulated, not measured on silicon.",
+      "facts": []
+    }
+  ]
+}
