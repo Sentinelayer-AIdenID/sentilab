@@ -26,7 +26,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", "deck", "sundai_thermal", "__pycache__", "node_modules"}
-SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds")
+SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds", "app.test_door_root_r1")
 RUNNER = """
 import json, sys, unittest
 def flat(suite):
