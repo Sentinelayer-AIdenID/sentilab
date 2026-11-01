@@ -51,7 +51,7 @@
     "age_recipient": {"type": "string", "pattern": "^age1[02-9ac-hj-np-z]{58}$"},
     "key_version": {"type": "integer", "minimum": 1, "maximum": 999999},
     "label_state": {"description": "SLAB-053's temperature label states, mirrored (labels.json).",
-                    "enum": ["withdrawn", "unvalidated", "illustrative", "accepted"]},
+                    "enum": ["withdrawn", "unvalidated", "illustrative", "accepted", "reproduction_tested"]},
     "evaluator": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$"},
     "unknown": {"const": "UNKNOWN"},
     "number_or_unknown": {"anyOf": [{"type": "number", "minimum": -10000000, "maximum": 10000000},

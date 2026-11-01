@@ -12,11 +12,15 @@
 //   withdrawn     the identity's engine:commit is on WITHDRAWN: the known affected build;
 //   illustrative  exactly the bundled interface fixture's identity: illustrative numbers, no solver ran;
 //   accepted      exactly an identity on ACCEPTED (there are none yet);
+//   reproduction_tested  exactly the build on REPRODUCTION_TESTED: the complete gate-zero build, which reproduced two
+//                 published reference temperatures in simulation; it says nothing about hardware;
 //   unvalidated   anything else: any other identity, and a missing or unreadable one (unvalidated provenance). A
 //                 different identity never implies validation.
 // A value derived from several (a difference, a gap, a range, an axis) takes the most cautious state among its inputs:
 // withdrawn, then unvalidated, then illustrative. It is illustrative only if every input is, accepted only if every
-// input is; any other mix, or no input at all, is unvalidated. Withdrawn and unvalidated values show the page notice.
+// input is, reproduction-tested only if every input is; any other mix, or no input at all, is unvalidated. Withdrawn
+// and unvalidated values show the page notice. A label is the evaluator's: it never clears a value's own qualifiers
+// (a diagnostic, an unassociated field, a replay status), which each view keeps beside it.
 
 // WITHDRAWN: the known affected build, HotSpot 7.0 at upstream f18831e, in every build, config and grid. It is under
 // review for heat-sink coupling; see the SLAB-049 review.
@@ -26,6 +30,15 @@ export const ILLUSTRATIVE = Object.freeze(["fixture-no-solver"]);
 // ACCEPTED: evaluator identities accepted for comparison. Each entry needs an exact evaluator acceptance, recorded for
 // that exact identity string (engine, commit, build, config and grid); it is matched exactly. None yet.
 export const ACCEPTED = Object.freeze([]);
+// REPRODUCTION_TESTED: the one complete build that reproduced gate zero's two published reference temperatures within
+// its declared tolerance (SLAB-049): HotSpot 6.0 at upstream a7a3286e, its pinned binary and image, the HotSpot config
+// and package-layer files both references share, grid 64 and the pinned centre mapping. The string is generated from
+// contracts/open-proposal-v1/builds.json: its readable fields, then build_sha256, a seal over the whole identity, so a
+// change to any one field is another identity; it is matched exactly. The broad alias "hotspot6:<binary>:grid:64x64"
+// is not this build.
+export const REPRODUCTION_TESTED = Object.freeze([
+  "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
+]);
 
 // The page notice, shown at the top of any page that shows a withdrawn or unvalidated temperature. One constant:
 // reword it here only.
@@ -50,6 +63,10 @@ export const LABELS = Object.freeze({
     title: "Interface fixture: an illustrative number. No solver produced it.",
   }),
   accepted: Object.freeze({ state: "accepted", notice: false, text: "simulated", short: "simulated", title: "Simulated with an accepted evaluator. Not silicon." }),
+  reproduction_tested: Object.freeze({
+    state: "reproduction_tested", notice: false, text: "simulated · reproduction-tested build", short: "reproduction-tested",
+    title: "This build reproduced two published reference temperatures within the declared 1°C tolerance. It has not been tested against hardware.",
+  }),
 });
 
 const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
@@ -57,15 +74,16 @@ const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const evaluatorKey = (identity) => identity.trim().split(":", 2).join(":").toLowerCase();
 
 // The rule over given lists (the tests build their own; the pages use the frozen lists above).
-export function labeller({ withdrawn = WITHDRAWN, illustrative = ILLUSTRATIVE, accepted = ACCEPTED } = {}) {
+export function labeller({ withdrawn = WITHDRAWN, illustrative = ILLUSTRATIVE, accepted = ACCEPTED, reproductionTested = REPRODUCTION_TESTED } = {}) {
   const withdrawnKeys = new Set(withdrawn.map((id) => id.toLowerCase()));
-  const illustrativeIds = new Set(illustrative), acceptedIds = new Set(accepted);
+  const illustrativeIds = new Set(illustrative), acceptedIds = new Set(accepted), reproducedIds = new Set(reproductionTested);
   // One value, from one identity.
   const labelFor = (identity) => {
     if (typeof identity !== "string" || identity.trim() === "") return LABELS.unvalidated;   // unvalidated provenance
     if (withdrawnKeys.has(evaluatorKey(identity))) return LABELS.withdrawn;                   // every build of it
     if (illustrativeIds.has(identity)) return LABELS.illustrative;                            // exactly the fixture
     if (acceptedIds.has(identity)) return LABELS.accepted;                                    // exactly as accepted
+    if (reproducedIds.has(identity)) return LABELS.reproduction_tested;                       // exactly the build
     return LABELS.unvalidated;
   };
   // A value derived from several: the identities of everything it was made from.
@@ -76,6 +94,7 @@ export function labeller({ withdrawn = WITHDRAWN, illustrative = ILLUSTRATIVE, a
     if (labels.includes(LABELS.withdrawn)) return LABELS.withdrawn;
     if (labels.length > 0 && labels.every((label) => label === LABELS.illustrative)) return LABELS.illustrative;
     if (labels.length > 0 && labels.every((label) => label === LABELS.accepted)) return LABELS.accepted;
+    if (labels.length > 0 && labels.every((label) => label === LABELS.reproduction_tested)) return LABELS.reproduction_tested;
     return LABELS.unvalidated;                    // an unvalidated input, a mix of fixture and real inputs, or none
   };
   return Object.freeze({ labelFor, labelForAll });

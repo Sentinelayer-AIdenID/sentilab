@@ -18,9 +18,11 @@ import base64
 import copy
 import hashlib
 import json
+import re
 import sys
 
 from . import age_tools
+from . import builds
 from . import canonical as h
 from .predicate_fixtures import cases as predicate_cases
 from .schemas import CONTRACT_DIR
@@ -1323,6 +1325,113 @@ def privacy_cases() -> list:
     return cases
 
 
+# ── the reproduction-tested build (builds.json) ──────────────────────────────────────────────────────────────────
+# The registered gate-zero build and the strings that are not it: the door's broad alias, near spellings of the id, and
+# the identity with exactly one field changed (each recomputed with builds.build_id, so it is the id that field would
+# give). The expected labels are written by hand.
+
+EVALUATOR_PATTERN = r"[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}"     # common.schema.json $defs/evaluator
+
+
+def build_strings() -> dict:
+    build = builds.registered()[0]
+    identity, config = build["identity"], build["identity"]["config_sha256"]
+
+    def one(**edits) -> str:
+        return builds.build_id(identity | edits)
+
+    return {
+        "build": build["id"],
+        "alias": f"hotspot6:{identity['binary_sha256']}:grid:64x64",
+        "near": [
+            ("the id in upper case", build["id"].upper()),
+            ("the id with a space before it", " " + build["id"]),
+            ("the id with a grid suffix", build["id"] + ":grid:64x64"),
+            ("the id with its digest cut short", build["id"][:-1]),
+            ("the engine and commit alone", f"{identity['engine']}:{identity['engine_commit']}"),
+            ("the same string under a SLAB-049 variant's commit", build["id"].replace(
+                identity["engine_commit"], identity["engine_commit"] + "+SLAB-049", 1)),
+            ("the readable fields without build_sha256", build["id"].rsplit(":build_sha256:", 1)[0]),
+            ("another build_sha256 on the same readable fields", build["id"].rsplit(":", 1)[0] + ":" + "0" * 64),
+        ],
+        "one_field": [
+            ("another engine commit", one(engine_commit=fake("another HotSpot commit")[:40])),
+            ("another binary", one(binary_sha256=fake("another HotSpot 6.0 binary"))),
+            ("another image", one(image="sentilab-gate0:0000000")),
+            ("no image", one(image=None)),
+            ("another HotSpot config", one(config_sha256=config | {"new_hotspot.config": fake("another config")})),
+            ("another package layer", one(config_sha256=config | {"sampleL5_TIM.flp": fake("another TIM layer")})),
+            ("a package layer missing", one(config_sha256={name: value for name, value in config.items()
+                                                            if name != "samplelayers.lcf"})),
+            ("another grid", one(grid=32)),
+            ("another centre mapping", one(centre_mapping="the maximum native block output")),
+        ],
+        "withdrawn": one(engine="HotSpot-7", engine_commit=WITHDRAWN.split(":")[1]),
+    }
+
+
+def build_label_vectors() -> dict:
+    """golden/build-labels.json: one label rule, two implementations. labels.py (test_rules) and
+    web/public/temperature-label.mjs (web/test/temperature-label.test.mjs) must give every expected label."""
+    s = build_strings()
+    single = [{"name": "the complete gate-zero build", "evaluator": s["build"], "label": "reproduction_tested"},
+              {"name": "the door's broad alias", "evaluator": s["alias"], "label": "unvalidated"}]
+    single += [{"name": name, "evaluator": value, "label": "unvalidated"} for name, value in s["near"] + s["one_field"]]
+    single.append({"name": "a withdrawn engine under the build's suffix", "evaluator": s["withdrawn"],
+                   "label": "withdrawn"})
+    derived = [
+        {"name": "two values from the build", "evaluators": [s["build"], s["build"]], "label": "reproduction_tested"},
+        {"name": "the build alone", "evaluators": [s["build"]], "label": "reproduction_tested"},
+        {"name": "the build and the alias", "evaluators": [s["build"], s["alias"]], "label": "unvalidated"},
+        {"name": "the build and an unassociated value (no evaluator named)", "evaluators": [s["build"], None],
+         "label": "unvalidated"},
+        {"name": "the build and a one-field variant", "evaluators": [s["build"], s["one_field"][2][1]],
+         "label": "unvalidated"},
+        {"name": "the build and the fixture", "evaluators": [s["build"], FIXTURE], "label": "unvalidated"},
+        {"name": "the build and a withdrawn value", "evaluators": [s["build"], WITHDRAWN], "label": "withdrawn"},
+        {"name": "no inputs", "evaluators": [], "label": "unvalidated"},
+    ]
+    build = builds.registered()[0]
+    references = [{"case": reference["case"], "statistic": statistic, "value_C": reference[statistic],
+                   "evaluator": s["build"], "label": "reproduction_tested"}
+                  for reference in build["references"]
+                  for statistic in ("native_all_block_max_C", "max_chiplet_centre_cell_mean_C")]
+    return {"schema": "sentilab-open-build-labels/1", "build": s["build"], "single": single, "derived": derived,
+            "references": references}
+
+
+def build_label_records() -> list:
+    """The label rule on results rows: the build reads reproduction_tested; nothing else may claim it."""
+    s = build_strings()
+    mismatch = [R("label.temperature", "/rows/0/temperature_label", "label_mismatch")]
+    cases = [
+        rec("results", "valid: the complete gate-zero build reads reproduction_tested", results(outside(
+            evaluator=s["build"], temperature_label="reproduction_tested")), manifest="F"),
+        rec("results", "the complete gate-zero build is not unvalidated", results(outside(
+            evaluator=s["build"], temperature_label="unvalidated")), mismatch, manifest="F"),
+        rec("results", "valid: the build's label keeps a suppressed claim and an UNKNOWN sensitivity", results(outside(
+            evaluator=s["build"], temperature_label="reproduction_tested",
+            labels=[{"id": "r-relaxed-wire thermal tolerance", "r": 0.05, "mode": PASSES}],
+            suppressed=[{"id": "strict-wire thermal tolerance", "r": None, "by": "failed binding"}])), manifest="F"),
+        rec("results", "valid: the door's broad alias reads unvalidated", results(outside(
+            evaluator=s["alias"], temperature_label="unvalidated")), manifest="F"),
+        rec("results", "the door's broad alias is not the build", results(outside(
+            evaluator=s["alias"], temperature_label="reproduction_tested")), mismatch, manifest="F"),
+        rec("results", "valid: a withdrawn engine under the build's suffix stays withdrawn", results(outside(
+            evaluator=s["withdrawn"], temperature_label="withdrawn", labels=[])), manifest="F"),
+        rec("results", "a withdrawn engine under the build's suffix is not reproduction-tested", results(outside(
+            evaluator=s["withdrawn"], temperature_label="reproduction_tested", labels=[])), mismatch, manifest="F"),
+    ]
+    for name, value in s["near"] + s["one_field"]:
+        if not re.fullmatch(EVALUATOR_PATTERN, value):
+            continue                    # a row's evaluator must match the schema's pattern (a padded id cannot)
+        cases.append(rec("results", f"valid: {name} reads unvalidated", results(outside(
+            evaluator=value, temperature_label="unvalidated")), manifest="F"))
+        cases.append(rec("results", f"{name} is not the build", results(outside(
+            evaluator=value, temperature_label="reproduction_tested")), mismatch, manifest="F"))
+    return cases
+
+
 def other_records() -> list:
     key_object = h.transport_key_object(room=ROOM, account=HUMAN, actor_slot="human", manifest_id=ID["F"],
                                         logical_key="t-1", content_sha256=h.proposal_sha256(P_PUB))
@@ -1705,7 +1814,7 @@ def dump_cases(cases) -> bytes:
 
 def outputs() -> dict:
     records = (manifest_records() + terms_records() + check_records() + receipt_records() + status_records()
-               + results_records() + other_records())
+               + results_records() + build_label_records() + other_records())
     return {
         CONTRACT_DIR / "vectors-canonical.json": dump(vectors()),
         GOLDEN / "manifests.json": dump({"manifests": MANIFESTS, "manifest_id": ID, "terms": TERMS}),
@@ -1715,6 +1824,7 @@ def outputs() -> dict:
         GOLDEN / "revisions.json": dump_cases(revisions()),
         GOLDEN / "order.json": dump(ordering()),
         GOLDEN / "predicates.json": dump_cases(predicate_cases()),
+        GOLDEN / "build-labels.json": dump(build_label_vectors()),
     }
 
 

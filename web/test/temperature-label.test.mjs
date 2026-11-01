@@ -3,9 +3,10 @@
 //   withdrawn     a known affected identity (the WITHDRAWN list);
 //   unvalidated   any other identity, and a missing or unreadable one: a different identity never implies validation;
 //   illustrative  exactly the bundled interface fixture;
-//   accepted      exactly an identity on ACCEPTED (empty: nothing is accepted yet).
+//   accepted      exactly an identity on ACCEPTED (empty: nothing is accepted yet);
+//   reproduction_tested  exactly the complete gate-zero build (REPRODUCTION_TESTED, from the contract's builds.json).
 // Withdrawn and unvalidated values show the page notice. A value derived from several takes the most cautious state
-// among its inputs; illustrative or accepted only if every input is. Values that arrive live (the Lab
+// among its inputs; illustrative, accepted or reproduction-tested only if every input is. Values that arrive live (the Lab
 // view's /api/view/events poller, the run view's /api/runs/{id}) go through the same rule: a signed fixture event is
 // driven through the page's own live poller below.
 import { test } from "node:test";
@@ -14,8 +15,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, NOTICE, labeller, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, hasTemperature,
-  needsNotice, runTemperatureIds, reportNeedsNotice,
+  WITHDRAWN, ILLUSTRATIVE, ACCEPTED, REPRODUCTION_TESTED, LABELS, NOTICE, labeller, labelFor, labelForAll, evaluatorIds, envelopeEvaluator,
+  hasTemperature, needsNotice, runTemperatureIds, reportNeedsNotice, sourceTags,
 } from "../public/temperature-label.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
@@ -24,6 +25,8 @@ import { pollLiveOnce } from "../public/sentilab/lab-live.mjs";
 import { testKey } from "./sentilab-keys.mjs";
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
+const CONTRACT = join(PUBLIC, "..", "..", "contracts", "open-proposal-v1");
+const contract = (rel) => JSON.parse(readFileSync(join(CONTRACT, rel), "utf8"));
 const COMMIT7 = "f18831e48cef5d62580585cca0d7fab6c71bc3cc";
 const LIVE_HS7 = `HotSpot-7:${COMMIT7}:binary_sha256:9f971da7370a59afb425ed1c8754e12bc67a6a95e8333c3b4a9d537fd30a77f6` +
   ":config_sha256:548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4:grid:16x16";   // the live feed, 2026-10-31
@@ -124,9 +127,10 @@ test("a derived value: withdrawn if any input is (a difference of two withdrawn 
 });
 
 test("the lists, labels and notice are frozen; the notice is root's wording, and nothing in the module claims a size", () => {
-  for (const x of [WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, ...Object.values(LABELS)]) assert.ok(Object.isFrozen(x));
+  for (const x of [WITHDRAWN, ILLUSTRATIVE, ACCEPTED, REPRODUCTION_TESTED, LABELS, ...Object.values(LABELS)]) assert.ok(Object.isFrozen(x));
   assert.throws(() => WITHDRAWN.push("anything"));
-  assert.deepEqual(Object.keys(LABELS).sort(), ["accepted", "illustrative", "unvalidated", "withdrawn"]);
+  assert.throws(() => REPRODUCTION_TESTED.push("anything"));
+  assert.deepEqual(Object.keys(LABELS).sort(), ["accepted", "illustrative", "reproduction_tested", "unvalidated", "withdrawn"]);
   assert.equal(NOTICE, "These simulated temperatures are under review and have been withdrawn from comparison with published layouts. " +
     "We are investigating heat-sink coupling and validating the evaluator against reconstructed research layouts. " +
     "Historical results remain available.");
@@ -137,6 +141,77 @@ test("the lists, labels and notice are frozen; the notice is root's wording, and
   assert.match(source, /SLAB-049/);
   // The tag beside a value must not read as the evidence views' own "withdrawn" node state.
   assert.notEqual(LABELS.withdrawn.short, "withdrawn");
+});
+
+// ── the reproduction-tested build: the contract's golden vectors, shared with labels.py ─────────────────────────
+const BUILD_LABELS = contract("golden/build-labels.json");
+const BUILD = BUILD_LABELS.build;
+
+test("the reproduction-tested build: exactly the complete gate-zero build, by the contract's shared vectors", () => {
+  assert.deepEqual([...REPRODUCTION_TESTED], [BUILD]);
+  const label = LABELS.reproduction_tested;
+  assert.deepEqual({ ...label }, {
+    state: "reproduction_tested", notice: false, text: "simulated · reproduction-tested build", short: "reproduction-tested",
+    title: "This build reproduced two published reference temperatures within the declared 1°C tolerance. It has not been tested against hardware.",
+  });
+  for (const c of BUILD_LABELS.single) assert.equal(labelFor(c.evaluator).state, c.label, c.name);
+  for (const c of BUILD_LABELS.derived) assert.equal(labelForAll(c.evaluators.map((x) => x ?? undefined)).state, c.label, c.name);
+  for (const c of BUILD_LABELS.references) assert.equal(labelFor(c.evaluator).state, c.label, `${c.case} ${c.statistic}`);
+  assert.equal(BUILD_LABELS.single.filter((c) => c.label === "reproduction_tested").length, 1, "one identity, nothing near it");
+  // Exact: no trimming, no case folding, no prefix; the list is the only way in.
+  assert.equal(labelFor(` ${BUILD}`), LABELS.unvalidated);
+  assert.equal(labelFor(BUILD.toLowerCase()), LABELS.unvalidated);
+  assert.equal(labelFor(`${BUILD}:grid:64x64`), LABELS.unvalidated);
+  assert.equal(labeller({ reproductionTested: [] }).labelFor(BUILD), LABELS.unvalidated);
+  assert.equal(labeller({ reproductionTested: [BUILD], withdrawn: ["HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9"] }).labelFor(BUILD),
+    LABELS.withdrawn, "a withdrawn engine:commit wins over the list");
+});
+
+test("the page list mirrors the contract: labels.json's states and list, builds.json's one registered id", () => {
+  const labels = contract("labels.json");
+  const builds = contract("builds.json");
+  assert.deepEqual([...REPRODUCTION_TESTED], labels.reproduction_tested);
+  assert.deepEqual([...REPRODUCTION_TESTED], builds.builds.map((b) => b.id));
+  assert.deepEqual(builds.builds.map((b) => b.label), ["reproduction_tested"]);
+  assert.deepEqual([...labels.states].sort(), Object.keys(LABELS).sort());
+  assert.deepEqual([...WITHDRAWN], labels.withdrawn);
+  assert.deepEqual([...ILLUSTRATIVE], labels.illustrative);
+  assert.deepEqual([...ACCEPTED], labels.accepted);
+  const identity = builds.builds[0].identity;
+  assert.equal(BUILD.split(":").slice(0, 2).join(":"), `${identity.engine}:${identity.engine_commit}`);
+  assert.equal(identity.image, "sentilab-gate0:2d35e9c");
+  assert.equal(identity.grid, 64);
+});
+
+test("the notice: off only for the exact build; any single-field variant or the broad alias keeps it", () => {
+  const measured = (id, evaluator) => ({ event: { type: "node.create", body: { id, kind: "measurement", semantics: { evaluator_version: evaluator } } },
+    values: { J: { value: 115.94, unit: "C" } } });
+  assert.equal(needsNotice([measured("m", BUILD)]), false);
+  for (const c of BUILD_LABELS.single.filter((x) => x.label !== "reproduction_tested")) {
+    assert.equal(needsNotice([measured("m", c.evaluator)]), true, c.name);
+  }
+  assert.equal(reportNeedsNotice({ lanes: [{ best: 90, bestIds: [BUILD, BUILD] }] }), false);
+  assert.equal(reportNeedsNotice({ lanes: [{ best: 90, bestIds: [BUILD, undefined] }] }), true, "an input that names none");
+});
+
+test("hard rule: the build label never clears a value's own qualifiers (diagnostic, unassociated, replay status)", () => {
+  const build = LABELS.reproduction_tested;
+  // Each source keeps its own qualifier beside the value: the build's tag never replaces the other source's.
+  assert.deepEqual(sourceTags(build, LABELS.unvalidated).map((t) => t.text), ["reproduction-tested", "temps unvalidated"]);
+  assert.deepEqual(sourceTags(LABELS.unvalidated, build).map((t) => t.text), ["unvalidated", "temps reproduction-tested"]);
+  assert.deepEqual(sourceTags(build, LABELS.withdrawn).map((t) => t.text), ["reproduction-tested", "temps pre-correction"]);
+  // A value derived from the build and an unassociated value (no evaluator named) is unvalidated, with the notice.
+  assert.equal(labelForAll([BUILD, undefined]), LABELS.unvalidated);
+  assert.equal(labelForAll([BUILD, null]).notice, true);
+  assert.equal(needsNotice([
+    { event: { type: "node.create", body: { id: "m", kind: "measurement", semantics: { evaluator_version: BUILD } } }, values: { J: { value: 1, unit: "C" } } },
+    { event: { type: "node.create", body: { id: "n", kind: "measurement" } }, values: { J: { value: 2, unit: "C" } } },
+  ]), true, "an unassociated temperature beside the build's still shows the notice");
+  // The label is the build's alone: a frozen record of five fields that carries no per-result state to clear.
+  assert.deepEqual(Object.keys(build).sort(), ["notice", "short", "state", "text", "title"]);
+  for (const word of ["diagnostic", "unassociated", "verified", "candidate"]) {
+    assert.doesNotMatch(`${build.text} ${build.short} ${build.title}`, new RegExp(word, "i"), word);
+  }
 });
 
 // Every identity in the data these pages serve is classified: the affected evaluator's records are withdrawn, the
@@ -161,8 +236,9 @@ function servedIdentities() {
 test("every identity in the served data is classified: affected withdrawn, plate unvalidated, fixture illustrative", () => {
   const found = servedIdentities();
   assert.ok(found.size >= 3, "the walk reaches the replay, the records and the demo");
-  const byState = { withdrawn: [], unvalidated: [], illustrative: [] };
+  const byState = { withdrawn: [], unvalidated: [], illustrative: [], reproduction_tested: [] };
   for (const id of found.keys()) byState[labelFor(id).state].push(id);
+  assert.deepEqual(byState.reproduction_tested, [], "no recorded (historical) identity is the reproduction-tested build");
   assert.ok(byState.withdrawn.length > 0 && byState.withdrawn.every((id) => id.startsWith(`HotSpot-7:${COMMIT7}:`)), byState.withdrawn.join(", "));
   assert.deepEqual(byState.unvalidated, ["synthetic-fvm-plate-v1-grid40"]);
   assert.deepEqual(byState.illustrative, [FIXTURE]);

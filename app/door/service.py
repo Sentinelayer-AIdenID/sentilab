@@ -22,6 +22,7 @@ from open_proposals.contract.labels import label_for
 from . import intake
 from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
+from .evaluator import ALIAS
 from .policy import CASE, NONCE, Policy, parse_utc, principal_for, short_id, utc
 from .scorer import ACTIVE_GUARD_C, METRIC, METRIC_ID, HttpScorer
 from .store import Store, label
@@ -29,7 +30,7 @@ from .store import Store, label
 RUN_ID = re.compile(r"open-[0-9a-f]{8}-[0-9a-f]{32}\Z")
 CURSOR_MAX = 2 ** 53 - 1
 RESULT_LABEL = "simulated, not silicon; HotSpot 6.0, grid 64; " + METRIC_ID
-EVALUATOR_IDENTITY = "hotspot6:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:grid:64x64"
+EVALUATOR_IDENTITY = ALIAS          # the broad alias (names no build: unvalidated); results name their full identity
 PROXY = {"field": "wire_proxy_mm", "unit": "mm", "kind": "proxy, not routed wire",
          "definition": ("weighted-mean Manhattan centre distance over the netlist "
                         "(the 64-entry matrix, 5,120 unordered wire weights)")}
@@ -257,6 +258,7 @@ class Door:
                 "metric": METRIC, "result": None, "verdict": None}
         if row["result"]:
             result = json.loads(row["result"])
+            evaluator = result["evaluator"] if isinstance(result["evaluator"], str) else ALIAS
             guard_ok = result["active_layer_peak_C"] < ACTIVE_GUARD_C
             item["result"] = {
                 "metric": METRIC, "metric_id": METRIC_ID,
@@ -271,7 +273,9 @@ class Door:
                          "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"},
                 "replay": result["replay"], "reproduced": row["state"] == "reproduced",
                 "binding_ok": result["binding"]["ok"],
-                "evaluator": result["evaluator"], "temperature_label": label_for(EVALUATOR_IDENTITY),
+                # The full identity string the run attests (evaluator.py) and its label, matched exactly; the
+                # verification below is the result's own and never changed by it.
+                "evaluator": evaluator, "temperature_label": label_for(evaluator),
                 "label": RESULT_LABEL,
                 "verification": self.verification(row, result, guard_ok, row["run_id"] in front_ids)}
             if row["run_id"] in front_ids:

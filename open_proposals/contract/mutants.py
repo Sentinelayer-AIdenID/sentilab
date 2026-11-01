@@ -21,7 +21,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 COPY = ["open_proposals", "contracts/open-proposal-v1", "contracts/HASHES.txt", "sentilab_core/__init__.py",
-        "sentilab_core/envelope.py"]
+        "sentilab_core/envelope.py",
+        # builds.py re-derives the reproduction-tested build from these (read as text, never imported)
+        "sundai_hotspot6/UPSTREAM_COMMIT", "app/door/scorer.py", "sundai_hotspot/gate_zero.py",
+        "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/SHA256SUMS",
+        "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/SHA256SUMS",
+        "web/public/agents/evidence.json"]
 FORM_TESTS = {"test_every_contract_file_is_pinned", "test_the_files_match_their_generator"}
 SUITES = ("open_proposals.contract.test_golden", "open_proposals.contract.test_rules",
           "open_proposals.contract.test_predicates", "open_proposals.contract.test_age")
