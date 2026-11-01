@@ -233,12 +233,15 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     // address stay on the slide in every case: they are the audience's call to action.
     const measuredTiles = (s.tiles ?? []).filter((t) => t.metric && metrics.byId.get(wanted[t.metric]?.key ?? t.metric));
     if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric) && measuredTiles.length === 0) {
-      for (const k of ["tiles", "title"]) delete content[k];
+      delete content.tiles;
       content.layout = "fallback";
       content.figure = figureContent(s.finalFallback.figure);
       content.footer = s.finalFallback.footer;
     }
     if (s.picture?.still === "qr" && !content.still) throw new FounderError(`${where} lost its QR code`);
+    // A QR code comes with the address it encodes, printed on the slide, for anyone who cannot scan it.
+    const encodes = content.still && v4.stills[content.still.id].payload;
+    if (encodes && !shownText(content).includes(new URL(encodes).host)) throw new FounderError(`${where} shows a QR code without the address it encodes (${new URL(encodes).host})`);
     if (s.bars) {
       const top = Math.max(...s.bars.map((b) => b.value));
       content.bars = s.bars.map((b) => {

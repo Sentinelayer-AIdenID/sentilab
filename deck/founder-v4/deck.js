@@ -25,6 +25,8 @@
     const w = Math.round(f.width * f.scale), h = Math.round(f.height * f.scale);
     return `<figure class="fig"><img src="${esc(f.src)}" alt="${esc(f.alt)}" width="${w}" height="${h}" data-fig="${esc(f.id)}" data-min-font="${esc(f.minFont)}" data-natural-width="${esc(f.width)}"></figure>`;
   };
+  // A slide's points, as a list (slide 9's door address).
+  const pointList = (c) => (c.points ? `<ul class="npoints">${c.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "");
   // A number tile; one not measured yet says so, in its own style; a measured one prints its time window.
   const tile = (t) => `<div class="tile${t.measuring ? " is-measuring" : ""}"><b class="${t.measuring ? "measuring" : "tv"}">${esc(t.value)}</b><span class="tl">${esc(t.label)}</span>${t.when ? `<span class="tw">${esc(t.when)}</span>` : ""}</div>`;
 
@@ -38,13 +40,13 @@
     },
     numbers(c) {
       const tiles = `<div class="tiles n${c.tiles.length}${c.still ? " with-pic" : ""}">${c.tiles.map(tile).join("")}</div>`;
-      const points = c.points ? `<ul class="npoints">${c.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
       // With a picture (the door's QR code), the tiles sit two by two beside it.
-      return c.still ? `${h1(c)}<div class="npic"><div>${tiles}${points}</div>${still(c.still, 420)}</div>` : `${h1(c)}${tiles}${points}`;
+      return c.still ? `${h1(c)}<div class="npic"><div>${tiles}${pointList(c)}</div>${still(c.still, 420)}</div>` : `${h1(c)}${tiles}${pointList(c)}`;
     },
-    // Slide 9 at a freeze with no measured number: the fallback picture, with the door's QR code beside it.
+    // Slide 9 at a freeze with no measured number: the fallback picture takes the tiles' place, with the door's QR code
+    // beside it (the picture at its type floor leaves a 205px column) and the door's address under them.
     fallback(c) {
-      return `<div class="fb">${fig(c.figure)}<div class="fbqr">${still(c.still, 200)}${c.points ? `<p>${esc(c.points[0])}</p>` : ""}</div></div>`;
+      return `${h1(c)}<div class="fb">${fig(c.figure)}${still(c.still, 200)}</div>${pointList(c)}`;
     },
     bars(c) {
       const bars = c.bars.map((b) => `<div class="hbar hbar-${esc(b.tone)}"><span class="hbar-fill" style="width:${(b.share * 100).toFixed(2)}%"></span>`

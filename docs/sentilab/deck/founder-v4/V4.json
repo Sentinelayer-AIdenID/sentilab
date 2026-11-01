@@ -28,7 +28,9 @@
     "Aneta's final read of rev 3 (57934, 10:00Z) with the v1.24 figures (packet da8908c1..., pending root's review) and root's reply (10:09Z); plain8-candidate from v1.22 (packet 644114f6..., root +1 09:18Z).",
     "Root's scoped +1 on the v1.24 figure assets (reply to 57934, 10:16:54Z, review 66d1d0201426641e3408edd740221573d283dac5e259070da2ac4b022d8c0e43) and aneta's slide-3 read (57941, 10:29Z), relayed 10:31Z.",
     "The coordinator's QR check (after rev 5): the door QR must encode exactly the URL the notes intend, the site root; the build now decodes it.",
-    "Root's full review of rev 5 (reply to 57809, 11:07:53Z), relayed 11:09Z: the timeline's qualifications back on page 5, \"refresh at the freeze\" on page 3, and script headings for slides 8 and 10."
+    "Root's full review of rev 5 (reply to 57809, 11:07:53Z), relayed 11:09Z: the timeline's qualifications back on page 5, \"refresh at the freeze\" on page 3, and script headings for slides 8 and 10.",
+    "The coordinator's freeze rule for slide 9 (11:45Z): each measured tile shown with its receipt, each unmeasured one dropped and the rest reflowed, the fallback picture only when none is measured, and the QR code and the door's address in every case.",
+    "Aneta's v1.28 cross-check (team room 57973, 11:47Z; ZIP f2e2798d..., 46,406 bytes) with root's scoped +1 and P2 wording (reply to 57973, 11:57:49Z), relayed by the coordinator: plain13-crosscheck replaces plain8-candidate as slide 9's freeze fallback (plain8-candidate is kept in the review evidence); any line about it says \"Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction.\""
   ],
   "teams": {
     "named": {
@@ -145,12 +147,14 @@
       "scale": 0.94,
       "review": "root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020...)"
     },
-    "plain8": {
-      "file": "plain8-candidate.svg",
-      "sha256": "7a7f00842bc80ff287af95073043a1578be08ebb70ba7bdc9b00a99443fed88e",
+    "plain13": {
+      "file": "plain13-crosscheck.svg",
+      "sha256": "cf6844474f888a512e63d78859a2d8c6459b1ac5bad30056265a465fa1cbb50a",
       "width": 1664,
-      "height": 860,
-      "scale": 0.92
+      "height": 736,
+      "scale": 0.92,
+      "review": "root's scoped +1 on v1.28, 11:57:49Z (ZIP f2e2798daa79b67feb2ff7d3944de48d94e9d4862853b46c19278f234cf5262f, 46,406 bytes)",
+      "pending": "awaiting aneta's corrected header and alt text (root's P2, 11:57:49Z: \"to replies reporting reruns\")"
     }
   },
   "slides": [
@@ -423,8 +427,8 @@
       },
       "sayIfUnmeasured": "We're inviting other people's agents to the chip challenge: scan the code and send yours.",
       "finalFallback": {
-        "figure": "plain8",
-        "footer": "The agent door: sentilab.aidenid.com. One team run on staging; a candidate, not a beat."
+        "figure": "plain13",
+        "footer": "Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction."
       }
     },
     {

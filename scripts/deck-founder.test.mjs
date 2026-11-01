@@ -108,8 +108,15 @@ test("root's carried openings, the finding beat in root's words and Carter's add
     assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
     assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
-  assert.equal(loaded.v4.figures.plain8.sha256, "7a7f00842bc80ff287af95073043a1578be08ebb70ba7bdc9b00a99443fed88e");
-  assert.equal(loaded.v4.figures.plain8.pending, undefined, "plain8 is v1.22, which root +1'd");
+  // Slide 9's freeze fallback is aneta's v1.28 plain13 (root's scoped +1, 11:57:49Z), in place of v1.22's plain8, which
+  // stays in the review evidence only. Its header and alt text still need root's P2 wording, so the freeze refuses it
+  // until aneta's corrected figure replaces it.
+  assert.equal(loaded.v4.figures.plain13.sha256, "cf6844474f888a512e63d78859a2d8c6459b1ac5bad30056265a465fa1cbb50a");
+  assert.match(loaded.v4.figures.plain13.review, /^root's scoped \+1 on v1\.28, 11:57:49Z \(ZIP f2e2798daa79b67feb2ff7d3944de48d94e9d4862853b46c19278f234cf5262f, 46,406 bytes\)$/);
+  assert.match(loaded.v4.figures.plain13.pending, /to replies reporting reruns/);
+  assert.equal(loaded.v4.slides.find((x) => x.id === "invite").finalFallback.figure, "plain13");
+  assert.equal(loaded.v4.figures.plain8, undefined);
+  for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith("plain8")), dir);
   assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
   assert.doesNotMatch(html(data), /figure pending review/);
   // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z).
@@ -202,14 +209,17 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
   const pending = structuredClone(loaded.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
   assert.throws(() => buildFounderData({ ...loaded, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
+  // With nothing measured, slide 9 needs its fallback picture, and plain13 waits for root's P2 wording.
+  assert.throws(() => buildFounderData(loaded, { final: true }), /figure plain13 is awaiting aneta's corrected header and alt text .*the freeze takes only reviewed figures/);
   const reviewed = structuredClone(loaded.v4);
+  delete reviewed.figures.plain13.pending;
   for (const slot of ["3min", "2min"]) {
     const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
     assert.equal(fin.deck.measuring, false);
     assert.doesNotMatch(html(fin), /measuring…|class="measuring"|DRAFT/, slot);
     assert.equal(slide(fin, "invite").content.tiles, undefined, "slide 9's tiles have no receipt yet, so none is shown");
-    assert.equal(slide(fin, "invite").content.figure.id, "plain8", "the fallback picture at the freeze");
+    assert.equal(slide(fin, "invite").content.figure.id, "plain13", "the fallback picture at the freeze");
     assert.equal(slide(fin, "invite").notes.text, "We're inviting other people's agents to the chip challenge: scan the code and send yours.");
     assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
     assert.ok(fin.budget.totalSeconds <= fin.budget.talkCapSeconds);
@@ -331,6 +341,7 @@ test("root's rev 5 review: the timeline keeps its qualifications, help says refr
 test("V4.json's build sets the committed build's mode: \"final\" is the freeze, anything else but \"draft\" stops the build", () => {
   const frozen = structuredClone(loaded.v4);
   frozen.build = "final";
+  delete frozen.figures.plain13.pending;
   const fin = buildFounderData({ ...loaded, v4: frozen });
   assert.equal(fin.deck.draft, false);
   assert.doesNotMatch(html(fin), /DRAFT/);
@@ -346,24 +357,29 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
 test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
   const { readQr } = await import("./qr-read.mjs");
   const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_start: "2026-11-01T07:13:20Z", window_end: "2026-11-01T14:20:05Z", window: "2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
-  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  // plain13 as it will be once aneta's corrected header is in (it is pending until then; the --final test pins that).
+  const freeze = (keys) => variant((v) => { v.build = "final"; delete v.figures.plain13.pending; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
   const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
   for (const [name, keys] of Object.entries(cases)) {
     const d = freeze(keys);
     const inv = slide(d, "invite");
+    assert.equal(inv.content.title, "We're inviting other people's agents to the chip challenge.", `${name}: the invitation stays`);
     // The call to action, in every case: the QR code (read from its pixels) and the door's address.
     assert.equal(inv.content.still?.id, "qr", `${name}: the QR code stays`);
     assert.equal(readQr(readFileSync(join(FOUNDER_DIR, "figures", loaded.v4.stills[inv.content.still.id].file))).text, "https://sentilab.aidenid.com", name);
-    assert.ok(inv.content.points.includes("The agent door: sentilab.aidenid.com"), `${name}: the door's address stays`);
+    assert.match(shown(d, "invite"), /The agent door: sentilab\.aidenid\.com/, `${name}: the door's address stays, as drawn`);
     const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
     assert.match(section, /data-still="qr"/, `${name}: the QR code is drawn`);
     assert.doesNotMatch(html(d), /measuring…|DRAFT/, name);
     const receipts = sourcesList(d).split("## invite")[1]?.split("\n## ")[0] ?? "";
     if (name === "none") {
       assert.equal(inv.content.layout, "fallback");
-      assert.equal(inv.content.figure.id, "plain8", "the fallback picture only when nothing is measured");
+      assert.equal(inv.content.figure.id, "plain13", "the fallback picture only when nothing is measured");
+      assert.match(section, /data-fig="plain13"/, "the fallback picture is drawn");
       assert.equal(inv.content.tiles, undefined);
       assert.equal(receipts, "", "no tile, no receipt");
+      // Root's P2 wording (11:57:49Z), verbatim, for the line about the cross-check.
+      assert.equal(inv.content.footer, "Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction.");
     } else {
       assert.equal(inv.content.layout, "numbers");
       assert.equal(inv.content.figure, undefined, `${name}: no fallback picture while a number is measured`);
@@ -374,6 +390,15 @@ test("at the freeze, slide 9 keeps each measured tile and always the QR code and
       for (const k of keys) assert.match(receipts, new RegExp(`METRICS-FREEZE\\.json ${k.replace(/\./g, "\\.")} = \\d+ \\(d; window 2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z; scope s\\)`), `${name}: ${k}'s receipt`);
     }
   }
+});
+
+test("the deck's own words on the cross-check follow root's P2: never \"their own solvers\", never a rerun duration", () => {
+  const texts = [
+    ...[join(FOUNDER_DIR, "V4.json"), scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources].map((p) => readFileSync(p, "utf8")),
+    html(draft),
+    html(variant((v) => { v.build = "final"; delete v.figures.plain13.pending; })),
+  ];
+  for (const t of texts) assert.doesNotMatch(t, /own solvers|re-?ran (?:it )?(?:with)?in (?:under )?(?:six|6) minutes/i);
 });
 
 test("a measured tile's time window, as the slide prints it", () => {
