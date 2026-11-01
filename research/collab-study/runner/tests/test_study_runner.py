@@ -128,3 +128,96 @@ def test_pilot_refuses_identical_sealed_packet_even_at_another_path(tmp_path):
     (duplicate / "report.md").write_text("independent pilot fixture", encoding="utf-8")
     message, _ = runner.validate_pilot(duplicate, [hashes])
     assert "independent pilot fixture" in message
+
+
+def test_provider_settings_usage_and_request_ids(monkeypatch):
+    calls = []
+
+    class Response:
+        status_code = 200
+        headers = {"x-request-id": "provider-request-one"}
+
+        def json(self):
+            return {"id": "completion-one", "choices": [{"message": {"content": "FINAL\n"}}],
+                    "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120,
+                              "prompt_tokens_details": {"cached_tokens": 40},
+                              "completion_tokens_details": {"reasoning_tokens": 5}}}
+
+    def post(self, endpoint, **kwargs):
+        calls.append((endpoint, kwargs))
+        return Response()
+
+    monkeypatch.setenv("STUDY_ENDPOINT", "https://provider.invalid/chat/completions")
+    monkeypatch.setenv("STUDY_API_KEY", "obviously-fake-credential")
+    monkeypatch.setattr(runner.requests.Session, "post", post)
+    model = runner.HTTPModel.from_env()
+    reply = model.complete([{"role": "system", "content": "system"}], max_tokens=321, timeout=15)
+    assert reply.content == "FINAL\n"
+    assert reply.request_id == "provider-request-one"
+    assert reply.response_id == "completion-one"
+    assert runner.usage_counts(reply.usage) == (100, 40, 20, 5)
+    endpoint, kwargs = calls[0]
+    assert endpoint == "https://provider.invalid/chat/completions"
+    assert kwargs["json"] == {"model": "deepseek-v4-pro", "temperature": 0.3, "top_p": 1,
+                              "max_tokens": 321, "messages": [{"role": "system", "content": "system"}],
+                              "stream": False}
+    assert kwargs["headers"]["Authorization"] == "Bearer obviously-fake-credential"
+    assert kwargs["allow_redirects"] is False
+    assert kwargs["timeout"] == 15
+
+
+def test_ambiguous_transport_failure_never_exposes_error_text(monkeypatch):
+    secret = "obviously-fake-credential"
+
+    def post(*args, **kwargs):
+        raise runner.requests.Timeout(secret)
+
+    monkeypatch.setattr(runner.requests.Session, "post", post)
+    model = runner.HTTPModel("https://provider.invalid/chat/completions", secret)
+    with pytest.raises(runner.CallFailure) as caught:
+        model.complete([], max_tokens=50, timeout=1)
+    assert caught.value.safe_to_retry is False
+    assert caught.value.kind == "transport_unknown"
+    assert secret not in str(caught.value)
+
+
+def test_only_evidenced_presend_failure_is_retryable(monkeypatch):
+    def post(*args, **kwargs):
+        try:
+            raise ConnectionRefusedError("refused")
+        except ConnectionRefusedError as error:
+            raise runner.requests.ConnectionError("connection failed") from error
+
+    monkeypatch.setattr(runner.requests.Session, "post", post)
+    model = runner.HTTPModel("https://provider.invalid/chat/completions", "obviously-fake-credential")
+    with pytest.raises(runner.CallFailure) as caught:
+        model.complete([], max_tokens=50, timeout=1)
+    assert caught.value.safe_to_retry is True
+    assert caught.value.kind == "presend_failure"
+
+
+@pytest.mark.parametrize("status", [429, 500, 503, 401])
+def test_http_failure_keeps_request_id_without_retry_or_error_body(monkeypatch, status):
+    class Response:
+        status_code = status
+        headers = {"apim-request-id": "failed-provider-request"}
+
+        def json(self):
+            return {"error": {"message": "obviously-fake-credential"}}
+
+    monkeypatch.setattr(runner.requests.Session, "post", lambda *a, **kw: Response())
+    model = runner.HTTPModel("https://provider.invalid/chat/completions", "obviously-fake-credential")
+    with pytest.raises(runner.CallFailure) as caught:
+        model.complete([], max_tokens=50, timeout=1)
+    assert not caught.value.safe_to_retry
+    assert caught.value.request_id == "failed-provider-request"
+    assert caught.value.status == status
+    assert "obviously-fake-credential" not in str(caught.value)
+
+
+@pytest.mark.parametrize("usage", [None, {}, {"prompt_tokens": True, "completion_tokens": 2},
+                                  {"prompt_tokens": 5, "completion_tokens": -1},
+                                  {"prompt_tokens": 5, "completion_tokens": 1, "prompt_tokens_details": {"cached_tokens": 6}}])
+def test_invalid_usage_is_unknown_not_estimated(usage):
+    with pytest.raises(runner.CallFailure, match="invalid_usage"):
+        runner.usage_counts(usage)
