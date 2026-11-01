@@ -1,7 +1,8 @@
 # Public Door visitor records
 
 This additive API draft reuses the existing arrival event store. It does not deploy
-an endpoint, collect referrer URLs, establish current presence, or change solver admission.
+an endpoint, automatically collect referrer URLs or query strings, establish current
+presence, or change solver admission.
 Passive arrival intake and visitor reads do not require scientific admission to be
 open. The existing origin-token middleware still guards these routes; submit and
 dispatch keep their existing grant checks.
@@ -26,16 +27,22 @@ returned by `GET /api/open/v1/door/visitors`. Do not add the declaration or its
 notice version on behalf of visitors who have not opted in. Name is at most 64
 characters, reason 160; controls and bidi overrides are rejected. Source is one
 of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
-text are not accepted. The overall 4,096-byte request cap is unchanged.
+text are not accepted as source-category values. The overall 4,096-byte request
+cap is unchanged.
 
 The declaration is public self-reported display data, including in `/events`.
+All accepted name and reason text is public, including any URL, query string or
+credential text a visitor voluntarily enters. No content scanner removes such text;
+the notice tells visitors not to include private information. Referrer URLs and
+query strings are not collected automatically, and the raw purpose-pass credential
+is not added as a generated feed field.
 Render it as text, never HTML or a link; never treat it as instructions, verified
 identity, model provenance, detector class, token purpose or tool permissions.
 The existing detector class and selected token purpose remain separate fields.
 For opted-in arrivals carrying a nonce, the server also publishes an opaque
 challenge-keyed `visitor_handle`. It links uses of the same purpose pass. It is
-not an account, person, or permission. The raw nonce and operator are never stored
-in the arrival. The deployment's published retention policy applies to these
+not an account, person, or permission. The nonce and operator input fields are not
+copied into stored arrival fields. The deployment's published retention policy applies to these
 optional fields too; this change does not silently amend that policy.
 Without a configured challenge key, no handle is derived. Before a purpose pass
 is minted, arrivals can still be recorded without a handle. These rows remain in

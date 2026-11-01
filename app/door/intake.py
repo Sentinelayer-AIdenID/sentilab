@@ -39,7 +39,9 @@ VISITOR_NOTICE = "sentilab-public-visitor/1"
 VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected purpose are public. If you opt in, "
                       "your declared name, reason and source category are also public, together with a handle "
                       "that links visits using this purpose pass. These declarations are not verified identity. "
-                      "Do not include private information. No referrer URL, query string or pass token is published.")
+                      "Referrer URLs and query strings are not collected automatically, and the raw purpose-pass "
+                      "credential is not added as a generated feed field. All text you enter in name or reason "
+                      "is public. Do not include private information.")
 DISPLAY_TEXT = r"^[^\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]*$"
 COMMON = SCHEMAS["common"]["$id"]
 SUBMIT_SCHEMA = {
