@@ -126,7 +126,47 @@ function shownRun() {
   return { L: S.selectedId == null ? M.followedRun(layouts()) : M.pickRun(layouts(), S.selectedId), at: null };
 }
 
+// ── live runs walk through their recorded steps ──────────────────────────────────────────────────────────────────
+// The step map draws a run at its latest step. A run first seen live whose several step records arrive in one poll
+// (a run can go from queued to reproduced inside one 3 s poll) walks through each recorded step in order instead,
+// WALK_STEP_MS apiece, each with its plain word, then rests at its real latest step. Runs held when the page first
+// read the door never walk; reduced motion, paused motion or a tab that was hidden jumps at once; a poll that brings
+// newer records ends a walk at once and continues from the real latest state.
+const walks = new Map();          // run id -> { steps, i }
+const walkSeen = new Map();       // run id -> its newest run-record seq already drawn
+let walkHistory = null, walkBase = 0, walkCursor = 0, walkTimer = 0, hiddenSincePoll = false;
+function planWalks() {
+  const ev = feed.state.events;
+  if (walkHistory === null) {
+    if (!feed.state.lastOkAt) return;
+    walkHistory = new Set([...layouts().map((L) => L.id), ...ev.filter((e) => e.kind === "run").map((e) => e.run_id)]);
+    walkBase = walkCursor = feed.state.eventsCursor ?? 0;
+    return;
+  }
+  const moved = (feed.state.eventsCursor ?? 0) > walkCursor;
+  if (moved) { walkCursor = feed.state.eventsCursor; walks.clear(); clearTimeout(walkTimer); walkTimer = 0; }
+  const still = REDUCED || !S.motion || document.hidden || hiddenSincePoll;
+  if (moved) hiddenSincePoll = Boolean(document.hidden);
+  // A run's records can arrive a poll before its result (two feeds, two requests): its walk waits until it can be drawn.
+  const drawable = new Set(layouts().map((L) => L.id));
+  const fresh = new Set(ev.filter((e) => e.kind === "run" && e.seq > (walkSeen.get(e.run_id) ?? walkBase) && drawable.has(e.run_id)).map((e) => e.run_id));
+  for (const id of fresh) {
+    const steps = M.walkSteps(ev, id, walkSeen.get(id) ?? walkBase);
+    if (steps.length) walkSeen.set(id, steps[steps.length - 1].seq);
+    if (!still && !walkHistory.has(id) && steps.length >= 2) walks.set(id, { steps, i: 0 });
+  }
+  if (walks.size && !walkTimer) walkTimer = setTimeout(stepWalks, M.WALK_STEP_MS);
+}
+function stepWalks() {
+  walkTimer = 0;
+  for (const [id, w] of walks) { w.i += 1; if (w.i >= w.steps.length) walks.delete(id); }
+  drawAtlas($("atlasSvg"));
+  if (walks.size) walkTimer = setTimeout(stepWalks, M.WALK_STEP_MS);
+}
+const walkAt = () => (walks.size ? new Map([...walks].map(([id, w]) => [id, w.steps[w.i]])) : null);
+
 function render() {
+  planWalks();
   renderStatus();
   renderRuns();
   renderModel();
@@ -338,7 +378,7 @@ function draw2d(L) {
 // ── the work: atlas, visitors, newest record ─────────────────────────────────────────────────────────────────────
 const STATION_XY = [[56, 34], [150, 22], [244, 34], [258, 108], [150, 128], [42, 108]];
 function drawAtlas(svg, { large = false } = {}) {
-  const a = M.atlas(layouts(), feed.state.events);
+  const a = M.atlas(layouts(), feed.state.events, walkAt());
   const shown = shownRun().L;
   svg.replaceChildren();
   svg.append(s("ellipse", { class: "atlas-ring", cx: 150, cy: 76, rx: 108, ry: 52 }));
@@ -362,6 +402,9 @@ function drawAtlas(svg, { large = false } = {}) {
       dot.append(s("title", {}, `${W.layoutFrom(r.label.split(" · ")[1] ?? null)} ${W.RUN_STATE[r.status] ?? r.status}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
+      // A walking run carries the plain word of the step it is passing, above its avatar.
+      if (r.step) svg.append(s("text", { class: "atlas-step", x: cx.toFixed(1), y: (cy - size / 2 - 3).toFixed(1), "text-anchor": "middle",
+        "data-step": String(r.step.i), "data-station": r.step.station }, r.step.word));
       const short = r.label.split(" \u00b7 ")[1] ?? null;
       if (shown && r.id === shown.id && short) svg.append(s("text", { class: "atlas-visit", x: cx.toFixed(1), y: (cy + size / 2 + 8).toFixed(1), "text-anchor": "middle" }, `visit ${short}`));
     });
@@ -812,7 +855,7 @@ function wire() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { hideIntro(); if (S.stage && !$("modal").open) setStage(false); }
   });
-  document.addEventListener("visibilitychange", () => { if (document.hidden) stopPlay(); else pollBoard(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) { stopPlay(); hiddenSincePoll = true; } else pollBoard(); });
   new ResizeObserver(() => renderTrace()).observe($("traceSvg"));
   $("visitorList").addEventListener("scroll", (e) => { const el = e.target; if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) loadEarlier(); }, { passive: true });
   new ResizeObserver(() => { frameCamera(); if (!$("packageCanvas2d").hidden) draw2d(shownRun().L); }).observe($("modelViewport"));

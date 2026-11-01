@@ -46,3 +46,4 @@ footer{font-size:12px;padding:12px 0;align-items:flex-start;flex-direction:colum
 @media(max-width:430px){h1{font-size:26px}.brand img{width:24px;height:24px}.model-metrics strong{font-size:24px}.model-metrics .metric-source{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .arrival-strip .av-item.named{min-width:132px;max-width:132px}.av-name bdi{font-weight:600;color:#ecd9b8}.av-name.card{display:block;font-size:11px;color:#e1efe6;margin-bottom:2px}.rec-row bdi{font-weight:600;color:#ecd9b8}.atlas-visit{font:7px var(--mono);fill:#cfe2d5}
+.atlas-step{font:600 7px var(--sans);fill:#f2d9a8;paint-order:stroke;stroke:#0f1a14;stroke-width:2px}

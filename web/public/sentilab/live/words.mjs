@@ -105,6 +105,10 @@ export function tempWord(t, verification = null) {
   if (verification?.replay === "not_reproduced") return "replay did not match · simulated";
   return "simulated";
 }
+// A run's step, in the words its outcome line uses (live-model.mjs runOutcome), as its avatar passes it.
+export const STEP_WORD = Object.freeze({ queued: "Waiting in line", held: "Held", evaluating: "Simulating", evaluated: "Re-checking (replay)",
+  replaying: "Re-checking (replay)", reproduced: "Accepted \u00b7 replay matched", cross_checked: "Accepted \u00b7 cross-checked",
+  not_reproduced: "Scored \u00b7 replay did not match" });
 export const YOUR_PICK = "your pick";
 
 // A design's steps in plain words, for the newest-event line and the model's caption.

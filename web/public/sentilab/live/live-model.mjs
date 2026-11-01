@@ -411,12 +411,22 @@ export const STATIONS = Object.freeze([
 const STATION_OF = Object.freeze({ queued: "queue", held: "queue", evaluating: "simulate", evaluated: "replay", replaying: "replay",
   reproduced: "board", not_reproduced: "board", cross_checked: "board" });
 export const stationOf = (status) => STATION_OF[status] ?? null;   // rejected, failed, cancelled, expired: out of the flow
-export function atlas(layouts, events) {
+// A live run's walk (Carter, 19:1xZ): when one poll brings several new step records for one run, its avatar passes
+// through each of them in order, WALK_STEP_MS apiece, then rests at its real latest step. Only the run's own records
+// newer than afterSeq that have a station, oldest first: never a step the run did not record.
+export const WALK_STEP_MS = 700;
+export function walkSteps(events, runId, afterSeq) {
+  return [...(events ?? [])].filter((e) => e.kind === "run" && e.run_id === runId && e.seq > afterSeq && stationOf(e.state))
+    .sort((a, b) => a.seq - b.seq).map((e, i) => ({ i, seq: e.seq, state: e.state, station: stationOf(e.state), word: W.STEP_WORD[e.state] ?? e.state }));
+}
+// at: run id -> a step the run is walking through (live.mjs), drawn at that step's station instead of its latest.
+export function atlas(layouts, events, at = null) {
   const runs = new Map(STATIONS.map((s) => [s.id, []]));
   const out = [];
   for (const L of layouts ?? []) {
-    const st = stationOf(L.status);
-    if (st) runs.get(st).push({ id: L.id, label: L.label, cls: L.cls, status: L.status });
+    const step = at?.get(L.id) ?? null;
+    const st = stationOf(step ? step.state : L.status);
+    if (st) runs.get(st).push({ id: L.id, label: L.label, cls: L.cls, status: step ? step.state : L.status, step });
     else out.push({ id: L.id, label: L.label, status: L.status });
   }
   const ev = events ?? [];
