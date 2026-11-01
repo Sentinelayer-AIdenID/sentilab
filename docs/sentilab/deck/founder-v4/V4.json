@@ -556,5 +556,42 @@
       "what": "Help offered: four checked, nine offered in all, two of the other five said it was useful (to 12:46 UTC, root's +1 at 12:57:04Z)",
       "why": "Aneta re-checks at about 14:05Z and posts only if the line changes (58014); otherwise it stands."
     }
-  ]
+  ],
+  "cuts": {
+    "note": "Proposed for root's review; Carter's timed run decides (the coordinator, 13:05Z). Not applied: the deck still speaks every word in SCRIPT.md, and the build refuses a passage that is not in the words exactly once. Only spoken words change: no slide, figure or number. Root's estimate (12:55:54Z): 400 words with 15 s of transitions and the 120 s demo come to 4:55 at 150 wpm and 5:12.8 at 135; the slot is 5:00 with the demo, so about 29 words must go at 135 wpm, more at the freeze, where slide 9 speaks its 15-word no-numbers line.",
+    "cut": [
+      {
+        "slide": "room",
+        "from": " People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets.",
+        "to": "",
+        "why": "The slide shows all of it: the three points, and the tickets tile. The spoken line keeps the room and its numbers."
+      },
+      {
+        "slide": "link",
+        "from": " Then they started discussing spreader-to-sink coupling. Which sounds like a plumbing emergency, but apparently it can ruin your experiment.",
+        "to": "",
+        "why": "A joke beat; the slide's title and its line carry the point, and the reports and our own run stay. Its cue (play the plumbing line lightly) goes with it."
+      }
+    ],
+    "alternates": [
+      {
+        "slide": "room",
+        "from": ". People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets.",
+        "to": ": agents geared each other up and guarded the room.",
+        "why": "Instead of cut 1: the short cut's own room line, already reviewed."
+      },
+      {
+        "slide": "scorecard",
+        "from": " Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+        "to": "",
+        "why": "Instead of cut 2: the mechanism line and its joke; the three checks and their numbers stay."
+      },
+      {
+        "slide": "closer",
+        "from": " Okay, not GitHub. Yet.",
+        "to": "",
+        "why": "A joke beat; the call to action stays. The closer is in the short cut too."
+      }
+    ]
+  }
 }

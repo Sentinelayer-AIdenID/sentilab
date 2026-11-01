@@ -31,7 +31,7 @@ export const FOUNDER_METRICS = join(FOUNDER_DIR, "METRICS.json");
 export const FOUNDER_METRICS_FREEZE = join(FOUNDER_DIR, "METRICS-FREEZE.json");
 export const FOUNDER_DECK_DIR = join(DECK_ROOT, "founder-v4");
 export const FOUNDER_FIGURE_DIR = join(FOUNDER_DECK_DIR, "figures");
-export const FOUNDER_OUTPUTS = { script: join(FOUNDER_DIR, "SCRIPT.md"), fillIn: join(FOUNDER_DIR, "FILL-IN.md"), sources: join(FOUNDER_DIR, "SOURCES.md") };
+export const FOUNDER_OUTPUTS = { script: join(FOUNDER_DIR, "SCRIPT.md"), fillIn: join(FOUNDER_DIR, "FILL-IN.md"), sources: join(FOUNDER_DIR, "SOURCES.md"), cuts: join(FOUNDER_DIR, "CUTS.md") };
 
 export class FounderError extends Error {}
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -427,8 +427,52 @@ export function publicOutputs(data, v4, loaded) {
   for (const slot of FOUNDER_SLOTS) out.set(scriptPath(slot), speakerScript(slot === data.deck.slot ? data : buildFounderData(loaded, { slot, final: !data.deck.draft }), v4));
   out.set(FOUNDER_OUTPUTS.fillIn, fillInTable(data));
   out.set(FOUNDER_OUTPUTS.sources, sourcesList(data));
+  if (v4.cuts) out.set(FOUNDER_OUTPUTS.cuts, cutsDoc(cutsPlan(loaded)));
   for (const [f, b] of pictureFiles(v4)) out.set(join(FOUNDER_FIGURE_DIR, f), b);
   return out;
+}
+
+// A proposed cut of the full talk's spoken words, for review and Carter's timed run (the coordinator, 13:05Z): never
+// applied by the build. Each change replaces one exact passage of a main slide's words, once; it may not touch a number
+// or a measured placeholder, and slides, figures and the short cut are not touched at all. The clock with the cut is the
+// build's own, on a copy of V4.json with the cut applied.
+export function cutsPlan(loaded) {
+  const { v4 } = loaded;
+  const main = v4.slots["3min"].main;
+  const check = (c, where) => {
+    const s = v4.slides.find((x) => x.id === c.slide);
+    if (!s || !main.includes(c.slide)) throw new FounderError(`${where}: ${c.slide} is not a main slide of the full talk`);
+    const n = String(s.say).split(c.from).length - 1;
+    if (n !== 1) throw new FounderError(`${where}: the passage must appear once in slide ${c.slide}'s words, found ${n}: ${JSON.stringify(c.from)}`);
+    if (/\{m:/.test(c.from + c.to)) throw new FounderError(`${where}: a cut may not touch a measured placeholder`);
+    if (JSON.stringify(numberTokens(c.from)) !== JSON.stringify(numberTokens(c.to))) throw new FounderError(`${where}: a cut may not touch a number: ${JSON.stringify(c.from)}`);
+    const saved = countWords(c.from) - countWords(c.to);
+    if (!(saved > 0)) throw new FounderError(`${where}: saves no words`);
+    const before = String(s.say);
+    return { ...c, n: main.indexOf(c.slide) + 1, saved, before, after: before.replace(c.from, c.to).replace(/\s+/g, " ").trim() };
+  };
+  const cut = v4.cuts.cut.map((c, i) => check(c, `cut ${i + 1}`));
+  const alternates = (v4.cuts.alternates ?? []).map((c, i) => check(c, `alternate ${i + 1}`));
+  const cutV4 = structuredClone(v4);
+  for (const c of cut) cutV4.slides.find((x) => x.id === c.slide).say = c.after;
+  const clock = (w, final) => buildFounderData({ ...loaded, v4: w }, { slot: "3min", final }).budget;
+  return {
+    note: v4.cuts.note, cut, alternates, saved: cut.reduce((a, c) => a + c.saved, 0),
+    clocks: [["Now, draft", clock(v4, false)], ["Now, at the freeze (slide 9's no-numbers line)", clock(v4, true)],
+      ["With the cut, draft", clock(cutV4, false)], ["With the cut, at the freeze (slide 9's no-numbers line)", clock(cutV4, true)]],
+  };
+}
+export function cutsDoc(plan) {
+  const q = (t) => (t ? `"${t.trim()}"` : "(nothing)");
+  return ["# CUTS: a proposed cut of the spoken words, not applied", "", plan.note, "",
+    "## The clock", "", "| | Words | Talk and transitions | With the 120 s demo, 150 wpm | With the demo, 135 wpm |", "|---|---|---|---|---|",
+    ...plan.clocks.map(([k, u]) => `| ${k} | ${u.talkWords} | ${u.totalSeconds} s | ${u.withDemoSeconds} s (${mss(u.withDemoSeconds)}) | ${u.slowWithDemoSeconds} s (${mss(u.slowWithDemoSeconds)}) |`), "",
+    `## The cut: ${plan.saved} words`, "",
+    ...plan.cut.flatMap((c, i) => [`### ${i + 1}. Slide ${c.n} (${c.slide}): ${c.saved} words`, "", `- Before: ${q(c.from)}`, `- After: ${q(c.to)}`, `- Why: ${c.why}`, ""]),
+    "## Each slide's words, before and after the cut", "",
+    ...plan.cut.flatMap((c) => [`### Slide ${c.n} (${c.slide})`, "", `Before: ${c.before}`, "", `After: ${c.after}`, ""]),
+    "## Alternates, not in the cut", "", "| Slide | Before | After | Words | Why |", "|---|---|---|---|---|",
+    ...plan.alternates.map((c) => `| ${c.n} (${c.slide}) | ${q(c.from)} | ${q(c.to)} | ${c.saved} | ${c.why} |`), ""].join("\n");
 }
 // Carter's handoff files (the coordinator, 12:31Z): aneta's answer sheet and demo run sheet, beside the scripts and not on
 // a slide, exactly as received; V4.json pins each by its sha256.

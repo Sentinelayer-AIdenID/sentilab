@@ -468,6 +468,30 @@ test("a figure's drawn words are read decoded, as they render, for the public-re
   assert.equal(svgText('<svg><text>Cloudfl&#97;re <tspan>AI</tspan></text><text>x&lt;y</text></svg>'), "Cloudflare AI \n x<y");
 });
 
+test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brings the freeze under 5:00 with the demo", async () => {
+  const { cutsPlan } = await import("./build-deck-founder.mjs");
+  const plan = cutsPlan(loaded);
+  assert.ok(plan.saved >= 30, `${plan.saved} words`);
+  assert.equal(plan.saved, plan.cut.reduce((a, c) => a + countWords(c.from) - countWords(c.to), 0));
+  // Root's arithmetic (12:55:54Z) for now; with the cut, the slot's 5:00 holds at 135 wpm, at the freeze too.
+  const clock = Object.fromEntries(plan.clocks.map(([k, u]) => [k, u]));
+  assert.deepEqual([clock["Now, draft"].talkWords, clock["Now, draft"].withDemoSeconds, clock["Now, draft"].slowWithDemoSeconds], [400, 295, 312.8]);
+  for (const k of ["With the cut, draft", "With the cut, at the freeze (slide 9's no-numbers line)"]) assert.ok(clock[k].slowWithDemoSeconds <= 300, `${k}: ${clock[k].slowWithDemoSeconds} s`);
+  // Not applied: the deck speaks every word it did, and no slide, figure or number moves.
+  assert.equal(data.budget.talkWords, 400);
+  for (const c of [...plan.cut, ...plan.alternates]) assert.ok(slide(data, c.slide).notes.text.includes(c.from.trim()), c.slide);
+  // The document is the build's, with each passage before and after.
+  const doc = readFileSync(join(FOUNDER_DIR, "CUTS.md"), "utf8");
+  assert.ok(doc.startsWith("# CUTS: a proposed cut of the spoken words, not applied"));
+  for (const c of plan.cut) assert.ok(doc.includes(`- Before: "${c.from.trim()}"`) && doc.includes(`After: ${c.after}`), c.slide);
+  // The build refuses a passage that is not there exactly once, or one that touches a number or a placeholder.
+  const bad = (mutate, re) => { const v4 = structuredClone(loaded.v4); mutate(v4.cuts); assert.throws(() => cutsPlan({ ...loaded, v4 }), re); };
+  bad((k) => { k.cut[0].from = " not in the words"; }, /must appear once in slide room's words, found 0/);
+  bad((k) => { k.cut.push({ slide: "room", from: " 422 messages from 28 identities", to: " Messages", why: "test" }); }, /may not touch a number/);
+  bad((k) => { k.cut.push({ slide: "invite", from: " {m:door.visits} visits,", to: "", why: "test" }); }, /may not touch a measured placeholder/);
+  bad((k) => { k.cut.push({ slide: "sources", from: "x", to: "", why: "test" }); }, /sources is not a main slide of the full talk/);
+});
+
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
   const pins = { "CARTER-QA.md": "d1e67703e3c3e7e8c0a5d8cc7e8ba048837a9a4b2e7a2d47d941f556aaf2acfe", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
