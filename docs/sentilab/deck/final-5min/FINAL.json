@@ -2357,7 +2357,7 @@
         "layout": "grader",
         "say": {
           "3+2": "Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. If nobody checks the grader, you don't get a dumb agent. You get a confident one.",
-          "3total": "Agents can search chip layouts all night, but a simulator grades every try. A wrong grader doesn't make a dumb agent. It makes a confidently wrong one."
+          "3total": "Agents can search chip layouts all night, but a simulator grades every try. If nobody checks the grader, you don't get a dumb agent. You get a confident one."
         },
         "picture": {
           "still": "render",
@@ -2678,7 +2678,7 @@
         "layout": "closer",
         "say": {
           "3+2": "Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the test case is public, so you can rerun it.",
-          "3total": "An optimizer is only as reliable as the tool grading it. That's SentiLab: agents propose, agents check, and the receipts are yours to verify."
+          "3total": "An optimizer is only as reliable as the tool grading it. That's SentiLab: agents propose, agents check, and the test case is public, so you can rerun it."
         },
         "sub": "Independent checks expose disagreements before we build on them.",
         "check": "Using the newer version's 3D mode? Check it against the older one.",

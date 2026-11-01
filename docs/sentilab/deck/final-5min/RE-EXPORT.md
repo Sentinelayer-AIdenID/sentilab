@@ -44,8 +44,8 @@ PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --r
   refresh stamps the rows with the current minute).
 - `--rederived` states the completed independent re-derivation (team room 57394). It is refused for anything but the
   recorded PASS.
-- `--demo-status live|replay` picks slide 9's variant and its scripted lines. `replay` is the default, and the plain
-  door has no `staging`. `live` is refused while `demo.urlIsPlaceholder` is true in `FINAL.json`: set it to false once
+- `--demo-status live|recorded` picks slide 10's variant and its scripted lines. `recorded` is the default; the plain
+  door has no other status. `live` is refused while `demo.urlIsPlaceholder` is true in `FINAL.json`: set it to false once
   the address is confirmed, which is also the only way a LIVE slide reaches a PDF.
 - The PDF is written as `SentiLab-5min-<cutoff date>-<HHMM>-pass.pdf`. The exporter never deletes anything. If an
   earlier PDF is in this folder, remove it with `git rm` in the same commit, because the tests allow one PDF.
@@ -53,9 +53,9 @@ PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --r
 ## The speaker script
 
 Every export also writes `SCRIPT.md` here: each main slide's exact spoken words as the deck renders them (consent
-names resolved, at the recorded result), with the word count and the seconds at 150 words a minute, slide 8 with its
-numbers line named as on or off, both of the door's scripted lines (LIVE and REPLAY), and the clock at 150 and 135
-words a minute. It is generated from the same data as the PDF, and `--check` and the tests compare
+names resolved, at the recorded result), with the word count and the seconds at 150 words a minute, both of the door's
+scripted lines (LIVE and RECORDED), the clock at 150 and 135 words a minute, and the answer sheet's notes for the
+presenter. It is generated from the same data as the PDF, and `--check` and the tests compare
 it with a fresh build. Keep it under 16,000 characters, so that it fits in one room message.
 
 ## Naming an outside team once it agrees
@@ -83,11 +83,11 @@ node scripts/build-deck-final.mjs --rederived --demo-status live --demo-review
 ```
 
 The first two keep the reviewer's wording for the gate slide (backup B4). Every slide is marked "REVIEW · not the
-recorded result" or "PREVIEW · not a result". The third renders slide 9 LIVE before the address is confirmed, with every
+recorded result" or "PREVIEW · not a result". The third renders slide 10 LIVE before the address is confirmed, with every
 slide marked "REVIEW · door variant, not the export". None of them can write a PDF or `SCRIPT.md`. To refresh
-`variants/`, export screenshots with `--no-pdf --shots <dir>` after each build and copy `13-gate-1920x1080.png` as
-`gate-<outcome>-1920x1080.png` and `09-talk9-1920x1080.png` as `slide9-live-1920x1080.png` (and, from the real export,
-`slide9-replay-1920x1080.png` and `gate-pass-1920x1080.png`). Finish with the real export above, so that the committed
+`variants/`, export screenshots with `--no-pdf --shots <dir>` after each build and copy `14-gate-1920x1080.png` as
+`gate-<outcome>-1920x1080.png` and `10-t-door-1920x1080.png` as `slide10-live-1920x1080.png` (and, from the real export,
+`slide10-recorded-1920x1080.png` and `gate-pass-1920x1080.png`). Finish with the real export above, so that the committed
 data is the recorded result.
 
 ## Checks

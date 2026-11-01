@@ -22,17 +22,15 @@ word for word, and the tests compare both with the script. Slide 1 opens with it
 other slide shows its heading as its title. The v2.5 export (commit 8e998d8b, cutoff 05:02) is the fallback.
 
 The slot is a build flag: `--slot 3+2`, the default and the talk Carter confirmed (5 minutes per team, 3-4 of talk and
-1-2 of demo, team room 57411, re-read by root), or `--slot 3total`, which speaks script v3-short
-(`PLAIN-SCRIPT-SHORT.md`, `fc472ef5…`) over the same screens, with slides 3 and 8 moved to the head of the backup
-and a 60 s demo. The short script is still v3-short as sent, without v3.1's fixes: its slide 2 says "A wrong grader
-doesn't make a dumb agent. It makes a confidently wrong one." under the new punchline "Unchecked grader → confident
-agent.", and its slide 9 (seventh in the short cut) still says "the receipts are yours to verify". Left as sent; a
-v3.1-short is the coordinator's to write.
+1-2 of demo, team room 57411, re-read by root), or `--slot 3total`, which speaks script v3.1-short
+(`PLAIN-SCRIPT-SHORT.md`, `3aed8f61…`) over the same screens, with slides 3 and 8 moved to the head of the backup
+and a 60 s demo. Script v3.1-short carries v3.1's two wording fixes: slide 2's spoken line, and the lesson's (seventh
+in the short cut).
 
 | Slot | Talk words | 150 wpm, with 15 s transitions | 135 wpm | Talk cap | Door words (LIVE / RECORDED) | Demo clock |
 |---|---:|---:|---:|---:|---:|---:|
 | 3+2 | 364 | 160.6 s | 176.8 s | 180 s | 79 / 32 | 120 s |
-| 3total | 205 | 97.0 s | 106.1 s | 120 s | 49 / 30 | 60 s |
+| 3total | 211 | 99.4 s | 108.8 s | 120 s | 49 / 30 | 60 s |
 
 | Slide | Picture | What the build checks |
 |---|---|---|
