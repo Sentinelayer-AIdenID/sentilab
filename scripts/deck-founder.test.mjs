@@ -250,3 +250,15 @@ test("the optional D1 layout result is Carter's call: in the notes and FILL-IN w
   assert.ok(fill.includes("## Optional, Carter's call: notes only, not on a slide") && fill.includes(o.line) && fill.includes(o.qualifiers));
   for (const slot of ["3min", "2min"]) assert.ok(readFileSync(scriptPath(slot), "utf8").includes("## Option, Carter's call: not spoken unless he asks (slide invite)"), slot);
 });
+
+test("the freeze drops tiles without a receipt even with no fallback picture, and a figure's own words face the public-render rule", () => {
+  const reviewed = structuredClone(loaded.v4);
+  for (const fig of Object.values(reviewed.figures)) delete fig.pending;
+  delete reviewed.slides.find((x) => x.id === "invite").finalFallback;
+  const fin = buildFounderData({ ...loaded, v4: reviewed }, { final: true });
+  assert.deepEqual(slide(fin, "invite").content.tiles, [], "no receipt, no tile");
+  // A vendor name drawn into a figure stops the build like one typed on the slide.
+  const named = structuredClone(loaded.v4);
+  named.figures.plain11.edits = [{ from: "AI-bot requests a week", to: "Cloudflare AI-bot requests a week", why: "test only" }];
+  assert.throws(() => buildFounderData({ ...loaded, v4: named }), (e) => e instanceof FounderError && /public-render rule .* figure plain11/.test(e.message));
+});
