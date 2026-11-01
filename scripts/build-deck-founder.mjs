@@ -499,30 +499,47 @@ export const decodeXml = (s) => String(s).replace(/&(?:#(\d+)|#x([0-9a-f]+)|(amp
   const cp = dec !== undefined ? Number(dec) : parseInt(hex, 16);
   return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
 });
-// Markup inside a text element (tspans, comments, CDATA markers) is dropped, so the pieces join as they render.
-const stripMarkup = (s) => s.replace(/<!--[\s\S]*?-->/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "");
+// Character data as XML reads it: a CDATA section stays literal, everything else is decoded once; markup between the
+// pieces becomes `sep` ("" inside a text element, so tspans join as they render).
+const textContent = (s, sep = "") => String(s).split(/(<!\[CDATA\[[\s\S]*?\]\]>)/).map((p) => (p.startsWith("<![CDATA[") ? p.slice(9, -3) : decodeXml(p.replace(/<[^>]*>/g, sep)))).join("");
+// A comment is not rendered: inside an element the text on either side joins ("Vor<!-- -->tex" reads "Vortex").
+const dropComments = (s, sep = "") => String(s).replace(/<!--[\s\S]*?-->/g, sep);
 // An SVG's drawn words, decoded, one text element per line.
-export const svgText = (svg) => [...String(svg).matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => decodeXml(stripMarkup(m[1]))).join(" \n ");
-// Everything a reader can get from an SVG, decoded (root's P2, 12:55:54Z): the drawn words, titles and descriptions, every
-// attribute value (alt and aria labels among them), the other character data and the raw file. Binary image data (a
-// base64 PNG, JPEG, GIF or WebP data: URI) is not text and is left out; an embedded SVG or text data: URI is decoded and
-// read too. An SVG that declares a DTD or an entity is refused: what it would spell is not known without expanding it.
+export const svgText = (svg) => [...dropComments(svg).matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => textContent(m[1])).join(" \n ");
+// A start tag, quoted attribute values allowed to hold ">", and its attributes.
+const TAG = /<[A-Za-z][^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/g;
+const ATTR = /([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+// Data URIs in text already decoded: binary image data (base64 PNG, JPEG, GIF, WebP, AVIF, BMP) is not text and is
+// dropped; any other is decoded (base64 or percent-encoding) and read, an SVG as an SVG (root, 13:30:15Z: decode the
+// attribute value first, then recognize the URI, so an encoded "d&#97;ta:" or ";b&#97;se64" cannot hide it).
 const BINARY_IMAGE = /^image\/(?:png|jpe?g|gif|webp|avif|bmp)$/i;
-export function svgReadable(svg, where) {
-  const embedded = [];
-  const s = String(svg).replace(/data:([^;,"')\s]*)((?:;[^;,"')\s]*)*),([^"')\s]*)/gi, (m, type, params, payload) => {
+function expandData(text, where) {
+  const inner = [];
+  const rest = String(text).replace(/data:([^;,"')\s]*)((?:;[^;,"')\s]*)*),([^"')\s]*)/gi, (m, type, params, payload) => {
     const base64 = /;base64$/i.test(params);
-    if (base64 && BINARY_IMAGE.test(type)) return "";
+    if (base64 && BINARY_IMAGE.test(type)) return " ";
     let body;
     try { body = base64 ? Buffer.from(payload, "base64").toString("utf8") : decodeURIComponent(payload); } catch { body = payload; }
-    embedded.push(/svg/i.test(type) ? svgReadable(body, `${where} (an embedded image)`) : body);
-    return "";
+    inner.push(/svg/i.test(type) ? svgReadable(body, `${where} (an embedded image)`) : body);
+    return " ";
   });
-  if (/<!DOCTYPE|<!ENTITY/i.test(s)) throw new FounderError(`${where} declares a DTD or an entity; it is refused, not expanded`);
-  const inner = (tag) => [...s.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi"))].map((m) => decodeXml(stripMarkup(m[1])));
-  const attrs = [...s.matchAll(/\s[\w:.-]+\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((m) => decodeXml(m[1] ?? m[2]));
-  const rest = decodeXml(s.replace(/<!--[\s\S]*?-->/g, " \n ").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, " \n "));
-  return [svgText(s), ...inner("title"), ...inner("desc"), ...attrs, rest, s, ...embedded].join(" \n ");
+  return [rest, ...inner].join(" \n ");
+}
+// Everything a reader can get from an SVG, decoded (root's P2, 12:55:54Z, and 13:30:15Z): the drawn words, titles and
+// descriptions, every attribute value decoded once (alt and aria labels among them), the other character data, the tag and
+// attribute names, and the comments as written; then every data: URI in those decoded strings, as above. An SVG that
+// declares a DTD or an entity is refused: what it would spell is not known without expanding it.
+export function svgReadable(svg, where) {
+  const src = String(svg);
+  if (/<!DOCTYPE|<!ENTITY/i.test(src)) throw new FounderError(`${where} declares a DTD or an entity; it is refused, not expanded`);
+  const comments = [...src.matchAll(/<!--([\s\S]*?)-->/g)].map((m) => m[1]);
+  const doc = dropComments(src);
+  const markup = doc.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, " ");
+  const tags = [...markup.matchAll(TAG)].map((t) => t[0]);
+  const inner = (tag) => [...doc.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi"))].map((m) => textContent(m[1]));
+  const parts = [svgText(src), ...inner("title"), ...inner("desc"), textContent(dropComments(src, " "), " \n "), ...comments,
+    ...tags.map((t) => t.replace(/"[^"]*"|'[^']*'/g, " ")), ...tags.flatMap((t) => [...t.matchAll(ATTR)].map((a) => decodeXml(a[2] ?? a[3])))];
+  return parts.map((p) => expandData(p, where)).join(" \n ");
 }
 // A team that has not consented to be named appears in nothing the deck publishes, in any letter case (the coordinator,
 // 12:31Z: Vortex stays "another team"): the slides and the sources page, a figure's text or alt text, the notes, both
@@ -533,7 +550,7 @@ export function checkUnnamed(files, v4) {
   for (const [path, body] of files) {
     if (!/\.(json|js|md|svg)$/.test(path)) continue;
     const where = relative(REPO_ROOT, path);
-    const text = path.endsWith(".svg") ? svgReadable(body, where) : `${body} \n ${decodeXml(body)}`;
+    const text = path.endsWith(".svg") ? svgReadable(body, where) : expandData(`${body} \n ${decodeXml(body)}`, where);
     for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(text)) throw new FounderError(`${where} names ${t}, who has not consented`);
   }
 }

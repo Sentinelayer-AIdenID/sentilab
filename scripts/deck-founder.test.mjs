@@ -472,6 +472,17 @@ test("root's P2 (12:55:54Z): the unnamed-team scan reads an SVG as it renders, d
   // An embedded SVG is text, base64 or percent-encoded: it is decoded and read too.
   refused(`<svg><image href="data:image/svg+xml;base64,${Buffer.from("<svg><text>Vortex</text></svg>").toString("base64")}"/></svg>`);
   refused('<svg><image href="data:image/svg+xml,%3Csvg%3E%3Ctext%3EVor%74ex%3C/text%3E%3C/svg%3E"/></svg>');
+  // Root (13:30:15Z): the attribute value is decoded before a data: URI is recognized, so an encoded scheme or parameter
+  // cannot hide an embedded SVG; data: URIs in a style element and attributes after a quoted ">" are read too.
+  const named = Buffer.from("<svg><text>Vortex</text></svg>").toString("base64");
+  refused(`<svg><image href="d&#97;ta:image/svg+xml;base64,${named}"/></svg>`);
+  refused(`<svg><image href="data:image/svg+xml;b&#97;se64,${named}"/></svg>`);
+  refused('<svg><image href="d&#x61;ta:image/svg+xml,%3Csvg%3E%3Ctext%3EVortex%3C/text%3E%3C/svg%3E"/></svg>');
+  refused(`<svg><style>.a{fill:url(data:image/svg+xml;base64,${named})}</style></svg>`);
+  refused('<svg><image title="a>b" alt="Vor&#116;ex"/></svg>');
+  // Still excluded once decoded: binary image data. And literal CDATA stays literal: it shows "Vor&#116;ex".
+  checkUnnamed([[at, '<svg><image href="d&#97;ta:image/png;b&#97;se64,QQ+Vortex+QQ"/></svg>']], loaded.v4);
+  checkUnnamed([[at, "<svg><text><![CDATA[Vor&#116;ex]]></text></svg>"]], loaded.v4);
   // One decoding pass, as a renderer makes: an escaped ampersand stays literal text ("Vor&#116;ex" is what shows).
   checkUnnamed([[at, '<svg><text>Vor&amp;#116;ex &lt;b&gt; &quot;q&quot; &apos;a&apos;</text></svg>']], loaded.v4);
 });
