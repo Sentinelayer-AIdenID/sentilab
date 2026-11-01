@@ -47,3 +47,12 @@ Post-merge repair (root #56857/#56858, warden review, astra's PR review comment 
 - [x] Warden #56968: the raw and 1 mm sections are restored exactly as reviewed at 063f6593 (SLAB-049 pins the raw section's canonical-JSON sha256); later additions moved to `raw_annotations`/`snapped_annotations`; section and layout content hashes pinned by tests; TAP input generation in-process (no child process for #37's launch-gate inventory); router notice names the passive-only interposer; micro150 cfg notice drops `path`; README wording (assumption, root's decision, 0.054 mm source); per-base hashes in ENVELOPE-PLAN.md.
 
 25 code mutants and 9 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.
+
+# PR83 coupling repair
+
+- [x] Check current PR head, owner comments and accepted final wording.
+- [x] Create isolated checkout at the reviewed PR head.
+- [x] Repair coupling persistence preflight and missing carry refusal.
+- [x] Set separate Nov 2 06:00Z deadline and exact approved four outcome strings.
+- [ ] Verify meaningful offline controls and unchanged frozen default manifest.
+- [ ] Deliver local diff and evidence for independent nonauthor review; no push or run grant.

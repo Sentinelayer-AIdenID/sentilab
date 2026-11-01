@@ -21,7 +21,13 @@ The gate-zero build is derived from the repository, not typed (derive_gate0_iden
   grid            sundai_hotspot/gate_zero.py GRID, which the manifest's statistic.grid repeats
   centre_mapping  the golden manifest's statistic.centre_mapping
   image           the one value from outside the repository: the operator-reported image tag in the evaluator binding
-                  packet, recorded with that packet's sha256
+                  packet, recorded with that packet's sha256. A tag is mutable: it names the build and proves nothing
+
+Beside the identity, outside the string, each build records image_digest: its image's sha256 digest, from the same
+packet (evaluator.image_id_or_digest), or null when none is recorded. It is the only proof of a run's image: the door
+names a build only when the run's evaluation receipt, its signed grant and its signed manifest
+(statistic.evaluator.build) each carry exactly that digest (app/door/evaluator.py), and a null digest is never
+matched. The packet records none for the gate-zero image, so no door run is that build until a digest is recorded.
 
   python -m open_proposals.contract.builds --write --receipts GATE0.json REDERIVATION.json --binding PACKET.json
   python -m open_proposals.contract.builds --check     # exit 1 unless builds.json matches its sources
@@ -63,9 +69,15 @@ RULE = ("Exact match only. A build's identity string is <engine>:<engine_commit>
         ":config_sha256:<sha256 of the config file map>:grid:<n>x<n>:build_sha256:<sha256 of the canonical identity>, "
         "the identity being schema, engine, engine_commit, binary_sha256, image, config_sha256, grid and "
         "centre_mapping. Any other string, the broad alias hotspot6:<binary>:grid:64x64 included, is another "
-        "evaluator. The label is the build's: it never clears a result's own qualifiers (diagnostic, unassociated, "
-        "replay status).")
+        "evaluator. A run is a build only when its image is proved by digest: its evaluation receipt's image_digest, "
+        "its signed grant's scorer_image_digest and its signed manifest's statistic.evaluator.build are each exactly "
+        "the build's recorded image_digest, as full strings. Nothing is trimmed or case-folded, a tag never counts, "
+        "and a build whose image_digest is null is never matched. The label is the build's: it never clears a "
+        "result's own qualifiers (diagnostic, unassociated, replay status).")
 TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+=-]{0,63}")
+IMAGE_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+NO_DIGEST = ("the packet records no digest for this image (null), so no run is matched to this build until one is "
+             "recorded")
 STATISTICS = {
     "native_all_block_max_C": "gate zero's statistic: the maximum native block output under centre mapping, compared "
                               "with the paper's value within tolerance_K",
@@ -93,14 +105,28 @@ def build_id(identity: dict) -> str:
             f":grid:{grid}x{grid}:build_sha256:{digest(identity)}")
 
 
+def _digest_recorded(build: dict) -> bool:
+    """The build records image_digest: sha256: and 64 lower-case hex, or null when none is recorded."""
+    if "image_digest" not in build:
+        return False
+    value = build["image_digest"]
+    return value is None or (isinstance(value, str) and IMAGE_DIGEST.fullmatch(value) is not None)
+
+
 def load(path: Path = BUILDS_PATH) -> tuple:
-    """The registered builds, each id checked against its identity."""
+    """The registered builds: each id checked against its identity, each image digest well-formed or null, and each
+    id registered once, so an id stands for exactly one recorded digest."""
     record = json.loads(path.read_bytes())
     if record.get("schema") != BUILDS_SCHEMA:
         raise ValueError("not a builds registry")
     for build in record["builds"]:
         if build["id"] != build_id(build["identity"]) or build["label"] != LABEL:
             raise ValueError("a registered build's id does not match its identity")
+        if not _digest_recorded(build):
+            raise ValueError("a registered build records its image digest (sha256:<64 hex>) or null")
+    ids = [build["id"] for build in record["builds"]]
+    if len(set(ids)) != len(ids):
+        raise ValueError("a build is registered once")
     return tuple(record["builds"])
 
 
@@ -206,13 +232,19 @@ def write(gate0: Path, rederivation: Path, binding: Path, path: Path = BUILDS_PA
             or evaluator["base_reference_config_sha256"] != identity["config_sha256"]["new_hotspot.config"]
             or identity["engine_commit"] not in evaluator["upstream"]):
         raise ValueError("the binding packet and the repository describe different builds")
+    image_digest = evaluator["image_id_or_digest"]
+    if not _digest_recorded({"image_digest": image_digest}):
+        raise ValueError("the binding packet's image digest is neither a sha256 image digest nor null")
+    packet = hashlib.sha256(raw).hexdigest()
     record = {"schema": BUILDS_SCHEMA, "rule": RULE, "builds": [{
-        "id": build_id(identity), "label": LABEL, "identity": identity,
+        "id": build_id(identity), "label": LABEL, "identity": identity, "image_digest": image_digest,
         "sources": {
             "engine_commit": "sundai_hotspot6/UPSTREAM_COMMIT (= golden manifest statistic.evaluator.upstream)",
             "binary_sha256": "app/door/scorer.py EVALUATOR_BINARY_SHA256 (door-scorer pins the same binary)",
-            "image": {"field": "evaluator.image_tag_operator_reported", "packet_sha256": hashlib.sha256(raw).hexdigest(),
-                      "note": "operator-reported tag; no image digest is recorded for it"},
+            "image": {"field": "evaluator.image_tag_operator_reported", "packet_sha256": packet,
+                      "note": "operator-reported tag: it names the build and proves no image (image_digest does)"},
+            "image_digest": {"field": "evaluator.image_id_or_digest", "packet_sha256": packet,
+                             "note": NO_DIGEST if image_digest is None else "the image digest the packet records"},
             "config_sha256": "the input files both gate-zero raw references share: "
                              + ", ".join(f"{REFERENCES_DIR.as_posix()}/{name}/SHA256SUMS"
                                          for name in GATE0_CASES.values()),
@@ -235,6 +267,8 @@ def check(path: Path = BUILDS_PATH, root: Path = ROOT) -> list:
         identity = build["identity"]
         if build["id"] != build_id(identity) or build["label"] != LABEL or build["statistics"] != STATISTICS:
             found.append("id, label or statistics")
+        if not _digest_recorded(build):
+            found.append("image_digest")
         derived = derive_gate0_identity(identity["image"], root)
         found += [f"identity.{name}" for name in IDENTITY_FIELDS if identity[name] != derived[name]]
         if build["tolerance_K"] != tolerance:

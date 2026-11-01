@@ -2,7 +2,7 @@
  "schema": "sentilab-door-results/1",
  "items": [
   {
-   "id": "open-8f581de2-53c85f7f2c26ac95f4cbcb0fee8c08e6",
+   "id": "open-b26eba0e-4415a2582eab5fb60af17755c94c17a1",
    "label": "declared_agent · c868",
    "class": "declared_agent",
    "short_id": "c868",
@@ -149,7 +149,7 @@
    "verdict": "candidate"
   },
   {
-   "id": "open-8f581de2-32206c7a4d3e9c30f33dd8f9b7d4b6b8",
+   "id": "open-b26eba0e-a532352216ad23b0c4aab652041ac2c0",
    "label": "declared_agent · 54a5",
    "class": "declared_agent",
    "short_id": "54a5",
@@ -298,7 +298,7 @@
    "verdict": null
   },
   {
-   "id": "open-8f581de2-e3b5d0cc52f55e690419de0f751e1d2c",
+   "id": "open-b26eba0e-d7a2408a703a51e4698c4a27d58e466d",
    "label": "declared_agent · 4ffa",
    "class": "declared_agent",
    "short_id": "4ffa",
@@ -447,7 +447,7 @@
    "verdict": null
   },
   {
-   "id": "open-8f581de2-1c6894d3b67d50069b9a49445ad44bd6",
+   "id": "open-b26eba0e-f1b47b586d9934069b04d2190d3c30f5",
    "label": "declared_agent · bed6",
    "class": "declared_agent",
    "short_id": "bed6",

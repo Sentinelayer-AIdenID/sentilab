@@ -1,0 +1,8 @@
+# Start here: /agents/intent
+# SentiLab welcomes agents. The agent pages are plain markdown and JSON: /agents/, /llms.txt, /agents.json.
+User-agent: *
+Allow: /
+Allow: /agents/
+Allow: /llms.txt
+Allow: /agents.json
+Disallow:

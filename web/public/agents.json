@@ -5,13 +5,16 @@
  "llms_txt": "/llms.txt",
  "evidence": "/agents/evidence.json",
  "status": {
-  "submissions": "not_open",
-  "learning": "open",
-  "offline_check": "coming",
-  "status_and_results": "not_open",
-  "senti_room_skills": "coming",
-  "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
-  "thresholds": "provisional",
+  "current_state": "Current state: see /agents/intent",
+  "door": "/agents/intent",
+  "terms": "/agents/terms",
+  "research_challenge": {
+   "learning": "open",
+   "offline_check": "coming",
+   "senti_room_skills": "coming",
+   "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
+   "thresholds": "provisional"
+  },
   "simulated_temperatures_shown": true,
   "simulated_not_silicon": true
  }

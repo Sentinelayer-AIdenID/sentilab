@@ -2,15 +2,16 @@
 
 - door_manifest(): the golden CPU-DRAM draft (contracts/open-proposal-v1/golden/manifests.json "M") made `signed`
   the way the contract's own signed test manifest is: every pin an obviously fake hash, except the evaluator's binary,
-  which is the gate-zero HotSpot 6.0 hash the door pins.
+  which is the gate-zero HotSpot 6.0 hash the door pins, and its build, which is the test scorer image (SCORER_IMAGE).
 - TEST_KEY: an Ed25519 key derived from a public phrase. It signs test bindings only; the door's pinned operator key
   is warden's, and a binding signed with this key never verifies against it.
 - FakeScorer: a deterministic stand-in for door-scorer's Score. Its grid is a smooth sum of bumps at the die centres
   printed to 0.01 K; its per-die values are that grid's GRID_CENTER means (the door's own code) and its metric their
   maximum, so its binding holds unless a mode breaks it on purpose. Like the real scorer it returns no grid unless
-  with_grid is set. Its evaluation receipt names the pinned binary and the inputs a run of the gate-zero build stages:
-  the raw CPU-DRAM reference's pinned input hashes (GATE0_INPUTS), with the three per-layout files replaced by this
-  layout's; `inputs` edits them (a None value drops a file).
+  with_grid is set. Its evaluation receipt names the pinned binary, the scorer image digest (SCORER_IMAGE, the one the
+  test grant pins, as door-scorer's bound receipts name the grant's; `image_digest` sets another, None leaves it out)
+  and the inputs a run of the gate-zero build stages: the raw CPU-DRAM reference's pinned input hashes (GATE0_INPUTS),
+  with the three per-layout files replaced by this layout's; `inputs` edits them (a None value drops a file).
 """
 from __future__ import annotations
 
@@ -51,6 +52,11 @@ def fake(label: str) -> str:
     return hashlib.sha256(("sentilab agent door fake: " + label).encode()).hexdigest()
 
 
+# The scorer image: the test manifest's statistic.evaluator.build and the test grant pin it, and FakeScorer's receipts
+# name it, as door-scorer's bound receipts always name the grant's image digest (app/door/scorer.py, bound_receipt).
+SCORER_IMAGE = "sha256:" + fake("scorer image")
+
+
 def door_manifest(**edits) -> dict:
     golden = json.loads((CONTRACT_DIR / "golden" / "manifests.json").read_bytes())
     manifest = copy.deepcopy(golden["manifests"]["M"])
@@ -59,7 +65,7 @@ def door_manifest(**edits) -> dict:
     manifest["references"]["file_sha256"] = fake("reference file")
     manifest["statistic"]["evaluator"].update({"binary_sha256": EVALUATOR_BINARY_SHA256,
                                                "gate_zero_record_sha256": fake("gate zero record"),
-                                               "build": "sha256:" + fake("image"), "runtime": "door-test"})
+                                               "build": SCORER_IMAGE, "runtime": "door-test"})
     manifest["statistic"]["numerical_admission"] = "admitted"
     manifest["wire"]["router_sha256"] = fake("router")
     manifest["policy"].update({"status": "frozen; policy choices, not uncertainty; fixed before any candidate is "
@@ -89,7 +95,7 @@ def door_manifest(**edits) -> dict:
 def grant(**edits) -> dict:
     value = {"grant": GRANT_ID, "cpu_cap_s": 3600, "token_cpu_s": 30, "parallel": 4, "run_reserve_cpu_s": 10,
              "not_before": OPENS, "not_after": CLOSES, "enforcement_evidence_sha256": fake("whole-container cutoff"),
-             "scorer_image_digest": "sha256:" + fake("scorer image")}
+             "scorer_image_digest": SCORER_IMAGE}
     value.update(edits)
     return value
 
@@ -151,10 +157,10 @@ class FakeScorer:
     answer) except ambiguous, whose outcome is unknown."""
 
     def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0, with_grid=False,
-                 cpu_known=True, inputs=None, binary_sha256=EVALUATOR_BINARY_SHA256):
+                 cpu_known=True, inputs=None, binary_sha256=EVALUATOR_BINARY_SHA256, image_digest=SCORER_IMAGE):
         self.checker, self.mode, self.healthy, self.cpu_s, self.delay_s = checker, mode, healthy, cpu_s, delay_s
         self.offset, self.with_grid, self.cpu_known = offset, with_grid, cpu_known
-        self.inputs, self.binary_sha256 = dict(inputs or {}), binary_sha256
+        self.inputs, self.binary_sha256, self.image_digest = dict(inputs or {}), binary_sha256, image_digest
         self.calls, self.health_calls = [], 0
         self.started = threading.Event()
         self.release = None          # a threading.Event a test may set to hold a score call open
@@ -204,6 +210,8 @@ class FakeScorer:
                 staged[name] = value
         receipt = {"run_id": request["run_id"], "fake": True, "binary_sha256": self.binary_sha256,
                    "input_sha256": staged}
+        if self.image_digest is not None:
+            receipt["image_digest"] = self.image_digest
         return Score(metric, metric - 0.01, max(max(row) for row in grid), per_die,
                      tuple(tuple(row) for row in grid) if self.with_grid else None, wire, fresh,
                      self.mode not in ("mismatch", "replay_failed"), code, self.cpu_s, EVALUATOR_BINARY_SHA256,

@@ -1,0 +1,80 @@
+{
+  "model": "deepseek-v4-pro",
+  "deployment": "fake-deployment",
+  "max_tokens_per_reply": 100,
+  "max_usd": "10",
+  "prices_per_million": {
+    "input": "1",
+    "cached_input": "0.5",
+    "output": "2"
+  },
+  "caps": {
+    "A": 120000,
+    "B": 40000,
+    "C": 40000
+  },
+  "wall_seconds": 900,
+  "turn_order": [
+    1,
+    2,
+    3
+  ],
+  "writer": 1,
+  "findings": {
+    "fields": [
+      "file",
+      "location",
+      "defect",
+      "evidence"
+    ],
+    "max_findings": 20,
+    "marker": "FINAL"
+  },
+  "prompt_files": {
+    "system": "system.txt",
+    "continue": "continue.txt",
+    "c1": "c1.txt",
+    "c2": "c2.txt",
+    "c3": "c3.txt"
+  },
+  "pilot_arms": [
+    "A",
+    "C"
+  ],
+  "initial_prompt_tokens": {
+    "case-one-A": {
+      "1": 100
+    },
+    "case-one-B": {
+      "1": 100,
+      "2": 100,
+      "3": 100
+    },
+    "case-one-C": {
+      "1": 100,
+      "2": 100,
+      "3": 100
+    },
+    "case-two-A": {
+      "1": 100
+    },
+    "case-two-B": {
+      "1": 100,
+      "2": 100,
+      "3": 100
+    },
+    "case-two-C": {
+      "1": 100,
+      "2": 100,
+      "3": 100
+    },
+    "pilot-A": {
+      "1": 100
+    },
+    "pilot-C": {
+      "1": 100,
+      "2": 100,
+      "3": 100
+    }
+  }
+}

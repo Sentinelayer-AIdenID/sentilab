@@ -11,8 +11,11 @@
 //      record (evidence.json), each only at its own fields and, in physics.md, only in its own section;
 //   4. every threshold is provisional and not frozen, and the pages quote each one as challenge.json has it;
 //   5. no "validated", no "calibrated" or "calibration", and "measured" only as "not measured";
-//   6. the status agrees everywhere: submissions not open, submit unavailable, gate zero re-derived from signed saved
-//      outputs and public scoring not admitted; no visitor receipt promise and no unreleased install command;
+//   6. discovery: index.md and llms.txt start with "Start here: /agents/intent"; no page hard-codes the door's open or
+//      closed state, and every pointer names its one live source, "Current state: see /agents/intent"; the research
+//      challenge stays apart from the door (its evaluator: gate zero re-derived, public scoring not admitted); the
+//      known limit of the scoring build is stated in root's words; the arrival classes are explained; /robots.txt
+//      allows the agent pages; no visitor receipt promise and no unreleased install command;
 //   7. the reference copies keep their identities (content_sha256 recomputes from identity.canonical), their legality
 //      follows the rules in math.md, and the manifest's dies are the references' dies;
 //   8. once the SLAB-048 sources are in this tree, each copy names their exact bytes (make_agents_references.py).
@@ -24,6 +27,8 @@ import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { AGENT_INDEX } from "../src/agent-view.js";
+import { arrivalOf, doorRoute } from "../src/door/door.js";
+import { identityFor } from "../src/edge.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = join(here, "..", "..");
@@ -74,13 +79,18 @@ const STR = { type: "string" };
 const PROVISIONAL = { required: ["unit", "status", "frozen"], properties: { unit: STR, status: { const: "provisional" }, frozen: { const: false } } };
 const THRESHOLD = { type: "object", ...PROVISIONAL, required: [...PROVISIONAL.required, "value"], properties: { ...PROVISIONAL.properties, value: { type: "number" } } };
 const THRESHOLD_LIST = { type: "object", ...PROVISIONAL, required: [...PROVISIONAL.required, "values"], properties: { ...PROVISIONAL.properties, values: { type: "array", minItems: 1, items: { type: "number" } } } };
+// The site's status: never the door's open or closed state (only a pointer to its live answer), with the research
+// challenge's own capabilities kept apart from the door.
+const CURRENT = "Current state: see /agents/intent";
 const STATUS = {
   type: "object", additionalProperties: false,
-  required: ["submissions", "learning", "offline_check", "status_and_results", "senti_room_skills", "evaluator", "thresholds", "simulated_temperatures_shown", "simulated_not_silicon"],
+  required: ["current_state", "door", "terms", "research_challenge", "simulated_temperatures_shown", "simulated_not_silicon"],
   properties: {
-    submissions: { enum: ["not_open", "open"] }, learning: { enum: ["open"] }, offline_check: { enum: ["coming", "available"] },
-    status_and_results: { enum: ["not_open", "open"] }, senti_room_skills: { enum: ["coming", "available"] }, evaluator: STR,
-    thresholds: { enum: ["provisional", "frozen"] }, simulated_temperatures_shown: { type: "boolean" }, simulated_not_silicon: { const: true },
+    current_state: { const: CURRENT }, door: { const: "/agents/intent" }, terms: { const: "/agents/terms" },
+    research_challenge: { type: "object", additionalProperties: false, required: ["learning", "offline_check", "senti_room_skills", "evaluator", "thresholds"],
+      properties: { learning: { enum: ["open"] }, offline_check: { enum: ["coming", "available"] }, senti_room_skills: { enum: ["coming", "available"] },
+        evaluator: STR, thresholds: { enum: ["provisional", "frozen"] } } },
+    simulated_temperatures_shown: { type: "boolean" }, simulated_not_silicon: { const: true },
   },
 };
 const LINK = { type: "object", required: ["rel", "href", "type"], properties: { rel: STR, href: SITE_PATH, type: { enum: ["text/markdown", "application/json", "text/plain"] } } };
@@ -120,28 +130,36 @@ const GATE_ZERO_FIELDS = ["paper_native_target_C", "native_block_max_C", "chiple
 const GATE_ZERO_RESULT = { type: "object", additionalProperties: false, required: ["problem", "layout", ...GATE_ZERO_FIELDS, "required_primary_and_replay_pass"],
   properties: { problem: { enum: ["ascend910", "micro150"] }, layout: STR, ...Object.fromEntries(GATE_ZERO_FIELDS.map((f) => [f, { type: "number" }])),
     required_primary_and_replay_pass: { type: "boolean" } } };
-const PLANNED = { enum: ["planned", "available"] };
+// A capability named by the door's route that provides it, never by a state ("planned", "available") that goes stale.
+const ROUTE = { type: "string", pattern: "/agents/|/api/open/v1/door/" };
+// Root's exact wording (gpt-astra-carter's reply to #57911, 08:30:43Z; the spaces its transport dropped before the
+// numbers restored). The one place "calibration" may appear: negated, in this sentence, in evidence.json.
+const KNOWN_LIMIT = "Known limit: for the saved 45mm/grid64 CPU-DRAM reference case, the source-defined ambient-boundary sum exceeds 680W input by 9.4449W (about 1.39%), beyond the 0.429424W allowance for saved-temperature rounding. This is a saved-field consistency finding, not physical calibration; the cause in the deployed binary has not been established. Current results are diagnostic.";
 const SCHEMAS = {
   "agents.json": { type: "object", additionalProperties: false, required: ["schema", "name", "agents", "llms_txt", "evidence", "status"],
     properties: { schema: { const: "sentilab-agents-pointer/1" }, name: STR, llms_txt: SITE_PATH, evidence: { const: "/agents/evidence.json" }, status: STATUS,
       agents: { type: "object", additionalProperties: false, required: ["md", "json", "alias"], properties: { md: SITE_PATH, json: SITE_PATH, alias: SITE_PATH } } } },
-  "agents/index.json": { type: "object", required: ["schema", "name", "entry", "human_view", "status", "opens_after", "sections"],
-    properties: { schema: { const: "sentilab-agents-index/1" }, entry: { const: "/agents/index.md" }, human_view: { const: "?view=human" }, status: STATUS, opens_after: { type: "array", minItems: 1, items: STR },
+  "agents/index.json": { type: "object", required: ["schema", "name", "entry", "human_view", "start_here", "status", "sections"],
+    properties: { schema: { const: "sentilab-agents-index/1" }, entry: { const: "/agents/index.md" }, human_view: { const: "?view=human" }, start_here: { const: "/agents/intent" }, status: STATUS,
       sections: { type: "array", minItems: 1, items: { type: "object", required: ["id", "href"], properties: { id: STR, href: SITE_PATH, links: { type: "array", items: LINK } } } } } },
   "agents/challenge.json": { type: "object", required: ["schema", "status", "frozen", "label", "sources", "problems", "definitions"],
     properties: { schema: { const: "sentilab-agents-challenge/0" }, frozen: { const: false },
-      status: { type: "object", required: ["manifest", "submissions", "thresholds", "evaluator", "temperatures"], properties: { submissions: { const: "not_open" }, evaluator: { const: GATE_ZERO_STATUS } } },
+      status: { type: "object", required: ["manifest", "submissions", "thresholds", "evaluator", "temperatures"], properties: { submissions: { const: CURRENT }, evaluator: { const: GATE_ZERO_STATUS } } },
       problems: { type: "array", minItems: 2, items: PROBLEM },
       definitions: { type: "object", required: ["layout", "comparisons", "bounded", "evidence_modes", "claims", "claim_states", "wire_tracks", "tradeoff", "pareto", "ties"],
         properties: { claims: { type: "array", minItems: 7, items: { type: "object", required: ["id", "label", "predicate"] } } } } } },
-  "agents/skills/tools.json": { type: "object", required: ["schema", "status", "submissions", "registers_tools", "adapters", "tools", "definitions"],
-    properties: { schema: { const: "sentilab-agents-tools/0" }, submissions: { const: "not_open" }, registers_tools: { const: false },
+  "agents/skills/tools.json": { type: "object", required: ["schema", "status", "current_state", "door", "registers_tools", "adapters", "tools", "definitions"],
+    properties: { schema: { const: "sentilab-agents-tools/0" }, current_state: { const: CURRENT }, registers_tools: { const: false },
+      door: { type: "object", additionalProperties: false, required: ["start", "current_state", "terms", "routes"], properties: { start: { const: "/agents/intent" },
+        current_state: { const: CURRENT }, terms: { const: "/agents/terms" },
+        routes: { type: "array", minItems: 7, items: { type: "object", required: ["name", "method", "path", "does"], properties: { method: { enum: ["GET", "POST"] }, path: SITE_PATH, does: STR } } } } },
       tools: { type: "array", minItems: 4, items: { type: "object", required: ["name", "availability", "summary", "input"],
         properties: { name: { enum: ["sentilab_open_check", "sentilab_open_submit", "sentilab_open_status", "sentilab_open_results"] }, availability: { enum: ["available", "coming", "unavailable"] }, input: { type: "object" } } } } } },
   // The saved gate-zero record: each statistic its own numeric field, the tolerance fixed before the check ran, its
-  // sources by hash; the old study still INCONCLUSIVE, and each live capability still planned.
-  "agents/evidence.json": { type: "object", additionalProperties: false, required: ["schema", "as_of_utc", "gate_zero", "historical_study", "interface"],
-    properties: { schema: { const: "sentilab-agent-evidence/1" }, as_of_utc: STR,
+  // sources by hash; the old study still INCONCLUSIVE; the scoring build's known limit in root's words; and each live
+  // capability named by the door's route that provides it, its state left to the door.
+  "agents/evidence.json": { type: "object", additionalProperties: false, required: ["schema", "as_of_utc", "known_limit", "gate_zero", "historical_study", "interface"],
+    properties: { schema: { const: "sentilab-agent-evidence/1" }, as_of_utc: STR, known_limit: { const: KNOWN_LIMIT },
       gate_zero: { type: "object", additionalProperties: false,
         required: ["status", "engine", "grid", "metric", "unit", "metric_definitions", "tolerance", "results", "raw_output_precision_K", "precision_note", "interpretation", "source", "method", "runtime_admission"],
         properties: { status: STR, engine: STR, grid: { type: "array", items: { type: "integer" } }, metric: STR, unit: { const: "degC" },
@@ -154,8 +172,9 @@ const SCHEMAS = {
             properties: { merged_commit: HEX40, tree: HEX40, packet_manifest_sha256: HEX64, packet_archive_sha256: HEX64, independent_review_sha256: HEX64 } } } },
       historical_study: { type: "object", required: ["status", "gate_zero_changes_historical_results", "held_out_comparison_complete", "source_report_sha256"],
         properties: { status: { const: "INCONCLUSIVE" }, gate_zero_changes_historical_results: { const: false }, held_out_comparison_complete: { const: false }, source_report_sha256: HEX64 } },
-      interface: { type: "object", required: ["representation", "public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota", "live_arrivals_and_evaluation_view", "identity_rule"],
-        properties: { public_submission_service: PLANNED, purpose_scoped_submission_token: PLANNED, queue_and_global_quota: PLANNED, live_arrivals_and_evaluation_view: PLANNED } } } },
+      interface: { type: "object", required: ["representation", "current_state", "public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota", "live_arrivals_and_evaluation_view", "identity_rule", "arrival_classes"],
+        properties: { current_state: { const: CURRENT }, public_submission_service: ROUTE, purpose_scoped_submission_token: ROUTE, queue_and_global_quota: ROUTE,
+          live_arrivals_and_evaluation_view: ROUTE, identity_rule: STR, arrival_classes: STR } } } },
 };
 const REFERENCE = {
   type: "object",
@@ -229,6 +248,9 @@ function linkProblems(from, href) {
   if (/^https?:[/][/]/.test(href) || href === HUMAN_VIEW) return [];
   if (href.startsWith("#")) return anchors(read(from)).has(href.slice(1)) ? [] : [`${from}: no heading for ${href}`];
   if (!href.startsWith("/")) return [`${from}: ${href} is not root-relative`];
+  // The door's own routes (door/door.js doorRoute) are answered by the Worker, not by a file.
+  const route = href.split("#")[0].split("?")[0];
+  if (route.startsWith("/agents/") && doorRoute(route) !== null) return [];
   const rel = servedFile(href);
   if (!existsSync(join(PUBLIC, ...rel.split("/")))) return [`${from}: ${href} resolves to nothing (${rel})`];
   const fragment = href.split("#")[1];
@@ -257,6 +279,9 @@ test("2. negative control: a missing file, a relative link and a missing heading
   assert.equal(linkProblems("agents/index.md", "/agents/physics.md#no-such-heading").length, 1);
   assert.deepEqual(linkProblems("agents/index.md", "/agents/physics.md#the-evaluator"), []);
   assert.deepEqual(linkProblems("llms.txt", "/agents/"), []);
+  assert.deepEqual(linkProblems("agents/index.md", "/agents/intent"), [], "a door route");
+  assert.deepEqual(linkProblems("agents/index.md", "/agents/status/{run_id}?t={t}"), [], "a door route with a parameter");
+  assert.equal(linkProblems("agents/index.md", "/agents/nowhere").length, 1, "not a door route and not a file");
   assert.equal(linkProblems("agents/index.md", "?view=other").length, 1, "only the exact human-view link is exempt");
 });
 test("2. every agent page links the normal site with ?view=human, once, right under its title", () => {
@@ -453,6 +478,7 @@ test("4. math.md quotes every threshold as challenge.json has it, and both probl
 // ── 5. wording ───────────────────────────────────────────────────────────────────────────────────────────────────
 function wordingProblems(rel, text) {
   const found = [];
+  if (rel === "agents/evidence.json") text = text.split(KNOWN_LIMIT).join("");
   for (const m of text.matchAll(/(?<![A-Za-z])(validated|calibrat[a-z]*)(?![A-Za-z])/gi)) found.push(`${rel}: "${m[0]}"`);
   for (const m of text.matchAll(/(?<![A-Za-z])measured(?![A-Za-z])/gi)) {
     if (!/(not|never|nor)[ ]+$/i.test(text.slice(Math.max(0, m.index - 8), m.index))) found.push(`${rel}: "measured" not negated`);
@@ -464,34 +490,54 @@ test("5. no 'validated', no 'calibrated' or 'calibration', and 'measured' only a
   assert.ok(wordingProblems("x.md", "a validated result").length && wordingProblems("x.md", "calibration against silicon").length
     && wordingProblems("x.md", "the measured peak").length);
   assert.deepEqual(wordingProblems("x.md", "Not CAD, not silicon, not measured. unvalidated"), []);
+  assert.ok(wordingProblems("agents/index.md", KNOWN_LIMIT).length, "the known limit's exemption is evidence.json's alone");
+  assert.ok(wordingProblems("agents/evidence.json", `${KNOWN_LIMIT} Calibrated.`).length, "and that sentence only");
 });
 
-// ── 6. status ────────────────────────────────────────────────────────────────────────────────────────────────────
-test("6. the status agrees everywhere: submissions not open, submit unavailable, gate zero re-derived and public scoring not admitted", () => {
+// ── 6. discovery and status ─────────────────────────────────────────────────────────────────────────────────────
+const START = "Start here: /agents/intent";
+// What a static page must never say about the door: its open or closed state goes stale the moment it changes.
+const STALE = [/\bnot[ _]open/i, /\bopen now\b/i, /\bopens? (only )?(after|with)\b/i, /\b(once|when|until) submissions open/i,
+  /none is available yet/i, /remain unavailable/i, /"planned"/, /\bopening will be announced/i];
+const staleIn = (text) => STALE.filter((re) => re.test(text)).map((re) => re.source);
+test("6. index.md and llms.txt start at the door, and no agent page hard-codes the door's state", () => {
+  for (const rel of ["agents/index.md", "llms.txt"]) assert.equal(read(rel).split(NL)[0], START, `${rel}: the first line`);
+  for (const rel of SITE) assert.deepEqual(staleIn(read(rel)), [], rel);
+  assert.deepEqual(staleIn(read("robots.txt")), []);
+  // Every pointer names the one live source of the door's state.
+  for (const rel of ["llms.txt", "agents/index.md", "agents/math.md", "agents/physics.md", "agents/skills/SKILL.md", "agents/skills/senti-room-skills.md"]) {
+    assert.ok(read(rel).includes(CURRENT), `${rel}: "${CURRENT}"`);
+  }
   const index = json("agents/index.json");
   assert.deepEqual(json("agents.json").status, index.status, "agents.json matches agents/index.json");
-  assert.equal(index.status.submissions, "not_open");
-  assert.equal(index.status.simulated_temperatures_shown, true, "the saved gate-zero record, from its typed source");
-  assert.equal(index.status.thresholds, "provisional");
-  assert.equal(index.status.evaluator, GATE_ZERO_STATUS);
-  assert.equal(challenge.status.submissions, "not_open");
-  assert.equal(evidence.historical_study.status, "INCONCLUSIVE");
-  assert.deepEqual([...new Set(["public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota",
-    "live_arrivals_and_evaluation_view"].map((k) => evidence.interface[k]))], ["planned"], "nothing live is claimed");
-  const tools = json("agents/skills/tools.json");
-  assert.equal(tools.submissions, "not_open");
-  assert.equal(tools.tools.find((t) => t.name === "sentilab_open_submit").availability, "unavailable");
-  assert.deepEqual(tools.tools.filter((t) => t.availability === "available"), [], "nothing is claimed available yet");
-  for (const rel of ["llms.txt", "agents/index.md", "agents/physics.md", "agents/math.md", "agents/skills/SKILL.md"]) {
-    assert.match(read(rel), /submissions not open yet/i, rel);
+  assert.equal(index.status.current_state, CURRENT);
+  assert.equal(json("agents/skills/tools.json").current_state, CURRENT);
+  assert.equal(json("agents/skills/tools.json").door.current_state, CURRENT);
+  assert.equal(evidence.interface.current_state, CURRENT);
+  assert.equal(challenge.status.submissions, CURRENT);
+  // The door's routes in tools.json are the Worker's own, and its terms are the door's.
+  const routes = json("agents/skills/tools.json").door.routes;
+  assert.deepEqual(routes.map((r) => r.name), ["intent", "engram", "check", "submit", "status", "board", "terms"]);
+  for (const r of routes) assert.notEqual(doorRoute(r.path.split("?")[0]), null, `${r.path} is a door route`);
+  assert.equal(routes.find((r) => r.name === "submit").method, "POST");
+  // Each live capability evidence.json lists is named by the door's route that provides it, not by a state.
+  for (const k of ["public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota", "live_arrivals_and_evaluation_view"]) {
+    assert.doesNotMatch(evidence.interface[k].replace(/[/][^\s,;]*/g, ""), /\b(planned|available|open|closed)\b/i, k);
   }
-  const skill = read("agents/skills/SKILL.md");
-  assert.match(skill.slice(skill.indexOf("## 5. Submit")), /^## 5[.] Submit [(]not open yet[)]/);
+  assert.ok(!("state_source" in evidence.interface), "no operator report of a state that the door now reports itself");
+  assert.equal(evidence.historical_study.status, "INCONCLUSIVE");
+  // The research challenge stays apart from today's diagnostic door.
+  assert.equal(index.status.research_challenge.evaluator, GATE_ZERO_STATUS);
+  assert.equal(index.status.research_challenge.thresholds, "provisional");
+  assert.equal(index.status.simulated_temperatures_shown, true, "the saved gate-zero record, from its typed source");
+  assert.match(read("agents/index.md"), /## Two things, kept apart/);
+  assert.match(read("agents/index.md"), /\*\*Today's door, at \/agents\/intent: a diagnostic[.]\*\*/);
+  assert.match(read("agents/index.md"), /\*\*The provisional research challenge, on the rest of these pages[.]\*\*/);
   assert.match(read("agents/skills/senti-room-skills.md"), /coming, not available yet/);
   // No visitor receipt promise and no unreleased install command; submitting as yourself stays, apart from
   // authenticated identity.
   assert.doesNotMatch(read("agents/index.md"), /Identify yourself|receipt/);
-  assert.ok(!json("agents/index.json").sections.some((s) => s.id === "identify-yourself"), "index.json drops its link");
+  assert.ok(!index.sections.some((s) => s.id === "identify-yourself"), "index.json drops its link");
   for (const rel of SITE) assert.doesNotMatch(read(rel), /npx|@latest|skills install/, rel);
   assert.match(read("agents/index.md"), /- Submit as yourself[.] An agent never leaves out its identity to look like a person[.]/);
   assert.match(read("agents/index.md"), /distinct from authenticated identity/);
@@ -499,6 +545,74 @@ test("6. the status agrees everywhere: submissions not open, submit unavailable,
     assert.equal(p.statistic.evaluator, GATE_ZERO_STATUS);
     assert.match(p.references.comparator.T_R, /^UNKNOWN/);
   }
+});
+test("6. negative control: the stale-state check catches each way a page could state the door's state", () => {
+  for (const line of ["**Status: submissions not open yet.**", '"submissions": "not_open"', "| Submissions | Open now |",
+    "Submissions open only after all of these:", "they open with submissions", "once submissions open", "none is available yet",
+    '"public_submission_service": "planned"', "The opening will be announced in the help room."]) assert.ok(staleIn(line).length, line);
+  for (const line of [CURRENT, START, "the checker is coming", "it cannot open the file", "whether the door takes submissions right now"]) {
+    assert.deepEqual(staleIn(line), [], line);
+  }
+});
+test("6. the scoring build's known limit is stated in root's words", () => {
+  assert.equal(evidence.known_limit, KNOWN_LIMIT);
+  assert.ok(!/(?<![0-9])1[.]39 ?(K|°C|C)\b/.test(read("agents/evidence.json")), "never a temperature error");
+});
+test("6. arrivals: the classification rule is stated where agents read it, and a class is never an identity or a person", () => {
+  const text = read("agents/index.md");
+  assert.ok(text.includes("## Who counts as an agent"));
+  const section = text.slice(text.indexOf("## Who counts as an agent"));
+  for (const cls of ["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown"]) {
+    assert.ok(section.includes(`\`${cls}\``), cls);
+  }
+  assert.match(section, /not an identity/);
+  assert.match(section, /never unique people or unique agents/);
+  assert.match(evidence.interface.arrival_classes, /not an identity/);
+  assert.match(evidence.interface.arrival_classes, /\/agents\/index[.]md#who-counts-as-an-agent/);
+});
+// The examples in "Who counts as an agent": each row of its table is [User-Agent, or null for none, documented class].
+function classExamples(text) {
+  const start = text.indexOf("## Who counts as an agent");
+  const section = text.slice(start, text.indexOf("\n## ", start + 1));
+  return [...section.matchAll(/^\| (?:`([^`]+)`|\(none\)) \| `([a-z_]+)` \|$/gm)].map((m) => [m[1] ?? null, m[2]]);
+}
+// The class the door's feeds show for a request with that User-Agent and no other header: the edge's own bounded
+// identity (signature check included, src/edge.js identityFor) through the door's arrival (src/door/door.js arrivalOf).
+async function feedClass(ua) {
+  const request = new Request("https://sentilab.aidenid.com/agents/intent", { headers: ua === null ? {} : { "user-agent": ua } });
+  return arrivalOf(await identityFor(request, {})).class;
+}
+async function classDrift(text) {
+  const wrong = [];
+  for (const [ua, documented] of classExamples(text)) {
+    const actual = await feedClass(ua);
+    if (actual !== documented) wrong.push(`${ua ?? "(none)"}: documented ${documented}, the classifier gives ${actual}`);
+  }
+  return wrong;
+}
+test("6. every example in 'Who counts as an agent' is the class the edge gives that request on the feeds", async () => {
+  const text = read("agents/index.md");
+  const examples = classExamples(text);
+  assert.ok(examples.length >= 9, `the table holds its examples (${examples.length})`);
+  for (const cls of ["declared_agent", "crawler_claimed", "automation", "unknown"]) assert.ok(examples.some(([, c]) => c === cls), `an example of ${cls}`);
+  assert.ok(examples.some(([ua]) => ua === null), "the request with no User-Agent");
+  assert.deepEqual(await classDrift(text), []);
+});
+test("6. negative control: a documented class the classifier does not give is caught", async () => {
+  const text = read("agents/index.md");
+  const row = "| `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36` | `automation` |";
+  assert.ok(text.includes(row), "the bare WebKit row as documented");
+  assert.deepEqual(await classDrift(text.replace(row, row.replace("`automation`", "`unknown`"))),
+    ["Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36: documented unknown, the classifier gives automation"]);
+  assert.equal((await classDrift(text.replace("| (none) | `automation` |", "| (none) | `unknown` |"))).length, 1);
+});
+
+test("6. robots.txt allows the agent pages and names the door", () => {
+  const lines = read("robots.txt").split(NL).map((line) => line.trim());
+  assert.equal(lines[0], "# Start here: /agents/intent");
+  assert.ok(lines.includes("User-agent: *"));
+  for (const path of ["/", "/agents/", "/llms.txt", "/agents.json"]) assert.ok(lines.includes(`Allow: ${path}`), path);
+  assert.ok(!lines.some((line) => /^Disallow:/i.test(line) && line !== "Disallow:"), "nothing is disallowed");
 });
 
 // ── 7. references ────────────────────────────────────────────────────────────────────────────────────────────────

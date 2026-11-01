@@ -1,6 +1,8 @@
 // node --test web/test/door-build-label.test.mjs
 // The door API's own results body (web/test/door-api-build-label.json, kept equal to the API's output by
-// app/test_door_build_label.py) through the page's label rule (web/public/temperature-label.mjs):
+// app/test_door_build_label.py, under a test registry recording the test scorer image's digest for the build; the real
+// builds.json records none for the gate-zero image, so the real door reads every result unvalidated) through the
+// page's label rule (web/public/temperature-label.mjs):
 //   - a result of the complete gate-zero build reads "simulated · reproduction-tested build", the same state the API
 //     wrote, and shows no notice;
 //   - a run that attests anything else (here a package-layer file it staged) is another identity: unvalidated;

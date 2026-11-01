@@ -769,6 +769,43 @@ class BuildLabels(unittest.TestCase):
             with self.assertRaises(ValueError):
                 builds.load(path)
 
+    def test_the_registry_records_each_builds_image_digest_or_null(self):
+        """warden's P1 on #85: a run's image is proved by digest, so each build records one, sha256: and 64 lower-case
+        hex, or null when none is recorded (then no run matches it). The gate-zero image's digest was never recorded:
+        the evaluator binding packet has image_id_or_digest null, and builds.json says so."""
+        self.assertIsNone(self.build["image_digest"])
+        source = self.build["sources"]["image_digest"]
+        self.assertEqual(("evaluator.image_id_or_digest", self.build["sources"]["image"]["packet_sha256"]),
+                         (source["field"], source["packet_sha256"]))
+        self.assertIn("no digest", source["note"])
+        record = json.loads(builds.BUILDS_PATH.read_bytes())
+        digest = "sha256:" + "ab" * 32
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "builds.json"
+
+            def load_with(value):
+                changed = copy.deepcopy(record)
+                if value is KeyError:
+                    del changed["builds"][0]["image_digest"]
+                else:
+                    changed["builds"][0]["image_digest"] = value
+                path.write_bytes(json.dumps(changed).encode())
+                return builds.load(path)
+
+            self.assertEqual(digest, load_with(digest)[0]["image_digest"])
+            self.assertEqual(self.build["id"], load_with(digest)[0]["id"], "the digest is beside the id, not in it")
+            for bad in ("sha256:" + "AB" * 32, "SHA256:" + "ab" * 32, " " + digest, digest + "\n", "ab" * 32,
+                        "sha256:" + "ab" * 31, "sha512:" + "ab" * 32, "", 7, [digest], {"digest": digest}, KeyError):
+                with self.subTest(bad=bad), self.assertRaises(ValueError):
+                    load_with(bad)
+                with self.subTest(check=bad):
+                    self.assertIn("image_digest", builds.check(path))
+            twice = copy.deepcopy(record)
+            twice["builds"].append(dict(copy.deepcopy(record["builds"][0]), image_digest=digest))
+            path.write_bytes(json.dumps(twice).encode())
+            with self.assertRaises(ValueError, msg="an id stands for one recorded digest"):
+                builds.load(path)
+
     def test_the_golden_build_labels(self):
         self.assertEqual(self.build["id"], self.vectors["build"])
         for case in self.vectors["single"]:
@@ -833,6 +870,7 @@ class BuildLabels(unittest.TestCase):
         # sha256): changing it breaks the id, and the label lists hold that id.
         tampered = [("id", lambda b: b["identity"].update(image="sentilab-gate0:0000000")),
                     ("identity.grid", lambda b: b["identity"].update(grid=32)),
+                    ("image_digest", lambda b: b.update(image_digest="sha256:" + "AB" * 32)),
                     ("tolerance_K", lambda b: b.update(tolerance_K=2.0)),
                     ("delta_K", lambda b: b["references"][1].update(delta_K=0.0))]
         if (ROOT / builds.EVIDENCE).exists():
