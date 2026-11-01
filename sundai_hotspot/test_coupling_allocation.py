@@ -134,6 +134,7 @@ class CouplingEntryTests(fixtures.EntryCase):
                 wrong = self.root / "wrong-engine"
                 wrong.write_bytes(data)
                 wrong.chmod(0o755)
+                self.write_provenance(wrong, "material_only")
                 with self.assertRaisesRegex(reference_validation.CallRefused, error):
                     self.call(primary, "refused", binary=wrong)
                 self.assertFalse(self.launched("refused"))
@@ -390,7 +391,53 @@ class FrozenEvaluationTests(unittest.TestCase):
             self.assertEqual(result["T_variant_C"], "82.671000000000000000000000000001")
 
 
+class ValidationSelectionTests(fixtures.EntryCase):
+    def test_validate_reference_cli_defaults_to_the_gate_manifest(self):
+        primary = fixtures.P_ASCEND
+        self.scenario.reserve(primary)
+        stdout, stderr = io.StringIO(), io.StringIO()
+        args = ["validate-reference", "--call", primary, "--timeout", "50",
+                "--out", str(self.root / "cli-gate"), "--ledger-root", str(self.scenario.root),
+                "--operator-key", str(self.key_file), "--binary", str(self.fake)]
+        with mock.patch.dict(os.environ, {reference_validation.ANCHOR_TOKEN_ENV: "synthetic"}), \
+                mock.patch.object(gate0_anchor, "github_request", return_value=self.scenario.api), \
+                mock.patch.object(reference_validation, "_now", return_value=fixtures.IN_WINDOW), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            self.assertEqual(reference_validation.main(args), 0, stderr.getvalue())
+            coupling, _ = reference_validation.load_manifest(selection="coupling")
+            args[2] = coupling["calls"][0]["id"]
+            args[6] = str(self.root / "cli-coupling-refused")
+            self.assertEqual(reference_validation.main(args), 2)
+        receipt = json.loads((self.root / "cli-gate/receipt.json").read_text())
+        self.assertEqual(receipt["manifest_sha256"], self.manifest_sha256)
+        self.assertEqual(receipt["evaluator"]["kind"], "hotspot6")
+        self.assertIn("not a call in the frozen manifest", stderr.getvalue())
+        self.assertTrue(self.launched("cli-gate"))
+        self.assertFalse(self.launched("cli-coupling-refused"))
+        self.assertEqual(len(self.scenario.api.launch_tags()), 1)
+
+
 class OperatorSelectionTests(fixtures.OperatorCase):
+    def setUp(self):
+        super().setUp()
+        for name in ("RUNS", "CPU_FILE", "LOG"):
+            self.patch(gate0_operator, name, getattr(gate0_operator, name))
+
+    def test_coupling_grant_refuses_a_cap_above_the_binding_limit(self):
+        root = self.root / "oversized-grant"
+        args = SimpleNamespace(manifest="coupling", ledger_root=root, key=self.key_file,
+                               grant_id="g49-cap", cap=234.000001)
+        with mock.patch.object(gate0_operator, "LOG", self.root / "operator.log"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(SystemExit, "cap exceeds.*binding cap"):
+                gate0_operator.cmd_grant(args)
+            self.assertFalse(root.exists())
+            args.cap = 233.999999
+            self.assertEqual(gate0_operator.cmd_grant(args), 0)
+        manifest, digest = reference_validation.load_manifest(selection="coupling")
+        ledger = gate0_anchor.read_ledger(root, manifest["operator"]["public_key_ed25519"], digest)
+        self.assertEqual(ledger["grant"]["cpu_cap_s"], 233.999999)
+
     def test_operator_imports_validation_from_the_checkout_being_reviewed(self):
         stale = self.root / "stale-image"
         (stale / "sundai_hotspot").mkdir(parents=True)

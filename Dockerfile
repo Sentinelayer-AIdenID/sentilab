@@ -21,10 +21,10 @@ ARG CI_ALLOCATION=0
 ENV CI_ALLOCATION=${CI_ALLOCATION}
 # SLAB-049 also builds the material-only HotSpot 7 diagnostic binary (never the default oracle; its own class
 # checks its identity tag) and the HotSpot 6.0 evaluator plus its TAP-faithful cross-check (scripts/build_hotspot6.sh).
-# Each gate-zero evaluator gets <binary>.provenance.json, which validate-reference requires (sundai_hotspot.provenance).
+# Each gate-zero and coupling evaluator gets <binary>.provenance.json, required by validate-reference.
 RUN cd sundai_hotspot && make -j4 SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} \
  && make SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} hotspot-material-only \
- && (cd /app && python3 -m sundai_hotspot.provenance hotspot7_default) \
+ && (cd /app && python3 -m sundai_hotspot.provenance hotspot7_default material_only) \
  && bash /app/scripts/build_hotspot6.sh \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \

@@ -111,9 +111,9 @@ Review tests can import the new checkout mounted at `/src`; the operator resolve
 instead of the old image's `/app`. Execution still requires the merged operator code deployed at `/app`, as the
 existing supervisor specifies. Recheck the material-only binary hash in that runtime before signing.
 
-Before the grant, the image must retain material-only provenance: the existing Dockerfile builds this target but
-only explicitly writes provenance for the default HS7 and HS6 builds. Run the existing provenance writer for
-`material_only` in that image; this reads the binary and loader metadata and runs no thermal solve.
+The Dockerfile writes provenance for `material_only` alongside the default HS7 and HS6 builds. Before the grant,
+verify that the deployed image retains it. The provenance writer reads the binary and loader metadata and runs
+no thermal solve; older images need the same writer command before use.
 
 ```sh
 python -m sundai_hotspot.provenance material_only
@@ -132,12 +132,17 @@ The surrogate executor used Python 3.12.3, GCC 13.3.0, glibc 2.39 and SuperLU 6.
 placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing fixtures never reached disk.
 These commands exited zero:
 
-- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 235 tests, no skips, including 21
+- `.venv/bin/python -m unittest -q sundai_hotspot.test_gate_zero sundai_hotspot.test_gate0_operator
+  sundai_hotspot.test_coupling_allocation` (from the repository root): 132 tests, no skips.
+- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 243 tests, no skips, including 29
   coupling tests.
-- `(cd sundai_controller && ../.venv/bin/python -m unittest -v test_controller.py test_experiment.py)`: 55 tests.
+- `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)`: 55 tests.
 - `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: 2 tests.
 - `make -j4 SUPERLU=1 -C sundai_hotspot` and `make SUPERLU=1 -C sundai_hotspot hotspot-material-only`.
 - `PATH="$PWD/.venv/bin:$PATH" bash scripts/build_hotspot6.sh`.
+- `.venv/bin/python -m sundai_hotspot.provenance hotspot7_default material_only`; both generated records also
+  pass `require_build_provenance` against the local binary identities.
+- `.venv/bin/python -m pip check`: no broken requirements.
 - `git diff --check`.
 
 The initial regression failed on the unmodified code with `load_manifest() got an unexpected keyword argument
@@ -148,15 +153,24 @@ threshold, rounding before comparison, skipped replay bytes, trusted stored eval
 ignored manifest selection, and shared CPU files. A separate import-shadow regression failed before replacing
 the hardcoded `/app` import root and passes with the checkout-derived import root.
 
-For the outcome/replay follow-up, all seven new tests and the extended exact-threshold test fail against
+For the earlier outcome/replay follow-up, all seven new tests and the extended exact-threshold test fail against
 pre-fix `b54569fe3d98592de8392bb832cf14550b6a2ff5` in a disposable worktree: the 21-test coupling file reports
 two failures and eleven errors (including rounding subcases). Both authentic stream-mismatch regressions
 fail with `AssertionError: True is not false`. With the fix, all 21 pass. They cover verbatim outcomes, missing
 or unusable calls, mixed results, exact rounding on both sides of a half-percent, and independent stdout/stderr
 mismatches, using the real validation/report paths and fake engines. No thermal solve is added.
 
+For the PR #83 HOLD follow-up, the disposable worktree reproduced three persistence failures on `ebec51b`,
+three expiry/grant failures on `4262f8b`, and seven failing assertions across four percentage/mixed-wording tests
+on `176a75f`. The missing-directory regression fails with `SystemExit not raised`; flooring exposes `85 != 84`.
+The new CLI-default and grant-cap coverage tests exercise existing behavior and pass before this follow-up;
+deliberately changing the default to coupling or removing the cap check makes each fail. Removing the binary
+pin check also makes the strengthened wrong-hash test fail with `CallRefused not raised`: its wrong binary now
+has valid provenance, so missing provenance cannot mask the absent pin check. These three mutants were tested
+separately against `8a0b54c` in the disposable worktree. All 29 coupling tests pass in the final suite.
+
 This tree generates coupling manifest SHA-256
-`e2de4a6ab7a10602f7236bc8747ae65c5b66597fc7b65cd4c6de943fb5341f9f`.
+`01e6793c859fd7871443535c725447c738d731a5d35e3a7b1b74203ca6a15b80`.
 The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
 its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.
 Docker is unavailable in this box, so the pinned-image suites/build check remain Warden's independent proof.
