@@ -56,9 +56,10 @@ export function stateLine(L) {
 // (source3d.mjs SUMMARIES: only the door's current words are read). A failed run has no score, so it reads "no score"
 // even where an older API still calls it "evaluated".
 export const summaryLine = (L) => (L?.status === "failed" ? "contract state: no score" : L?.summary ? `contract state: ${L.summary}` : null);
-// One line for an event of the arrivals panel (after its label).
+// One line for an event of the arrivals panel (after its label). An arrival that carried an opt-in declaration (#89's
+// event_kind, which source3d.mjs keeps only as "declaration") reads as one, in fixed words: never the visitor's text.
 export function eventLine(e) {
-  if (e.kind === "arrival") return "arrived at the door";
+  if (e.kind === "arrival") return e.event_kind === "declaration" ? "sent a self-described declaration" : "arrived at the door";
   const codes = e.codes?.length ? e.codes.map(codeWords).join(", ") : "";
   if (e.kind === "attempt") return `${e.outcome === "refused" ? "refused" : "rejected"}${codes ? `: ${codes}` : ""}`;
   const word = (STATE_WORD[e.state] ?? plain(e.state)).toLowerCase();

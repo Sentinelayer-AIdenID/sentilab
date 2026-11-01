@@ -255,7 +255,9 @@ export function readScorer(raw) {
 // ── the API: one event (the arrivals) ────────────────────────────────────────────────────────────────────────────
 // -> { event }, { skip: true } for a scorer event (it moves the cursor only), or { refused: code }.
 // event: { seq, kind: "arrival" | "attempt" | "run", cls, short (null for an arrival without a token), label,
-//          outcome ("rejected" | "refused", attempts), run_id and state (runs), codes (attempts and runs) }
+//          outcome ("rejected" | "refused", attempts), run_id and state (runs), codes (attempts and runs),
+//          event_kind ("declaration" only: an arrival that carried an opt-in declaration, #89's partition; absent
+//          otherwise, and never any of the declaration's text) }
 export function normalizeEvent(raw) {
   if (!isObj(raw) || !count(raw.seq)) return { refused: "event_malformed" };
   if (raw.kind === "scorer") return { skip: true };
@@ -266,6 +268,7 @@ export function normalizeEvent(raw) {
   const label = short === null ? raw.class : labelText(raw.class, short);
   if (raw.label !== label) return { refused: "label_invalid" };
   const event = { seq: raw.seq, kind: raw.kind, cls: raw.class, short, label };
+  if (raw.kind === "arrival" && raw.event_kind === "declaration") event.event_kind = "declaration";
   if (raw.kind === "attempt") {
     if (raw.outcome !== "rejected" && raw.outcome !== "refused") return { refused: "event_malformed" };
     Object.assign(event, { outcome: raw.outcome, codes: codesOf(raw.codes).slice(0, 4) });
