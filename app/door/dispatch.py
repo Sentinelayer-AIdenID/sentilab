@@ -100,7 +100,9 @@ def outcome_for(score, claimed: dict, checker) -> dict:
         usage = "measured" if score.cpu_s <= envelope else "measured_overrun"
     else:
         usage = "unknown_charged_conservatively"
-    return {"kind": "scored", "charged_cpu_s": score.cpu_s, "usage": usage,
+    # Usage not fully measured is charged at no less than the run's envelope (warden's P3-1 on #81).
+    charged = score.cpu_s if score.cpu_known else max(envelope, score.cpu_s)
+    return {"kind": "scored", "charged_cpu_s": charged, "usage": usage,
             "qualifiers": [] if bound["ok"] else ["binding_mismatch"], "reproduced": reproduced,
             "replay_code": replay_code, "result": result, "metric_c": score.max_chiplet_centre_cell_mean_C}
 

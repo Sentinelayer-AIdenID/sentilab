@@ -147,7 +147,8 @@ class Door:
         if refusal is not None:
             return 403, refusal, {}
         principal = principal_for(claims["nonce"])
-        short, klass, operator = short_id(principal), value.get("class", "unknown"), value.get("operator", "unknown")
+        # The declared operator is accepted (lane 1's shape) and never kept, not even in the store (warden's P3-6).
+        short, klass, operator = short_id(principal), value.get("class", "unknown"), "unknown"
         limited = self.store.note_request(principal=principal, now=now, flood=self.policy.flood)
         if limited:
             return self._rejected(limited, limits=["request_rate"], now=now)
@@ -334,7 +335,8 @@ class Door:
     def board(self, nonce=None) -> tuple:
         """The public board. With the verified token's nonce (x-door-nonce), it also carries that token's CPU."""
         now = self.policy.clock()
-        scored, counters, states, grant_rows = self.store.board_rows()
+        scored, counters, states, grant_rows = self.store.board_rows(
+            self.policy.grant.grant if self.policy.grant else None)
         front_ids = self._front_ids()
         ranked = sorted(scored, key=lambda row: (row["metric_c"], row["geometry_sha256"]))[:10]
         full = {row["run_id"]: row for row in self.store.runs_by_id([row["run_id"] for row in ranked])}
