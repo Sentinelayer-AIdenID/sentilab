@@ -102,6 +102,47 @@ in the same transaction as the existing counters, including for older writers.
 Historical event bytes and existing totals are preserved. Reads use materialized
 counts and an indexed page from one snapshot; they do not scan the full history.
 
+## Operator hiding
+
+An operator with filesystem write access to the API's existing store can hide one
+declaration event without deleting or rewriting its arrival:
+
+```sh
+python -m app.door.moderation hide --store /data/door.sqlite3 --seq 42 --reason privacy
+```
+
+Run this locally on the API host as its authorized operator account. The command
+requires an explicit existing Door database; a missing path or unrelated database
+is refused. It does not start the service, scorer or dispatcher, acquire the scorer
+owner lock, or offer a public HTTP write route. Existing filesystem permissions
+control who can run it against the store; no new shared secret is used.
+
+The reason must be `privacy`, `abuse`, `spam` or `other`; it is a public fixed code,
+not free text. `hidden_declarations` records the declaration's exact event seq,
+reason and operator-command timestamp. Only an arrival with a declaration object
+can be hidden. Repeating the command returns `already_hidden` with the first
+reason/time, even if a different allowed reason was supplied. It never replaces
+that first record. Receipts contain only status, seq, reason and timestamp.
+
+On subsequent `/events` and `/visitors` reads, that event keeps its sequence/time
+and has `declaration: null`, `event_kind: "declaration"`, and `hidden: "privacy"`
+(or the selected reason). Class and purpose use the fixed detector/purpose enums;
+the short ID must be four lowercase hex characters. The label is rebuilt from
+those fields. No arbitrary stored declaration, nested extra field or derived name
+is projected for the hidden row. Other unhidden rows stay visible, including a
+different declaration with the same text or internal handle.
+
+The original text and handle remain in the store, and all event, visitor, pass and
+arrival-partition counts retain their meanings. Hiding is not deletion or erasure.
+Paging cursors and `through_seq` do not advance because no arrival is added or
+rewritten. Both HTTP responses remain `no-store`; there is no separate API cache
+of latest visitor names or declarations. A client that already holds an earlier
+page must refetch and replace it to see the tombstone; continuing only from its
+old cursor does not revisit that row. The renderer/proxy rollout must account for
+that refresh behavior. Previously downloaded copies are not erased. All API
+processes serving these feeds must run the repaired projection before declarations
+are enabled; an older process cannot apply the side table to its responses.
+
 `current_presence` is always `{ "status": "not_measured", "count": null }`.
 An arrival is not a heartbeat, live connection or running agent. The live view
 may show human-classified arrivals as arrivals, without calling them currently
