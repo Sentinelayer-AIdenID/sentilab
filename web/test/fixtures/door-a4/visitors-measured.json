@@ -8,7 +8,6 @@
    "purpose": null,
    "short_id": null,
    "label": "automation",
-   "visitor_handle": null,
    "declaration": null
   },
   {
@@ -18,7 +17,6 @@
    "purpose": "place-chiplets",
    "short_id": "0f62",
    "label": "declared_agent \u00b7 0f62",
-   "visitor_handle": "f1fb90bfb5d2638a38a0552ed64d8f776f4f97bc5963e2cb975c15a5497e3ade",
    "declaration": {
     "notice_version": "sentilab-public-visitor/1",
     "name": "<script>alert('x')</script> \u202fBot\u200b\ud83d\udd25",
@@ -33,7 +31,6 @@
    "purpose": "read",
    "short_id": "0f62",
    "label": "likely_human \u00b7 0f62",
-   "visitor_handle": null,
    "declaration": null
   },
   {
@@ -43,7 +40,6 @@
    "purpose": "review",
    "short_id": "93ce",
    "label": "automation \u00b7 93ce",
-   "visitor_handle": "bf9b54c669d14b2fdc7766b58f3cecb88de94945af211b447dae14fff43f8da5",
    "declaration": {
     "notice_version": "sentilab-public-visitor/1",
     "source": "github"

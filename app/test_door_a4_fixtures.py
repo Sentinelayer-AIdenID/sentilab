@@ -1,6 +1,11 @@
-"""The published A4 fixtures (web/test/fixtures/door-a4/) are what the code returns, byte for byte as JSON values, so the
-Live Lab builds against real shapes: visitors-measured.json from #89's visitors page with measured presence, stats.json
-from the run totals, and the API facts in here.json. Regenerate with: python -m app.test_door_a4_fixtures --write"""
+"""The published A4 fixtures (web/test/fixtures/door-a4/) are what the code returns, as JSON values, so the Live Lab
+builds against real shapes: visitors-measured.json from #89's visitors page with measured presence, stats.json from the
+run totals, and the API facts in here.json. Regenerate with: python -m app.test_door_a4_fixtures --write
+
+One agreed difference: warden's c94eaf73 ruling (root agrees) keeps the generated visitor_handle out of the public
+projection; it stays internal, for distinct counts only, and #89 makes that change. The fixture shows the public shape
+without it, and the test checks that removing visitor_handle from #89's items is the only difference. Once #89 drops it,
+that removal is a no-op."""
 import hashlib
 import hmac
 import json
@@ -98,9 +103,16 @@ def stats_page(path: Path) -> dict:
     return totals(store)
 
 
+NOT_PUBLIC = ("visitor_handle",)     # warden's c94eaf73 ruling: internal only (#89 removes it from its projection)
+
+
+def public(page: dict) -> dict:
+    return {**page, "items": [{key: value for key, value in item.items() if key not in NOT_PUBLIC} for item in page["items"]]}
+
+
 def build() -> dict:
     with tempfile.TemporaryDirectory() as one, tempfile.TemporaryDirectory() as two:
-        return {"visitors-measured.json": visitors_page(Path(one)), "stats.json": stats_page(Path(two))}
+        return {"visitors-measured.json": public(visitors_page(Path(one))), "stats.json": stats_page(Path(two))}
 
 
 class FixtureTests(unittest.TestCase):
@@ -121,8 +133,19 @@ class FixtureTests(unittest.TestCase):
         items = json.loads((FIXTURES / "visitors-measured.json").read_bytes())["items"]
         shared = [item for item in items if item["short_id"] == "0f62"]
         self.assertEqual(len(shared), 2)
-        self.assertNotEqual(shared[0]["seq"], shared[1]["seq"])
-        self.assertNotEqual(shared[0]["visitor_handle"], shared[1]["visitor_handle"])
+        self.assertNotEqual(shared[0]["seq"], shared[1]["seq"])      # the click-card key is the event seq
+        self.assertNotEqual(shared[0]["declaration"], shared[1]["declaration"])
+
+    def test_the_visitors_fixture_never_presents_visitor_handle_as_public(self):
+        text = (FIXTURES / "visitors-measured.json").read_text(encoding="utf-8")
+        page = json.loads(text)
+        for item in page["items"]:
+            self.assertNotIn("visitor_handle", item)
+        self.assertNotIn("visitor_handle", json.dumps(page["items"]))
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = visitors_page(Path(tmp))
+        differs = [key for raw_item, item in zip(raw["items"], page["items"]) for key in set(raw_item) ^ set(item)]
+        self.assertLessEqual(set(differs), set(NOT_PUBLIC))
 
 
 if __name__ == "__main__":
