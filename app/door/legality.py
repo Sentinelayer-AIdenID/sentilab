@@ -8,9 +8,10 @@ margin, halo_overlap and min_spacing violations, with whole-micrometre amounts r
 The lattice stays the contract validator's exact-integer check.
 
 The wire proxy is TapGeometry's weighted-mean Manhattan centre distance over the netlist (5,120 unordered wire
-weights for CPU-DRAM), in mm. The board metric max_chiplet_centre_cell_mean_C is recomputed from a scorer's grid with
-gate zero's own selector code (sundai_hotspot.slab049 block_extent and center_cells), so one selector serves the
-score, the replay, the board and the results.
+weights for CPU-DRAM), in mm. For the board metric max_chiplet_centre_cell_mean_C the checker gives each chiplet's
+GRID_CENTER cells with gate zero's own code (sundai_hotspot.slab049 block_extent and center_cells), so whenever a
+scorer returns its grid the door recomputes every chiplet's centre-cell mean and the metric from it: one selector for
+the score, the replay, the board and the results.
 """
 from __future__ import annotations
 

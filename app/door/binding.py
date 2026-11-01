@@ -9,8 +9,9 @@ pins, so only that key opens it. `check` runs the door's own Policy over the two
 door would stay closed now; it never prints a key.
 
 grant.json: {"grant": "<the manifest's refs.grant>", "cpu_cap_s": 3600, "token_cpu_s": 30, "parallel": 4,
-"run_reserve_cpu_s": <the scorer's whole-container envelope per run>, "not_before": "<UTC>", "not_after": "<UTC>",
+"run_reserve_cpu_s": 20, "not_before": "<UTC>", "not_after": "<UTC>",
 "enforcement_evidence_sha256": "<the scorer's whole-container cutoff evidence>"}
+run_reserve_cpu_s 20 matches door-scorer, which reserves 10 CPU-s for a score and 10 for its replay.
 """
 from __future__ import annotations
 
