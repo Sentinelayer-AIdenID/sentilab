@@ -117,11 +117,15 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
   // Two deadlines, kept apart so neither can shorten the other: nextAt, the spacing slot the last launch reserved, and
   // embargoUntil, the backoff a 429/503 (its Retry-After) or a failure set. Only a later, longer embargo replaces one.
   let nextAt = -Infinity, embargoUntil = -Infinity, embargoSetAt = -Infinity, failures = 0;
-  // Slots are taken one caller at a time (a promise chain): a caller waits for the one before it to launch, then
-  // sleeps and rechecks both deadlines until they have passed (a 429 may arrive while it sleeps), and reserves its
-  // slot before it launches. An aborted caller gives its turn up at once.
+  // Slots are taken one caller at a time (a promise chain): a caller waits for the one before it, then sleeps and
+  // rechecks both deadlines until they have passed (a 429 may arrive while it sleeps). Then, in one synchronous step
+  // with no await in between, it reserves its slot and calls fetch (review item, dispatch): no microtask can delay the
+  // real dispatch past its reservation, so spacing holds where fetch is called and an already-reserved request
+  // cannot cross a 429 taken in after it. The turn is released at once; the answer is awaited outside it. An aborted
+  // caller gives its turn up at once.
   let turn = Promise.resolve();
-  async function acquire(signal) {
+  async function dispatch(url, init) {
+    const signal = init.signal;
     const before = turn;
     let release;
     turn = new Promise((resolve) => { release = resolve; });
@@ -135,7 +139,10 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
       }
       const startedAt = now();
       nextAt = startedAt + GATE.GAP_MS + random() * GATE.GAP_JITTER_MS;
-      return startedAt;
+      let answer;
+      try { answer = Promise.resolve(fetchImpl(url, init)); } catch (e) { answer = Promise.reject(e); }
+      answer.catch(() => {});                          // handled by the caller; never an unhandled rejection here
+      return { startedAt, answer };
     } finally {
       release();
     }
@@ -148,9 +155,9 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
     embargoSetAt = now();
   };
   async function gated(url, init = {}) {
-    const startedAt = await acquire(init.signal);
+    const { startedAt, answer } = await dispatch(url, init);
     let r;
-    try { r = await fetchImpl(url, init); } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
+    try { r = await answer; } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
     if (r.status === 429 || r.status === 503) backoff(retryAfterMs(r.headers?.get?.("retry-after"), now()));
     else if (r.status === 500 || r.status === 502 || r.status === 504) backoff(null);
     // A success resets the backoff count only when it started after the last embargo was set; it never lifts an
