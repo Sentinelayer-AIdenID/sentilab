@@ -35,6 +35,8 @@ web/
 # app/test_door_declaration_u16.py regenerates the Worker's Unicode 16 tables and the API's verdict fixture.
 !web/src/door/unicode16.js
 !web/test/make_declare_unicode.py
+# app/test_door_lab.py checks that the Worker's registry enums are the bundled registry's (scripts/door_registry.py).
+!web/src/door/registry-enums.js
 deck/
 **/*.pem
 **/*.key

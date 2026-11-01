@@ -219,7 +219,8 @@ test("3. declare.js reads no engine Unicode property tables: its categories and 
 // ── 4. the notice text, pinned to its version ────────────────────────────────────────────────────────────────────
 // Each notice version names exactly one text. Changing the text means a new version and a new line here; the API's
 // copy is pinned by the same table (app/test_door_declaration_u16.py).
-const PINNED_NOTICES = Object.freeze({ "sentilab-public-visitor/1": "89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b" });
+const PINNED_NOTICES = Object.freeze({ "sentilab-public-visitor/1": "89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b",
+  "sentilab-public-visitor/2": "7c627fb07e928f5f474268a512459d1e70fda1cfcb06f6524c2eb47656241cf1" });
 
 test("4. the bundled notice's text is the one its version names (SHA-256 of its UTF-8 bytes)", () => {
   assert.ok(Object.hasOwn(PINNED_NOTICES, NOTICE.version), `${NOTICE.version} has no pinned text: a new version needs its own line`);

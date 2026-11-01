@@ -48,6 +48,7 @@ import { preferredAgentType, serveAgentVersion } from "../agent-view.js";
 import { CSP } from "../csp.js";
 import { identityFor } from "../edge.js";
 import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
+import { SERVICES, CATEGORIES, VERIFICATIONS } from "./registry-enums.js";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
 import { NOTICE, declarationOutcome, declareObject, linkCarriesDeclaration, prefillFrom, readOptIn, viaSource } from "./declare.js";
 import { agentView, gateZeroFrom, knownLimitFrom } from "./engram.js";
@@ -161,12 +162,16 @@ export function decodedPath(pathname) {
   return path.includes("%") ? null : path;
 }
 
-// A copy of a feed answer without any "operator" field, at any depth: the declared operator stays with the intake, as
-// the door's own routes already keep it.
+// A copy of a feed answer without any "operator" field, at any depth, except one place: an arrival record (an events
+// record of kind "arrival", or a visitors item) keeps the recognised lab the intake publishes for it (Carter #58250),
+// and only when it is one of OPERATORS. Board, results, status and anything nested still never carry one.
+const arrivalRecord = (value) => value.kind === "arrival" || typeof value.event_kind === "string";
 export function withoutOperators(value) {
   if (Array.isArray(value)) return value.map(withoutOperators);
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "operator").map(([key, item]) => [key, withoutOperators(item)]));
+  const keep = arrivalRecord(value) && OPERATORS.includes(value.operator);
+  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "operator" || keep)
+    .map(([key, item]) => [key, key === "operator" ? item : withoutOperators(item)]));
 }
 
 // A Referer the /api proxy must drop because it carries a token.
@@ -390,11 +395,27 @@ async function bounded(task, ms) {
 // its events feed. The wall says exactly this (render.js RECORDED). With the visitor's opt-in at the pick (declare.js
 // readOptIn), the arrival also carries their declaration, and the intake publishes it with an opaque visitor_handle
 // (root's #89); never otherwise.
-export function arrivalOf(identity, purpose, nonce, declaration = null) {
-  return { class: CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown",
-    operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown",
+// observation: the AIdenID registry's reading of this request ({category, service, verification}, observationFor, the
+// same call the collector post makes). Each field is sent only when it is exactly one of the bundled registry's enums
+// (registry-enums.js); the intake checks them again and never keeps any for a person.
+const PERSON_CLASSES = Object.freeze(["likely_human", "unknown", "ours"]);
+export function arrivalOf(identity, purpose, nonce, declaration = null, observation = null) {
+  const klass = CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown";
+  const lab = PERSON_CLASSES.includes(klass) ? {} : {
+    ...(SERVICES.includes(observation?.service) ? { service: observation.service } : {}),
+    ...(CATEGORIES.includes(observation?.category) ? { category: observation.category } : {}),
+    ...(VERIFICATIONS.includes(observation?.verification) ? { verification: observation.verification } : {}),
+  };
+  return { class: klass, operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown", ...lab,
     ...(PURPOSE_IDS.includes(purpose) ? { purpose } : {}), ...(/^[0-9a-f]{16}$/.test(nonce ?? "") ? { nonce } : {}),
     ...(declaration ? { declaration } : {}) };
+}
+
+// The registry's reading of one request, exactly as the collector post computes it; null without a classified identity.
+export function observationOf(request, identity) {
+  if (!identity?.triage) return null;
+  return observationFor({ triageClass: identity.triage.class, basis: identity.basis,
+    userAgent: request.headers.get("user-agent") ?? "", signer: identity.verification?.signer, cfBotCategory: request.cf?.verifiedBotCategory });
 }
 
 async function postCollector(request, env, identity, event, expiresAt) {
@@ -416,7 +437,7 @@ function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce =
     ctx.waitUntil((async () => {
       if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return;
       const who = identity === undefined ? await identityFor(request, env) : identity;
-      const event = arrivalOf(who, purpose, nonce, declaration);
+      const event = arrivalOf(who, purpose, nonce, declaration, observationOf(request, who));
       await Promise.allSettled([callApi(env, API.arrival, { method: "POST", body: event, host: url.host, timeoutMs: 1200 }),
         postCollector(request, env, who, event, expiresAt)]);
     })().catch(() => undefined));
@@ -434,7 +455,7 @@ function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce =
 export async function deliverArrival(request, env, ctx, url, { purpose, nonce, expiresAt, declaration }) {
   if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return "skipped";
   const who = await identityFor(request, env);
-  const event = arrivalOf(who, purpose, nonce, declaration);
+  const event = arrivalOf(who, purpose, nonce, declaration, observationOf(request, who));
   if (typeof ctx?.waitUntil === "function") {
     try { ctx.waitUntil(postCollector(request, env, who, event, expiresAt).catch(() => undefined)); } catch { /* never breaks a page */ }
   }

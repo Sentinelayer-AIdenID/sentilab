@@ -16,8 +16,22 @@ make a read private.
 ## Existing contract
 
 `POST /api/open/v1/door/arrival` accepts `class` and optional `purpose`, `nonce`,
-and `operator`. The Worker supplies the detector class; operator is discarded.
+`operator`, `service`, `category` and `verification`. The Worker supplies the detector
+class and, from the AIdenID registry's reading of the request, the lab it recognised.
 The public event contains class, purpose, a four-character short ID, label and time.
+
+**The recognised lab (Carter #58250).** For a recognised agent or bot, the door records
+and publicly shows the lab (`operator`, one of `OPERATORS`), the `service`, the `category`
+and the `verification` level the classifier recognised, on every arrival record of
+`/events` and `/visitors`, with `operator_name` and `service_name` for display. Service,
+category and verification are exact enums generated from the bundled registry
+(`app/door/aidenid-registry.json`, 22,673 bytes, sha256
+`81577af1136c8b852ae638e0ec8c0c334c36c932a057e6e847ce19d0ca1c8737`;
+`python -m scripts.door_registry --check`). Anything off a list is `"unknown"` or null, and
+no free text is ever accepted. A person never gets one: for `likely_human`, `unknown` and
+`ours` the operator is `"unknown"` and the rest null, whatever was sent. `verification`
+is what the edge checked: `signature` only for a verified Web Bot Auth signature, `network`
+for a verified network, `claimed` for a user-agent or self-declared claim.
 `GET /events` keeps its existing 200 maximum, and `/results` keeps its 20 maximum.
 
 ## Additive contract
@@ -93,7 +107,12 @@ otherwise turn the surrogate into U+FFFD and pass it.
 
 The notice text is pinned to its version: each version names exactly one text, by the
 SHA-256 of its UTF-8 bytes. `sentilab-public-visitor/1` is 506 bytes,
-`89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b`. A test on each side
+`89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b`.
+`sentilab-public-visitor/2` (the current notice) is 701 bytes,
+`7c627fb07e928f5f474268a512459d1e70fda1cfcb06f6524c2eb47656241cf1`: it adds that a
+recognised agent's or bot's lab, service, category and verification level are public and
+that a person never gets them, and that the internal handle also links a declaration to
+its pass's arrival. A test on each side
 (`app/test_door_declaration_u16.py` for `VISITOR_NOTICE` and `VISITOR_DISCLOSURE`,
 `web/test/door-declaration-u16.test.mjs` for the Worker's `NOTICE`) fails when the text
 changes without a new version and a pin of its own.
@@ -111,8 +130,12 @@ For opted-in arrivals carrying a nonce, the server keeps an opaque challenge-key
 `visitor_handle` internally for the distinct-purpose-pass count. It is omitted from
 both `/visitors` and `/events`, including projections of older stored events; only
 the aggregate count is public. The stored handle links uses of the same purpose pass.
-It is not an account, person, or permission. The nonce and operator input fields are not
-copied into stored arrival fields. The deployment's published retention policy applies to these
+It is not an account, person, or permission. The nonce is not copied into stored arrival
+fields; the operator is stored only as one of `OPERATORS` (else `"unknown"`), never for a
+person. A passive arrival carrying a nonce keeps the same opaque handle as `pass_handle`,
+so a later declaration names the arrival of its own pass: `arrival`, that arrival's seq on
+both feeds, or null when the pass has none. It is resolved from the nonce's handle, never
+from the four-character short ID, and like `visitor_handle` it is in no feed. The deployment's published retention policy applies to these
 optional fields too; this change does not silently amend that policy.
 Without a configured challenge key, no handle is derived. Before a purpose pass
 is minted, arrivals can still be recorded without a handle. These rows remain in
@@ -260,7 +283,8 @@ unavailable, not_measured and measured distinctly.
 Worker ownership remains with Forge/Warden, renderer ownership with the existing
 live-view author. No new proxy route is needed (see the top): the Worker already
 forwards `GET /api/open/v1/door/visitors`, and #90 passes it through its open-feed
-filter (no `operator` field, `nosniff`). The Worker's opt-in (`POST /agents/declare`,
+filter (no `operator` field except an arrival record's recognised `OPERATORS` value,
+`nosniff`). The Worker's opt-in (`POST /agents/declare`,
 and the notice and form on a pass's page) ships off: `DOOR_DECLARATIONS` is `"off"` in
 `web/wrangler.jsonc` for production and staging, and anything but exactly `"on"` is off
 (`DOOR-PRESENCE-STATS.md` section 4). It stays off until warden explicitly authorizes

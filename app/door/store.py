@@ -631,6 +631,13 @@ class Store:
         with self.tx() as db:
             self._event(db, "scorer", {"state": state}, now)
 
+    def arrival_of_pass(self, handle: str):
+        """The seq of the latest passive arrival recorded for this pass (its keyed handle), or None."""
+        with self.read() as db:
+            row = db.execute("SELECT seq FROM events WHERE kind = 'arrival' AND json_extract(body, '$.pass_handle') = ? "
+                             "ORDER BY seq DESC LIMIT 1", (handle,)).fetchone()
+        return row[0] if row is not None else None
+
     def note_arrival(self, body: dict, *, now: float, per_min: int) -> bool:
         with self.tx() as db:
             recent = db.execute("SELECT COUNT(*) FROM events WHERE kind = 'arrival' AND at > ?",

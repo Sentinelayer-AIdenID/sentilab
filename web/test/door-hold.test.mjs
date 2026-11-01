@@ -108,8 +108,11 @@ test("P3-3: the public proxy passes the intake's board, results and events on wi
   for (const path of Object.keys(answers)) {
     const r = await s.go(`${path}?after=0`);
     assert.equal(r.status, 200);
-    assert.ok(!r.text.includes("operator") && !/openai|anthropic|google|meta/.test(r.text), `${path}: ${r.text}`);
+    // Only the arrival record keeps its recognised lab (an OPERATORS value, Carter #58250); nothing else carries one.
+    assert.ok(!/openai|anthropic|meta/.test(r.text) && (r.text.match(/"operator"/g) ?? []).length === 1, `${path}: ${r.text}`);
     const value = JSON.parse(r.text);
+    assert.equal(value.events[0].operator, "google");
+    assert.ok(!("operator" in value.events[0].body) && !("operator" in value) && !("operator" in value.top[0]));
     assert.deepEqual([value.top[0].short_id, value.top[0].label, value.events[0].body.class, value.items[0].result.metric_id], ["ab12", "declared_agent · ab12", "automation", "m"]);
     assert.equal(r.headers.get("etag"), null);
   }

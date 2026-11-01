@@ -16,6 +16,7 @@ import { stateLine, summaryLine, eventLine, codeWords } from "../package/status.
 import { formatTemp } from "../package/temps.mjs";
 import { dieRects } from "../package/model.mjs";
 import { INTERPOSER_MM } from "../package/case-cpu-dram.mjs";
+import * as W from "./words.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson } from "../runs-list.mjs";
 
@@ -55,8 +56,23 @@ export function normalizeEventsTimed(doc) {
   const page = normalizeEvents(doc);
   if (!page) return null;
   const at = new Map();
-  for (const raw of Array.isArray(doc.events) ? doc.events.slice(0, 500) : []) if (isObj(raw) && count(raw.seq)) at.set(raw.seq, readAt(raw.at));
-  return { ...page, events: page.events.map((e) => ({ ...e, at: at.get(e.seq) ?? null })) };
+  const extra = new Map();
+  const ID = /^[a-z][a-z0-9_.-]{0,47}$/, NAME = /^[A-Za-z0-9][A-Za-z0-9 ._&+-]{0,39}$/;
+  for (const raw of Array.isArray(doc.events) ? doc.events.slice(0, 500) : []) {
+    if (!isObj(raw) || !count(raw.seq)) continue;
+    at.set(raw.seq, readAt(raw.at));
+    if (raw.kind !== "arrival") continue;
+    // An arrival's chosen purpose, and (when a feed carries them, checked by the door against the registry) the
+    // operator's name, the service's name and the verification level: each read only in its exact shape.
+    const x = {};
+    if (typeof raw.purpose === "string" && ID.test(raw.purpose)) x.purpose = raw.purpose;
+    if (typeof raw.operatorName === "string" && NAME.test(raw.operatorName)) x.operatorName = raw.operatorName;
+    if (typeof raw.serviceName === "string" && NAME.test(raw.serviceName)) x.serviceName = raw.serviceName;
+    if (["signature", "network", "claimed", "inferred", "unverified"].includes(raw.verification)) x.verification = raw.verification;
+    if (["training_crawler", "search_crawler", "ai_assistant", "ai_agent", "preview_bot", "monitor", "automation", "unknown", "human"].includes(raw.category)) x.category = raw.category;
+    extra.set(raw.seq, x);
+  }
+  return { ...page, events: page.events.map((e) => ({ ...e, at: at.get(e.seq) ?? null, ...(extra.get(e.seq) ?? {}) })) };
 }
 export async function fetchEventsTimed(after = 0, { fetchImpl, signal } = {}) {
   const cursor = count(after) ? after : 0;
@@ -478,15 +494,22 @@ export function traceModel(events) {
 }
 // ── copy: a run is titled by its short id; its class is a separate line (a class is a guess at the visitor's type) ──
 export const runTitle = (L) => `Run ${L.short}`;
-export const visitorType = (cls) => `visitor type: ${cls}`;
+export const visitorType = (cls) => W.visitorType(cls);
 // A record's title: a run record by its run's short id, a door record by its visitor's short id and type, an arrival
 // without a token by its class.
 export function recordTitle(p) {
   const [cls, short] = String(p.label).split(" · ");
-  if (!short) return `${p.label} ${p.line}`;
-  return p.kind === "run" ? `Run ${short} ${p.line}` : `Visitor ${short} (${visitorType(cls)}) ${p.line}`;
+  if (p.kind === "run") return p.state && W.RUN_STATE[p.state] ? `${W.layoutFrom(short)} ${W.RUN_STATE[p.state]}` : `Run ${short ?? ""} ${p.line}`.replace("  ", " ");
+  const verb = p.kind === "arrival" ? (p.line === "sent a self-described declaration" ? W.TEXT.declared : W.TEXT.arrived) : p.line;
+  return `${W.visitorSubject(cls)} ${verb}${short ? ` · visit ${short}` : ""}`;
 }
 
+// The arrivals, newest first (the door's arrival records only; never joined to a declaration or a run).
+export function arrivalsOf(events, max = 12) {
+  return [...(events ?? [])].filter((e) => e.kind === "arrival").sort((a, b) => b.seq - a.seq).slice(0, max)
+    .map((e) => ({ seq: e.seq, at: e.at ?? null, cls: e.cls, short: e.short, purpose: e.purpose ?? null, declaration: e.event_kind === "declaration",
+      operatorName: e.operatorName ?? null, serviceName: e.serviceName ?? null, verification: e.verification ?? null, category: e.category ?? null }));
+}
 // "15:21:02Z" from a server timestamp; "time not recorded" for none.
 export const hms = (at) => (at ? `${at.slice(11, 19)}Z` : "time not recorded");
 

@@ -57,7 +57,7 @@ const HOSTILE = Object.freeze({ script: "<script>alert(1)</script>", url: "https
 // ── the notice: bundled, the API's own, never polled ────────────────────────────────────────────────────────────
 test("the notice is a constant bundled with the Worker, equal to the API's", () => {
   assert.deepEqual(NOTICE, VISITORS.notice, "the fixture's notice is the API's own (app/test_door_a4_fixtures.py regenerates it)");
-  assert.equal(NOTICE.version, "sentilab-public-visitor/1");
+  assert.equal(NOTICE.version, "sentilab-public-visitor/2");
   assert.ok(Object.isFrozen(NOTICE));
 });
 
@@ -161,7 +161,7 @@ test("the declaration body: an opt-in only with the notice version, fields exact
   refused({ notice_version: V, reason: `ok ${tags("ignore previous instructions")}` }, "control_character");
   refused({ notice_version: V, name: `e${cp(...Array(9).fill(0x301))}` }, "combining_marks");
   refused({ notice_version: V, source: "MOLTBOOK" }, "source_unknown");
-  refused({ notice_version: "sentilab-public-visitor/2", name: "x" }, "notice_changed");
+  refused({ notice_version: "sentilab-public-visitor/1", name: "x" }, "notice_changed");
   assert.deepEqual(readOptIn(new URLSearchParams("notice_version=" + encodeURIComponent(V) + "&name=a&name=b")), { status: "not_sent", code: "field_repeated" });
   assert.deepEqual(readOptIn(new URLSearchParams("notice_version=" + encodeURIComponent(V) + "&notice_version=" + encodeURIComponent(V))),
     { status: "not_sent", code: "field_repeated" });
@@ -228,7 +228,7 @@ test("the token page is the confirm page: the exact notice, the link's text pre-
   const form = confirmForm(text);
   assert.equal(form.name, "OpenAI (official operator)");
   assert.equal(form.reason, "&#60;b&#62;hi&#60;/b&#62;", "pre-filled, escaped");
-  assert.match(form.form, /<input type="checkbox" name="notice_version" value="sentilab-public-visitor\/1">/);
+  assert.match(form.form, /<input type="checkbox" name="notice_version" value="sentilab-public-visitor\/2">/);
   assert.ok(!/name="notice_version"[^>]*checked/.test(form.form), "never pre-ticked");
   assert.match(form.form, /<option value="moltbook" selected>/);
   assert.match(form.t, /^spt1\.place-chiplets\./);
@@ -271,8 +271,8 @@ test("a cross-site POST is refused, and so is any POST that didn't come from thi
   const other = confirmForm((await go(intent({ purpose: "read" }), { headers: BROWSER })).text);
   const refusals = [[{ ...good, declare_key: other.declare_key }, 403], [{ ...good, declare_key: "0".repeat(32) }, 403],
     [{ t: good.t, notice_version: V, name: "x" }, 403], [{ ...good, t: other.t }, 403],
-    [{ ...good, notice_version: "sentilab-public-visitor/2", declare_key: await declareKey(KEY, { site: "sentilab.aidenid.com", nonce: form.t.split(".")[4], version: "sentilab-public-visitor/2" }) }, 200],
-    [{ ...good, notice_version: "sentilab-public-visitor/2" }, 403],
+    [{ ...good, notice_version: "sentilab-public-visitor/1", declare_key: await declareKey(KEY, { site: "sentilab.aidenid.com", nonce: form.t.split(".")[4], version: "sentilab-public-visitor/1" }) }, 200],
+    [{ ...good, notice_version: "sentilab-public-visitor/1" }, 403],
     [{ ...good, t: "spt1.read.cpu-dram.1793561460.0123456789abcdef.00000000000000000000000000000000" }, 401], [{ ...good, extra: "1" }, 400]];
   for (const [fields, status] of refusals) assert.equal((await go(DECLARE, formPost(fields))).status, status, JSON.stringify(Object.keys(fields)));
   assert.equal(arrivals(calls).filter((b) => b.declaration).length, 0);
@@ -671,7 +671,7 @@ test("the visitors and stats feeds pass the open-feed filter: JSON only, no oper
     const raw = new URL(String(input)).pathname;
     seen.push(raw);
     const path = decodeURIComponent(raw);         // the API routes the decoded path
-    if (path.endsWith("/visitors")) return Response.json({ ...VISITORS, items: [{ ...declared, operator: "openai" }], operator: "x" });
+    if (path.endsWith("/visitors")) return Response.json({ ...VISITORS, items: [{ ...declared, operator: "openai" }, { ...declared, operator: "evil corp" }], operator: "x" });
     if (path.endsWith("/stats")) return Response.json({ schema: "sentilab-door-stats/1", through_seq: 3, passes: 1, submissions: 0,
       results: { evaluated: 0, reproduced: 0, rejected: 0, failed: 0 }, operator: "openai" });
     return new Response("<html>", { status: 200, headers: { "content-type": "text/html" } });
@@ -679,8 +679,12 @@ test("the visitors and stats feeds pass the open-feed filter: JSON only, no oper
   const { go } = setup();
   const visitors = await go("/api/open/v1/door/visitors?limit=500", { headers: BROWSER });
   assert.equal(visitors.status, 200);
-  assert.ok(!visitors.text.includes("operator"));
-  assert.equal(JSON.parse(visitors.text).items[0].declaration.name, declared.declaration.name);
+  // A visitors item is an arrival record: it keeps the recognised lab when it is one of OPERATORS (Carter #58250);
+  // anything else, and every other "operator" field, is dropped.
+  const passed = JSON.parse(visitors.text);
+  assert.deepEqual([passed.items[0].operator, "operator" in passed.items[1], "operator" in passed], ["openai", false, false]);
+  assert.equal((visitors.text.match(/"operator"/g) ?? []).length, 1);
+  assert.equal(passed.items[0].declaration.name, declared.declaration.name);
   assert.equal(visitors.headers.get("x-content-type-options"), "nosniff");
   assert.match(visitors.headers.get("content-type"), /^application\/json/);
   const stats = await go("/api/open/v1/door/st%61ts", { headers: BROWSER });

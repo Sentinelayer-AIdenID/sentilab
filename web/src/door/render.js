@@ -43,11 +43,11 @@ function submitForm({ token, compact, terms, again, button }) {
 // intake's public events feed (/api/open/v1/door/events). The words are the signed terms' (aneta #57813 P3, #57819).
 // A declaration is recorded only with the visitor's opt-in, under the notice the opt-in shows (declare.js).
 // The live 3D view for people: both parameters matter (feed=door picks the door feed, src=live the live source).
-export const LIVE_VIEW = "/sentilab/package/?feed=door&src=live";
+export const LIVE_VIEW = "/sentilab/live/";
 // The earlier demo: the replay page that / served people before the Live Lab, now at /lab for every client (worker.js).
 const EARLIER_DEMO = "/lab";
-export const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
-const RECORDED_JSON = "a guess at your assistant's type (class) and the time; plus the purpose and a short visit id if you pick one; published on the public activity feed";
+export const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. For a recognised agent or bot, we also record the lab, service, category and verification level our detector recognised; a person never gets them. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+const RECORDED_JSON = "a guess at your assistant's type (class) and the time; for a recognised agent or bot, the lab (operator), service, category and verification level the detector recognised, never for a person; plus the purpose and a short visit id if you pick one; published on the public activity feed";
 const SUBMISSIONS = Object.freeze({
   open: "open. Submitting needs a place-chiplets token.",
   closed: "closed right now. Reading still works.",
@@ -178,7 +178,7 @@ export function wallJson(origin, submissions, { source = null, declarations = fa
 // ── the token page, after a purpose is chosen ─────────────────────────────────────────────────────────────────────
 export function nextLinks(origin, purpose, token, source = null) {
   if (purpose === "place-chiplets") return [{ name: "engram", label: "The challenge, as JSON: case, rules, check and submit links", url: `${origin}/agents/engram?t=${token}${source ? `&via=${source}` : ""}` }];
-  if (purpose === "review") return [{ name: "live", label: "Watch it live: the 3D package view", url: `${origin}${LIVE_VIEW}` },
+  if (purpose === "review") return [{ name: "live", label: "Watch it live: the Live Lab", url: `${origin}${LIVE_VIEW}` },
     { name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },
     { name: "read", label: "The agent pages", url: `${origin}/agents/` }];
   return [{ name: "read", label: "The agent pages", url: `${origin}/agents/` },
@@ -234,6 +234,7 @@ export function declaredHtml(origin, claims, outcome) {
   return page(`SentiLab: ${heading.toLowerCase()}`, `<p class="eyebrow">SentiLab · purpose: ${esc(claims.purpose)}</p>
 <h1>${heading}</h1>
 <p>${esc(outcome.detail ?? DECLARATION_TEXT.not_opted_in)}</p>
+<p><a href="${esc(origin + LIVE_VIEW)}">See your visit on the live page</a></p>
 <p class="fine">Your ${TOKEN_WORDING} is unchanged and still valid until ${esc(claims.expires_at)}.</p>`);
 }
 

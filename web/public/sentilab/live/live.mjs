@@ -11,6 +11,7 @@ import { drawPackage as draw2dPackage, TrackAnimation } from "../package/render.
 import { scorerChip, utcTime, stateLine } from "../package/status.mjs";
 import { NOTICE } from "../../temperature-label.mjs";
 import * as M from "./live-model.mjs";
+import * as W from "./words.mjs";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -146,9 +147,9 @@ function renderStatus() {
         : st.state === "error" ? `The door feed has not answered (${st.error}).` : "Asking the door feed.";
   const fs = $("feedState");
   fs.dataset.state = st.state;
-  $("feedStateText").textContent = st.state === "live" ? `DOOR FEED LIVE · ${feed.state.events.length} RECORDS · ${layouts().length} RUNS`
-    : st.state === "empty" ? "DOOR FEED LIVE · NO RECORDS YET"
-      : st.state === "stale" ? `STALE · LAST GOOD ANSWER ${st.ageS}S AGO`
+  $("feedStateText").textContent = st.state === "live" ? W.TEXT.feedLive(layouts().length, feed.state.events.length)
+    : st.state === "empty" ? W.TEXT.feedEmpty
+      : st.state === "stale" ? W.TEXT.feedStale(st.ageS)
         : st.state === "error" ? `NOT CONNECTED · ${st.error.toUpperCase()}` : "CONNECTING TO THE DOOR";
   // The banner: a feed that is down or stale, and records the page refused.
   const banner = $("feedBanner");
@@ -175,12 +176,13 @@ function renderDoorFacts(st) {
     const stale = fresh ? "" : " · stale";
     setFact("factDoor", board.door ? `${board.door.open ? "open" : "closed"}${board.door.codes.length ? ` · ${board.door.codes.join(", ").replace(/_/g, " ")}` : ""}${stale}` : "unavailable",
       board.door ? (board.door.open ? (fresh ? "" : "warn") : "warn") : "na");
-    setFact("factQueue", board.queue ? `${board.queue.length} of ${board.queue.max} · ${board.queue.active} running${stale}` : "unavailable", board.queue ? (fresh ? "" : "warn") : "na");
-    setFact("factBudget", board.budget ? `${fmtInt(board.budget.remaining_s)} of ${fmtInt(board.budget.cap_s)} s left${stale}` : "unavailable", board.budget ? (fresh ? "" : "warn") : "na");
+    setFact("factQueue", board.queue ? `${W.TEXT.queue(board.queue.length, board.queue.active)}${stale}` : "unavailable", board.queue ? (fresh ? "" : "warn") : "na");
+    setFact("factBudget", board.budget ? `${W.TEXT.computeLeft(Math.round(board.budget.remaining_s / 60), Math.round(board.budget.cap_s / 60))}${stale}` : "unavailable", board.budget ? (fresh ? "" : "warn") : "na");
   }
   // The scorer: the door feed's own snapshot while it is fresh (status.mjs scorerChip), else unknown.
   const chip = scorerChip({ feed: feed.state, nowMs: Date.now() });
-  setFact("factScorer", chip.word === "unknown" ? "unknown" : `${chip.word}${chip.since ? ` since ${utcTime(chip.since)}` : ""}`,
+  setFact("factScorer", chip.word === "unknown" ? "unknown" : chip.word === "unreachable" ? "not reachable"
+    : chip.since ? W.TEXT.simulatorUp(W.localTime(chip.since * 1000)) : chip.word === "busy" ? "running, busy" : "running",
     chip.word === "unreachable" ? "bad" : chip.word === "unknown" ? "na" : "");
 }
 
@@ -188,13 +190,13 @@ function runCard(L, selected, { mobile = false } = {}) {
   const v = M.runView(L);
   const btn = h("button", { type: "button", class: mobile ? (selected ? "selected" : "") : `experiment${selected ? " selected" : ""}`, "aria-pressed": selected ? "true" : "false", dataset: { run: L.id } });
   if (mobile) {
-    btn.append(M.runTitle(L), h("small", null, v.metric ? `${v.metric.text} · ${v.metric.qualifier}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
-      h("small", { class: "vt" }, M.visitorType(L.cls)));
+    btn.append(M.runTitle(L), h("small", null, v.metric ? `${v.metric.text} · ${W.tempWord(v.metric, v.verification)}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
+      h("small", { class: "vt" }, W.visitorType(L.cls)));
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)),
-      h("small", null, v.metric ? [v.metric.text, " ", h("em", null, v.metric.qualifier)] : v.none),
-      h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), `arrival ${L.arrival ?? "?"} · record ${L.seq ?? "?"}`));
+      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
+      h("small", null, v.metric ? [v.metric.text, " ", h("em", { title: v.metric.title }, W.tempWord(v.metric, v.verification))] : v.none),
+      h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), v.metric ? "simulated, not silicon" : "no temperature yet"));
   }
   btn.addEventListener("click", () => selectRun(L.id));
   return btn;
@@ -229,22 +231,26 @@ function renderModel() {
   applyControls(M.viewControls(renderer));
   $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
   $("modelTitle").textContent = L ? M.runTitle(L) : "A closer look at the package.";
-  $("modelSub").textContent = L ? M.visitorType(L.cls) : "";
-  $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `AT RECORD ${view.atRecord.seq ?? "?"} · ${view.state.toUpperCase()}`
-    : `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}`;
+  $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
+  const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
+  $("modelCap").textContent = !L ? "" : [W.layoutFrom(L.short), view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,
+    W.RESULT_CHECK[L.status] ?? null, lastRun?.at ? W.when(lastRun.at) : null].filter(Boolean).join(" · ");
+  const picked = Boolean(L && S.selectedId === L.id && M.pickRun(layouts(), null)?.id !== L.id);
+  $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `REPLAY · ${view.state.toUpperCase()}`
+    : `${STATUS_TAG[L.status] ?? L.status}${picked ? ` · ${W.YOUR_PICK.toUpperCase()}` : ""}`;
   // Metrics, bound to this run's own record; at a replay cursor, the state as of that record, and the latest apart.
   const mv = $("metricValue");
   mv.replaceChildren();
   mv.className = view?.metric ? "" : "none";
   if (view?.metric) {
     const [num, unit] = view.metric.text.split(" ");
-    mv.append(num, h("small", null, unit), h("em", { title: view.metric.title }, view.metric.qualifier));
+    mv.append(num, h("small", null, unit), h("em", { title: view.metric.title }, W.tempWord(view.metric, view.verification)));
     mv.title = `${view.metricDefinition} ${view.metric.title} Rounded to 0.01 °C for display.`;
-    $("metricDescription").textContent = `${view.metricName} · simulated, not silicon${view.diagnostic ? " · diagnostic" : ""}`;
+    $("metricDescription").textContent = `${W.METRIC_NAME} · simulated, not silicon${view.diagnostic ? " · diagnostic" : ""}`;
   } else if (view?.atRecord) {
     mv.textContent = view.state.toLowerCase();
     mv.title = "";
-    $("metricDescription").textContent = `record ${view.atRecord.seq ?? "?"} · ${M.hms(view.atRecord.at)} · a record carries a state and a time, no value`;
+    $("metricDescription").textContent = W.TEXT.atStep(W.when(view.atRecord.at));
   } else {
     mv.textContent = L ? "not scored" : "--";
     mv.title = "";
@@ -252,12 +258,12 @@ function renderModel() {
   }
   $("metricLabel").textContent = view?.atRecord ? "STATE AT THIS RECORD" : "BOARD METRIC · SELECTED RUN";
   $("frameValue").replaceChildren(...(L ? [`${INTERPOSER_MM} × ${INTERPOSER_MM}`, h("small", null, "mm")] : ["--"]));
-  $("frameNote").textContent = L ? `Interposer frame · 8 dies from this run's record (arrival ${L.arrival ?? "?"})` : "Interposer square of the model";
+  $("frameNote").textContent = L ? W.TEXT.frameNote : "Interposer square of the model";
   const src = $("metricSource"), det = $("metricSourceDetail");
   const latest = view?.atRecord ? view.latest : view;
-  $("sourceLabel").textContent = view?.atRecord ? `LATEST RECEIPT · RECORD ${latest.seq ?? "?"} · NOT AT THE CURSOR` : "EVALUATION SOURCE";
+  $("sourceLabel").textContent = view?.atRecord ? "LATEST RESULT · NOT AT THIS STEP" : "EVALUATION SOURCE";
   if (latest?.metric) {
-    src.textContent = view.atRecord ? `${latest.metric.text} · ${latest.metric.qualifier}` : "HotSpot 6.0";
+    src.textContent = view.atRecord ? `${latest.metric.text} · ${W.tempWord(latest.metric)}` : "HotSpot 6.0";
     det.replaceChildren(view.atRecord ? `latest state ${latest.state.toLowerCase()} · HotSpot 6.0, grid 64` : `grid 64 · ${M.verificationWords(latest.verification).split(";")[0] || "as the feed reports it"}`,
       h("button", { type: "button", "aria-label": "Open this run's latest receipt", dataset: { modal: "receipt" } }, "↗"));
   } else {
@@ -273,7 +279,7 @@ function renderModel() {
   $("modelNote").replaceChildren(...(renderer === "2d"
     ? ["2D view: this browser can't run the 3D view", h("br"), "Schematic · not manufacturing CAD"]
     : [`Thin layers drawn ×${VIEW.THIN_Z} in z · cooling stack lifted`, h("br"), S.explode > 0 ? "Exploded · spacing not to scale" : "Schematic · not manufacturing CAD"]));
-  const words = L ? `${M.runTitle(L)} (${M.visitorType(L.cls)}), ${view.state.toLowerCase()}${view.atRecord ? " at this record" : ""}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}.` : "";
+  const words = L ? `${M.runTitle(L)} (${W.visitorType(L.cls)}), ${view.state.toLowerCase()}${view.atRecord ? " at this record" : ""}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}.` : "";
   $("packageCanvas").setAttribute("aria-label", L ? `3D view of the ${CASE_TITLE}: ${words} Arrow keys orbit, plus and minus zoom.` : "No run drawn");
   $("packageCanvas2d").setAttribute("aria-label", L ? `2D drawing of the ${CASE_TITLE}: ${words}` : "No run drawn");
   $("packageCanvas").hidden = renderer === "2d";
@@ -331,9 +337,13 @@ function drawAtlas(svg, { large = false } = {}) {
     // One dot per run at its station (a task state), at most 12 drawn per station; arrivals are counted, not drawn.
     const row = st.runs.slice(-12);
     row.forEach((r, k) => {
-      const cx = x - ((row.length - 1) * 7) / 2 + k * 7, cy = y + 17;
-      const dot = s("circle", { class: `atlas-dot${shown && r.id === shown.id ? " sel" : ""}`, cx: cx.toFixed(1), cy, r: large ? 3.5 : 2.8, fill: LANE_COLOR.run });
-      dot.append(s("title", {}, `Run ${r.label.split(" · ")[1] ?? r.label} · ${(STATUS_TAG[r.status] ?? r.status).toLowerCase()}`));
+      const cx = x - ((row.length - 1) * 11) / 2 + k * 11, cy = y + 19;
+      const dot = avatar({ cls: r.cls, short: r.label.split(" · ")[1] ?? null, seq: 0 });
+      const size = large ? 16 : 13;
+      dot.setAttribute("x", (cx - size / 2).toFixed(1)); dot.setAttribute("y", (cy - size / 2).toFixed(1));
+      dot.setAttribute("width", size); dot.setAttribute("height", size);
+      dot.setAttribute("class", `av atlas-av${shown && r.id === shown.id ? " sel" : ""}`);
+      dot.append(s("title", {}, `${W.layoutFrom(r.label.split(" · ")[1] ?? null)} ${W.RUN_STATE[r.status] ?? r.status}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
     });
@@ -341,8 +351,9 @@ function drawAtlas(svg, { large = false } = {}) {
   return a;
 }
 function renderWork() {
+  renderArrivals();
   const a = drawAtlas($("atlasSvg"));
-  $("mapLegend").textContent = `A dot is a run at its last reported state, not a screen position${a.out.length ? ` · ${a.out.length} out of the flow (rejected, failed, cancelled or expired)` : ""}`;
+  $("mapLegend").textContent = `${W.TEXT.mapLegend}${a.out.length ? ` · ${W.TEXT.outOfFlow(a.out.length)}` : ""}`;
   // Keyed on the full run id: two runs with one label are two rows, and door records (no run id) are a qualified label
   // group, never attached to a run (live-model.mjs followWork).
   const { runs, door, anonymous } = M.followWork(feed.state.events, layouts());
@@ -352,28 +363,103 @@ function renderWork() {
   list.replaceChildren();
   for (const r of runs.slice(0, 30)) {
     const task = r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown";
-    const where = r.submitted ? `submitted ${M.hms(r.submitted.at)}` : "submission not in the newest records";
+    const where = r.submitted ? W.TEXT.submitted(W.when(r.submitted.at)) : W.TEXT.submittedEarlier;
     const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
       h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${M.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this short id` : where}`)),
+      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${W.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} designs with this short id` : where}`)),
       h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
     btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
     list.append(btn);
   }
-  if (door.length || anonymous.length) list.append(h("p", { class: "door-head" }, "DOOR RECORDS · BY LABEL · NOT LINKED TO RUNS"));
+  if (door.length || anonymous.length) list.append(h("p", { class: "door-head" }, W.TEXT.recentVisitors));
   for (const d of door.slice(0, 12)) {
-    list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, d.label),
-      `${d.arrivals} arrival(s)${d.attempts ? `, ${d.attempts} attempt(s)` : ""} · last ${M.hms(d.last.at)}`));
+    list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, W.visitorType(d.cls)),
+      `visit ${d.short} · ${W.TEXT.visits(d.arrivals)}${d.attempts ? `, ${W.TEXT.attempts(d.attempts)}` : ""} · ${W.TEXT.lastSeen(W.when(d.last.at))}`));
   }
-  for (const a of anonymous) list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, a.cls), `${a.count} arrival(s) without a token · last ${M.hms(a.lastAt)}`));
+  for (const a of anonymous) list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, W.visitorType(a.cls)), `${W.TEXT.noTask(a.count)} · ${W.TEXT.lastSeen(W.when(a.lastAt))}`));
   if (!runs.length && !door.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
   // The newest record, or the replay cursor's.
   const pts = points();
   const c = M.cursorIndex(pts, S.cursorSeq);
   const p = c === null ? pts.at(-1) : pts[c];
-  $("selectedEventLabel").textContent = c === null ? "NEWEST RECORD" : `REPLAY · RECORD ${c + 1} OF ${pts.length}`;
+  $("selectedEventLabel").textContent = c === null ? W.TEXT.newest : W.TEXT.replayStep(c + 1, pts.length);
   $("eventTitle").textContent = p ? M.recordTitle(p) : "No record yet";
-  $("eventSubtitle").textContent = p ? `${p.kind} · seq ${p.seq} · ${M.hms(p.at)}` : "Waiting for the door";
+  $("eventSubtitle").textContent = p ? W.when(p.at) : "Waiting for the door";
+  $("eventSubtitle").title = p ? `seq ${p.seq}` : "";
+}
+
+// ── who just arrived: the aquarium's avatar (AIdenID live-aquarium Character, ported), a sentence, the visit id ─────
+// Cards come from arrival records only (never from a declaration, never joined to a run); a declaration event reads
+// "sent a declaration" and carries none of its text. The newest arrival holds the card for ARRIVAL_HOLD_MS after its
+// server time, then settles into the strip of the last ~12. Motion is the card's CSS slide-in, off with reduced motion.
+const ARRIVAL_HOLD_MS = 10000;
+const SKIN = ["#f6d7c3", "#e8b996", "#c98b63", "#9c6644", "#6d4330"];
+const HAIR = ["#2b2118", "#5a3a22", "#b5651d", "#d9b26f", "#3a3a3a", "#8c2f39"];
+const SHIRT = ["#3d9bff", "#1fdc4d", "#f5a623", "#a274ff", "#ff6b8a", "#2ec4b6"];
+const BOT_COLORS = { verified: { body: "#17342f", accent: "#72d5b5" }, inferred: { body: "#3a2a1c", accent: "#e5b18a" },
+  automation: { body: "#3a1f1c", accent: "#f08b7c" }, crawler: { body: "#1c2d3a", accent: "#7cc4f0" }, neutral: { body: "#1c2d3a", accent: "#9fc2d8" } };
+function hashOf(seed) { let x = 2166136261; for (const ch of String(seed)) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619) >>> 0; } return x; }
+function avatar(a) {
+  const svg = s("svg", { class: "av", viewBox: "0 0 64 64", fill: "none", "aria-hidden": "true" });
+  const add = (tag, attrs) => svg.append(s(tag, attrs));
+  add("ellipse", { cx: 32, cy: 58, rx: 15, ry: 3, fill: "currentColor", opacity: ".16" });
+  const verified = a.verification === "signature" || a.verification === "network" || (!a.verification && a.cls === "verified_agent");
+  if (a.cls === "likely_human") {
+    const hsh = hashOf(a.short ?? a.seq), style = Math.floor(hsh / 199) % 3;
+    add("path", { d: "M13 56c1-11 9-17 19-17s18 6 19 17c0 1-1 2-2 2H15c-1 0-2-1-2-2Z", fill: SHIRT[Math.floor(hsh / 61) % SHIRT.length] });
+    add("circle", { cx: 32, cy: 24, r: 12, fill: SKIN[hsh % SKIN.length] });
+    const hair = HAIR[Math.floor(hsh / 7) % HAIR.length];
+    add("path", { d: style === 0 ? "M20 23c0-9 5-14 12-14s12 5 12 14c-2-4-6-6-12-6s-10 2-12 6Z" : style === 1 ? "M19 26c0-11 6-16 13-16s13 5 13 16v6c-3-5-7-7-13-7s-10 2-13 7Z"
+      : "M21 21c1-6 5-10 11-10s10 4 11 10c-3-2-7-3-11-3s-8 1-11 3Z", fill: hair });
+    add("circle", { cx: 27.5, cy: 25, r: 1.6, fill: "#1f2a2e" });
+    add("circle", { cx: 36.5, cy: 25, r: 1.6, fill: "#1f2a2e" });
+    add("path", { d: "M28 30c2 2 6 2 8 0", stroke: "#1f2a2e", "stroke-width": 1.6, "stroke-linecap": "round" });
+    return svg;
+  }
+  if (a.cls === "unknown") {
+    add("path", { d: "M32 9c-12 0-19 10-19 23v22h38V32c0-13-7-23-19-23Z", fill: "#2a2414", stroke: "#f2d479", "stroke-width": 1.5 });
+    add("ellipse", { cx: 32, cy: 31, rx: 9, ry: 10, fill: "#120f08" });
+    add("path", { d: "M29 27a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4M32 36v.5", stroke: "#f2d479", "stroke-width": 1.8, "stroke-linecap": "round" });
+    return svg;
+  }
+  // Every automated visitor: the aquarium's robot. Its colour says what is known: verified, a script, or (declared
+  // and crawler-claimed classes, which today's feeds cannot tell apart) neutral.
+  const c = verified ? BOT_COLORS.verified : a.cls === "automation" ? BOT_COLORS.automation : BOT_COLORS.neutral;
+  add("path", { d: "M32 8v5", stroke: c.accent, "stroke-width": 2, "stroke-linecap": "round" });
+  add("circle", { cx: 32, cy: 6, r: 2.6, fill: c.accent });
+  add("rect", { x: 16, y: 13, width: 32, height: 24, rx: 7, fill: c.body, stroke: c.accent, "stroke-width": 1.5 });
+  add("rect", { x: 22, y: 21, width: 7, height: 6, rx: 1.5, fill: c.accent });
+  add("rect", { x: 35, y: 21, width: 7, height: 6, rx: 1.5, fill: c.accent });
+  add("path", { d: "M25 32h14M29 30v4M35 30v4", stroke: c.accent, "stroke-width": 1.6, "stroke-linecap": "round" });
+  add("path", { d: "M20 40h24a4 4 0 0 1 4 4v10H16V44a4 4 0 0 1 4-4Z", fill: c.body, stroke: c.accent, "stroke-width": 1.2 });
+  add("circle", { cx: 32, cy: 47, r: 2.5, fill: c.accent });
+  if (a.category === "training_crawler" || a.category === "search_crawler") {
+    add("circle", { cx: 52, cy: 46, r: 5, stroke: c.accent, "stroke-width": 1.8, fill: "none" });
+    add("path", { d: "m55.5 49.5 4 4", stroke: c.accent, "stroke-width": 2, "stroke-linecap": "round" });
+  }
+  if (verified) { add("circle", { cx: 52, cy: 14, r: 8, fill: "#102a27", stroke: "#72d5b5" }); add("path", { d: "m49 14 2 2 4-4", stroke: "#72d5b5", "stroke-width": 2, "stroke-linecap": "round" }); }
+  else { add("circle", { cx: 52, cy: 14, r: 8, fill: "#1f2a2e", stroke: "#a9b4b4", "stroke-width": 1.5, "stroke-dasharray": "2.6 1.8" }); add("path", { d: "M48.5 14h7", stroke: "#d9e0e0", "stroke-width": 2, "stroke-linecap": "round" }); }
+  return svg;
+}
+let cardSeq = null;
+function renderArrivals() {
+  const list = M.arrivalsOf(feed.state.events, 13);
+  const now = Date.now();
+  const newest = list[0];
+  const fresh = newest && newest.at && now - Date.parse(newest.at) <= ARRIVAL_HOLD_MS;
+  const card = $("arrivalCard");
+  card.hidden = !fresh;
+  if (fresh && cardSeq !== newest.seq) {
+    cardSeq = newest.seq;
+    card.replaceChildren(avatar(newest), h("p", null, W.arrivalSentence(newest, now), h("small", null, W.arrivalDetail(newest))));
+  } else if (fresh) {
+    card.querySelector?.("p")?.firstChild && (card.querySelector("p").firstChild.textContent = W.arrivalSentence(newest, now));
+  }
+  const strip = (fresh ? list.slice(1) : list).slice(0, 12);
+  $("arrivalStrip").replaceChildren(...strip.map((a) => h("div", { class: "av-item", role: "listitem", title: `${W.arrivalSentence(a, now)} · ${W.arrivalDetail(a)}` },
+    avatar(a), h("span", null, a.short ? `visit ${a.short}` : W.visitorType(a.cls)), h("span", null, W.when(a.at, now)))));
+  $("arrivals").hidden = list.length === 0;
+  $("arrivalsHead").textContent = W.ARRIVALS_HEAD;
 }
 
 // ── the flight record ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -405,8 +491,8 @@ function renderTrace() {
     g.addEventListener("click", () => { setCursor(i); openRecord(i); });
     svg.append(g);
   });
-  $("traceStart").textContent = first ? `FIRST KEPT · ${M.hms(first.at)}` : "NO RECORDS";
-  $("traceEnd").textContent = last ? `NEWEST · ${M.hms(last.at)}` : "";
+  $("traceStart").textContent = first ? W.TEXT.traceOldest(W.when(first.at)) : "NOTHING YET";
+  $("traceEnd").textContent = last ? W.TEXT.traceNewest(W.when(last.at)) : "";
   const ph = $("playhead");
   ph.hidden = c === null;
   if (c !== null) ph.style.left = `${xOf(pts[c])}px`;
@@ -416,8 +502,8 @@ function renderTrace() {
   range.value = String(c ?? Math.max(0, pts.length - 1));
   range.setAttribute("aria-valuetext", pts.length ? `record ${(c ?? pts.length - 1) + 1} of ${pts.length}` : "no records");
   const tc = $("timecode");
-  tc.replaceChildren(c === null ? (last ? `LIVE · ${M.hms(last.at)}` : "--") : `${c + 1} / ${pts.length} · ${M.hms(pts[c].at)}`,
-    h("span", null, c === null ? ` · ${pts.length} kept` : " · recorded"));
+  tc.replaceChildren(c === null ? (last ? W.TEXT.timecodeLive(W.when(last.at)) : "--") : W.TEXT.timecodeReplay(c + 1, pts.length, W.when(pts[c].at)),
+    h("span", null, c === null ? "" : " · recorded"));
   $("followLive").setAttribute("aria-pressed", c === null ? "true" : "false");
   $("transportNote").textContent = c === null ? "Live: following the newest record. Replay plays only when you choose it." : "Replay of records already received, at their original times";
   $("play").innerHTML = icon(S.playing ? "pause" : "play");
@@ -426,7 +512,7 @@ function renderTrace() {
   const ml = $("mobileEventList");
   ml.replaceChildren(...pts.slice(-12).reverse().map((p) => {
     const i = pts.indexOf(p);
-    const b = h("button", { type: "button" }, h("span", null, M.hms(p.at), h("small", null, `seq ${p.seq}`)), h("strong", null, M.recordTitle(p)), h("b", { "aria-hidden": "true" }, "↗"));
+    const b = h("button", { type: "button" }, h("span", null, W.when(p.at)), h("strong", null, M.recordTitle(p)), h("b", { "aria-hidden": "true" }, "↗"));
     b.addEventListener("click", () => { setCursor(i); openRecord(i); });
     return b;
   }));
@@ -437,7 +523,7 @@ function selectRun(id) { S.selectedId = id; if (S.cursorSeq !== null) { S.cursor
 // The replay cursor is held as a record's seq (live-model.mjs cursorIndex): new records never move a paused cursor.
 function setCursor(i) { const pts = points(); const c = M.clampCursor(i, pts.length); S.cursorSeq = c === null ? null : pts[c].seq; render(); }
 const cursorIdx = () => M.cursorIndex(points(), S.cursorSeq);
-function followLive() { stopPlay(); S.cursorSeq = null; render(); }
+function followLive() { stopPlay(); S.cursorSeq = null; S.selectedId = null; render(); }
 function stopPlay() { S.playing = false; clearTimeout(S.playTimer); }
 function play() {
   const n = points().length;
@@ -535,7 +621,7 @@ function openRecord(i) {
   const e = feed.state.events.find((x) => x.seq === p.seq);
   openDialog(M.recordTitle(p), `RECORD ${i + 1} OF ${points().length} · ${p.kind.toUpperCase()}`,
     lead("One record as the door's events feed returned it, after the page's checks. The time is the server's own; the label is a classification and a short id, never a name."),
-    table([["Kind", p.kind], ["Server time", p.at ?? "not recorded"], ["Sequence", String(p.seq)], ["Label (class · short id)", p.label],
+    table([["What happened", M.recordTitle(p)], ["When", p.at ? W.localTime(Date.parse(p.at)) : "not recorded"], ["Visitor type", W.visitorType(String(p.label).split(" · ")[0])],
       ["Page route", "not recorded: the door's events carry no page route", "unknown"], ["Identity", "not established: a class is an observation, not an identity", "unknown"]]),
     h("pre", { class: "json-block" }, JSON.stringify(e ?? p, null, 2)));
 }
@@ -545,10 +631,10 @@ function openRun(r) {
     lead(`${CLASS_NOTE[r.cls] ?? "A classification, not an identity."} The label is a class and a 4-character short id; short ids can repeat, so this page never joins two runs, or a run and the door's other records, on it.`),
     h("div", { class: "modal-grid" },
       h("div", { class: "modal-card" }, h("span", { class: "label" }, "SUBMITTED (WHERE THE DOOR SAW IT ACT)"), h("h3", null, r.submitted ? `submitted · ${r.submitted.state}` : "unknown"),
-        h("p", null, r.submitted ? `run record · seq ${r.submitted.seq} · ${M.hms(r.submitted.at)}` : "This run's first record is not among the newest records."),
+        h("p", null, r.submitted ? W.TEXT.submitted(W.when(r.submitted.at)) : W.TEXT.submittedEarlier),
         h("p", null, "The scorer's later work changes the run's state, not where its submitter was.")),
       h("div", { class: "modal-card" }, h("span", { class: "label" }, "TASK (RUN STATE)"), h("h3", null, r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown"),
-        h("p", null, r.task && r.task.seq >= 0 ? `run record · seq ${r.task.seq} · ${M.hms(r.task.at)}` : "From the results list (no record in the newest window)."),
+        h("p", null, r.task && r.task.seq >= 0 ? W.when(r.task.at) : "from the results list"),
         h("p", null, L ? stateLine(L) ?? L.status : "This run is not in the results list."))),
     table([["Other runs with this label", r.sameLabel ? `${r.sameLabel}: shown as separate rows, never merged` : "none in view"],
       ["Presence now", "unknown: the door does not publish presence to this page", "unknown"], ["Page route", "not recorded", "unknown"],
@@ -563,8 +649,8 @@ function showModal(kind) {
     openDialog(L ? M.runTitle(L) : "No run selected", at ? "LATEST RECEIPT · NOT THE STATE AT THE CURSOR" : kind === "receipt" ? "RECEIPT · AS THE FEED REPORTS IT" : "EVIDENCE",
       at ? note(cursorNote, true) : "",
       lead("Every number here is the scorer's, as the door's results feed reports it, for this run's own record. The page shows it; it does not recompute or verify it."),
-      L ? table([["Board metric", v.metric ? `${v.metric.text} · ${v.metric.qualifier}${v.diagnostic ? " · diagnostic" : ""}` : v.none],
-        ["Definition", v.metricDefinition], ...v.distinct.map((d) => [`${d.name} (a different statistic)`, `${d.text.text} · ${d.text.qualifier}`]),
+      L ? table([["Board metric", v.metric ? `${v.metric.text} · ${W.tempWord(v.metric)}${v.diagnostic ? " · diagnostic" : ""}` : v.none],
+        ["Definition", v.metricDefinition], ...v.distinct.map((d) => [`${d.name} (a different statistic)`, `${d.text.text} · ${W.tempWord(d.text)}`]),
         ["Claim", v.claim ?? "none"], ["Evaluator named by the feed", v.evaluator ?? "none named", v.evaluator ? null : "unknown"],
         ["Checks the feed reports", v.verification ? M.verificationWords(v.verification) : "none"],
         ["Temperature field", v.field.available ? "verified field, associated with this layout" : v.field.reason, v.field.available ? null : "unknown"],
@@ -595,7 +681,7 @@ function showModal(kind) {
     const pts = points();
     openDialog("The door's newest records.", "FLIGHT RECORD",
       lead(`The ${pts.length} newest records the door returned, oldest first. Select one to replay from it.`),
-      h("div", null, pts.map((p, i) => { const b = h("button", { type: "button", class: "event-list-row" }, h("span", null, M.hms(p.at)), h("span", null, p.kind), h("strong", null, M.recordTitle(p))); b.addEventListener("click", () => { setCursor(i); openRecord(i); }); return b; })));
+      h("div", null, pts.map((p, i) => { const b = h("button", { type: "button", class: "event-list-row" }, h("span", null, W.when(p.at)), h("span", null, ""), h("strong", null, M.recordTitle(p))); b.addEventListener("click", () => { setCursor(i); openRecord(i); }); return b; })));
   } else if (kind === "sources") {
     openDialog("What is real on this page?", "SOURCES & SCOPE",
       h("ul", { class: "modal-list" },
@@ -611,7 +697,7 @@ function showModal(kind) {
         h("li", null, h("span", { class: "step-no" }, "01"), h("div", null, h("strong", null, "The physical model."), h("p", null, "Each run's eight dies on the CPU-DRAM package, from its own record. Drag to orbit, explode the layers (display only), select a layer to read its true thickness."))),
         h("li", null, h("span", { class: "step-no" }, "02"), h("div", null, h("strong", null, "The work."), h("p", null, "The door's stations and the visitors' short ids, from the door's own records. Unknown stays unknown."))),
         h("li", null, h("span", { class: "step-no" }, "03"), h("div", null, h("strong", null, "The flight record."), h("p", null, "The newest records, in order. Replay one only when you choose to; LIVE returns to the newest.")))),
-      note("No temperature colours are drawn: the door's results carry a scalar, not a temperature field. Every temperature is simulated, unvalidated and diagnostic."));
+      note("No temperature colours are drawn: the door's results carry a scalar, not a temperature field. Every temperature is simulated and diagnostic, not measured on real chips."));
   }
 }
 function closeDialog() { $("modal").close(); }
@@ -620,6 +706,7 @@ function closeDialog() { $("modal").close(); }
 function wire() {
   hydrateIcons();
   $("wnotice").textContent = NOTICE;
+  $("tempLine").textContent = W.TEMP_LINE;
   $("layerCount").textContent = String(STACK_LAYERS.length).padStart(2, "0");
   $("layerList").replaceChildren(...[...STACK_LAYERS].reverse().map((l) => {
     const sw = h("i", { class: "layer-swatch" });
@@ -705,14 +792,14 @@ async function pollVisitors() {
 function renderDeclarations() {
   const d = S.decl, box = $("declList");
   const fresh = d.at && Date.now() - d.at <= M.VISITORS_FRESH_MS;
-  const window = `THE LATEST ${M.VISITORS_WINDOW.toLocaleString("en-US")} DOOR RECORDS`;
+  const n = M.VISITORS_WINDOW.toLocaleString("en-US");
   box.hidden = d.ok === null;
   if (d.ok !== true || !fresh) {
     box.replaceChildren(h("p", { class: "decl-head" }, d.ok === false && d.error === "answered 404" ? "DECLARATIONS · NOT AVAILABLE ON THIS API"
       : `DECLARATIONS · UNAVAILABLE${d.error ? ` · ${d.error.toUpperCase()}` : ""}`));
     return;
   }
-  const head = d.list.length ? `DECLARATIONS IN ${window} · NEWEST FIRST` : `DECLARATIONS · NONE IN ${window}`;
+  const head = d.list.length ? W.TEXT.declarationsHead(n) : W.TEXT.declarationsNone();
   box.replaceChildren(h("p", { class: "decl-head" }, head),
     ...(d.partial ? [h("p", { class: "decl-head warn" }, "PARTIAL · NOT ALL OF THE WINDOW COULD BE READ; SOME NEWER DECLARATIONS MAY BE MISSING")] : []),
     ...d.list.map((x) => declBlock(x.view, x)));
@@ -721,7 +808,7 @@ function renderDeclarations() {
 // with its own time and seq.
 function declBlock(v, x) {
   if (!v) return null;
-  const when = h("small", null, `${M.hms(x.at)} · seq ${x.seq}`);
+  const when = h("small", { title: `seq ${x.seq}` }, W.when(x.at));
   if (v.kind !== "declared") return h("div", { class: "decl hidden" }, v.text, when);
   return h("div", { class: "decl" }, h("b", null, h("bdi", null, v.name === "" ? "(no name given)" : v.name)),
     v.reason ? h("span", null, h("bdi", null, v.reason)) : null, v.source ? h("span", null, `source: ${v.source}`) : null, when, h("em", null, v.note));
@@ -734,7 +821,7 @@ feed.start();
 pollBoard();
 pollVisitors();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); renderDeclarations(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.

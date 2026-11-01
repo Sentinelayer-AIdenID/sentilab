@@ -49,7 +49,9 @@ class VisitorTests(unittest.TestCase):
         self.assertEqual(self.arrival(nonce='a' * 16)[0], 204)
         with self.store.read() as db:
             body = json.loads(db.execute("SELECT body FROM events").fetchone()[0])
-        self.assertEqual(set(body), {'class', 'purpose', 'short_id', 'label'})
+        # Carter #58250: the recognised lab (a person gets "unknown" and nulls); pass_handle stays internal.
+        self.assertEqual(set(body), {'class', 'purpose', 'short_id', 'label', 'operator', 'service', 'category',
+                                     'verification', 'pass_handle'})
         page = self.door.visitors(None, None)[1]
         self.assertEqual(page['counts']['unique_observed_handles'], 0)
         self.assertEqual(page['counts']['arrivals_without_handle'], 1)
@@ -70,7 +72,9 @@ class VisitorTests(unittest.TestCase):
         self.assertEqual(page['items'][0]['class'], 'likely_human')
         self.assertEqual(page['declaration_trust'], 'self_declared_display_data')
         self.assertNotIn('a' * 16, json.dumps(page))
-        self.assertNotIn('operator', json.dumps(page))
+        # A person never carries a lab (Carter #58250).
+        self.assertEqual({(item['operator'], item['service'], item['category'], item['verification'])
+                          for item in page['items']}, {('unknown', None, None, None)})
         self.assertEqual(page['notice']['version'], intake.VISITOR_NOTICE)
 
     def test_passive_visit_and_repeat_declarations_have_separate_event_counts(self):

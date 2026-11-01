@@ -79,23 +79,27 @@ test("the wall negotiates: markdown and JSON for agents that prefer them; unclas
 test("the wall says exactly what a visit records and that it is public, in HTML, markdown and JSON", async (t) => {
   const calls = installApi(t);
   const s = setup();
-  const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+  const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. For a recognised agent or bot, we also record the lab, service, category and verification level our detector recognised; a person never gets them. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
   const html = await s.go("/", agent(UA.gptbot));
   assert.ok(html.text.includes(`<p class="fine">${RECORDED}</p>`), html.text);
   const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
   assert.ok(md.text.includes(`\n${RECORDED}\n`), md.text);
   const js = JSON.parse((await s.go("/", agent(UA.curl, { accept: "application/json" }))).text);
-  assert.equal(js.recorded, "a guess at your assistant's type (class) and the time; plus the purpose and a short visit id if you pick one; published on the public activity feed");
+  assert.equal(js.recorded, "a guess at your assistant's type (class) and the time; for a recognised agent or bot, the lab (operator), service, category and verification level the detector recognised, never for a person; plus the purpose and a short visit id if you pick one; published on the public activity feed");
   for (const text of [html.text, md.text, JSON.stringify(js)]) {
     assert.ok(!/purpose you pick is recorded|purpose id only|record: your assistant's type/.test(text), "the old claims are gone");
   }
-  // What those words describe: a wall view sends the class (and the operator, which the intake never keeps); a pick
-  // adds the purpose and the token's nonce, of which the intake keeps only a 4-hex short id.
+  // What those words describe: a wall view sends the class and, for a recognised agent or bot, the lab the registry
+  // read (operator, service, category, verification); a pick adds the purpose and the token's nonce, of which the
+  // intake keeps only a 4-hex short id.
   await s.drain();
-  assert.deepEqual(arrivalsOf(calls).map((a) => Object.keys(a)), [["class", "operator"], ["class", "operator"], ["class", "operator"]]);
+  const LAB = ["class", "operator", "service", "category", "verification"];
+  const labOnly = (keys) => keys[0] === "class" && keys[1] === "operator" && keys.every((key, i) => LAB.includes(key) && (i === 0 || LAB.indexOf(keys[i - 1]) < LAB.indexOf(key)));
+  assert.equal(arrivalsOf(calls).length, 3);
+  assert.ok(arrivalsOf(calls).every((a) => labOnly(Object.keys(a))), JSON.stringify(arrivalsOf(calls)));
   await s.go("/agents/intent?purpose=read", agent(UA.gptbot));
   await s.drain();
-  assert.deepEqual(Object.keys(arrivalsOf(calls).at(-1)), ["class", "operator", "purpose", "nonce"]);
+  assert.deepEqual(Object.keys(arrivalsOf(calls).at(-1)), [...LAB, "purpose", "nonce"]);
 });
 
 test("the wall says honestly whether submissions are open, closed or unknown, as the intake reports", async (t) => {
@@ -142,9 +146,9 @@ test("without DOOR_TOKEN_KEY the door is closed: agents keep #66's pages and the
   assert.deepEqual(intakeCalls(calls).filter((c) => c.method === "POST"), [], "nothing was submitted");
 });
 
-test("the wall sends a person to the live 3D view, with both parameters, in all three formats; the earlier demo stays as a second link", async (t) => {
+test("the wall sends a person to the Live Lab, in all three formats; the earlier demo stays as a second link", async (t) => {
   installApi(t);
-  const live = `${BASE}/sentilab/package/?feed=door&src=live`;
+  const live = `${BASE}/sentilab/live/`;
   const s = setup();
   const html = await s.go("/", agent(UA.gptbot));
   // The earlier demo, the replay page / served people before the Live Lab, is at /lab (web/test/livelab-route.test.mjs).
@@ -177,13 +181,15 @@ test("choosing a purpose mints a token on the request's own host and links the n
     assert.ok(!/receipt|identify yourself/i.test(page.text), "no receipt or identity promise");
     await s.drain();
     const arrival = arrivalsOf(calls).at(-1);
-    assert.deepEqual(arrival, { class: "declared_agent", operator: "openai", purpose: "place-chiplets", nonce: token.split(".")[4] });
+    // ChatGPT-User's user agent: the registry's assistant service, a claim (root's witness, 18:11Z).
+    assert.deepEqual(arrival, { class: "declared_agent", operator: "openai", service: "openai.chatgpt-user", category: "ai_assistant",
+      verification: "claimed", purpose: "place-chiplets", nonce: token.split(".")[4] });
     // The intake keeps only short_id, the first 4 hex of sha256(nonce); the view shows that and nothing more.
     assert.equal(createHash("sha256").update(arrival.nonce).digest("hex").slice(0, 4), verdict.claims.short_id);
   }
   const s = setup();
   const review = JSON.parse((await s.go("/agents/intent?purpose=review", agent(UA.curl, { accept: "application/json" }))).text);
-  assert.deepEqual(review.next.map((n) => n.url), [`${BASE}/sentilab/package/?feed=door&src=live`, `${BASE}/agents/board`, `${BASE}/agents/`]);
+  assert.deepEqual(review.next.map((n) => n.url), [`${BASE}/sentilab/live/`, `${BASE}/agents/board`, `${BASE}/agents/`]);
   assert.equal(review.kind, "scoped purpose token; not an identity");
   assert.equal(review.scope, "review:cpu-dram");
   const read = await s.go("/agents/intent?purpose=read", agent(UA.curl, { accept: "text/markdown" }));
@@ -453,7 +459,9 @@ test("arrivals carry exactly five fields from fixed lists; the collector hears a
   assert.deepEqual([posts[0].body.siteId, posts[0].body.path, posts[0].body.intent.category, posts[0].body.intent.source, posts[0].body.intent.classifierVersion],
     ["sentilab", "/agents/intent", "review", "declared_preset", "intent-gate-v1"]);
   for (const arrival of arrivalsOf(calls)) {
-    assert.deepEqual(Object.keys(arrival), ["class", "operator", "purpose", "nonce"]);
+    // GPTBot's user agent: the registry's training crawler, a claim (root's witness, 18:11Z).
+    assert.deepEqual(Object.keys(arrival), ["class", "operator", "service", "category", "verification", "purpose", "nonce"]);
+    assert.deepEqual([arrival.service, arrival.category, arrival.verification], ["openai.gptbot", "training_crawler", "claimed"]);
     assert.ok(["verified_agent", "signed_agent", "declared_agent", "crawler_claimed", "automation", "likely_human", "unknown"].includes(arrival.class));
     assert.ok(["openai", "google", "meta", "anthropic", "perplexity", "microsoft", "apple", "amazon", "bytedance", "commoncrawl", "deepseek", "unknown"].includes(arrival.operator));
     assert.match(arrival.nonce, /^[0-9a-f]{16}$/);

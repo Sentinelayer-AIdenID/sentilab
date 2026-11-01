@@ -140,7 +140,8 @@ class FeedTests(tk.DoorCase, unittest.TestCase):
 
     def test_no_open_route_carries_operator_anywhere(self):
         """AGENT-DOOR Amendment 3 (warden's PR82 P3.3): the public /api proxy reaches board, results and events, so
-        `operator` must appear in none of them, at any depth; nor in a token holder's own status."""
+        `operator` must appear in none of them, at any depth; nor in a token holder's own status. Since Carter #58250
+        the one exception is an arrival record, which carries the lab the edge recognised (app/test_door_lab.py)."""
         status, _reply, _ = self.request("POST", "/api/open/v1/door/arrival",
                                          json.dumps({"class": "declared_agent", "operator": "openai",
                                                      "purpose": "place-chiplets", "nonce": tk.NONCE}).encode())
@@ -153,6 +154,11 @@ class FeedTests(tk.DoorCase, unittest.TestCase):
         bodies.append(self.get("/api/open/v1/door/board", {"x-door-nonce": tk.nonce(10)})[1])
         bodies.append(self.get(f"/api/open/v1/door/status/{run_id}", {"x-door-nonce": tk.nonce(10)})[1])
         self.assertTrue(bodies[0]["items"] and bodies[1]["events"] and bodies[2]["top"])
+        events = bodies.pop(1)["events"]
+        self.assertEqual(["openai"], [event["operator"] for event in events if "operator" in event])
+        self.assertTrue(all(event["kind"] == "arrival" for event in events if "operator" in event))
+        self.assertNotIn("operator", json.dumps([{k: v for k, v in event.items() if k not in ("operator", "operator_name")}
+                                                 for event in events]))
         for body in bodies:
             self.assertNotIn("operator", json.dumps(body))
 
@@ -185,7 +191,9 @@ class FeedTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual({key: arrival[key] for key in ("class", "purpose", "short_id")},
                          {"class": "declared_agent", "purpose": "place-chiplets",
                           "short_id": principal_for(tk.NONCE)[13:17]})
-        self.assertNotIn("operator", arrival, "operator leaves every open feed (Amendment 3)")
+        # Carter #58250: an arrival record carries the lab the edge recognised, from exact enums (app/test_door_lab.py).
+        self.assertEqual({key: arrival[key] for key in ("operator", "service", "category", "verification")},
+                         {"operator": "anthropic", "service": None, "category": None, "verification": None})
         self.assertEqual(page["events"][1]["codes"], ["rotation_not_allowed"])
         self.assertNotIn("Claude says hi", json.dumps(page))
         status, later = self.get(f"/api/open/v1/door/events?after={page['events'][0]['seq']}&limit=1")

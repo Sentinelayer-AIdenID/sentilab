@@ -37,10 +37,12 @@ MAX_BODY_BYTES = 4096
 MAX_COMPACT_CHARS = 128
 COMPACT_ITEM = re.compile(r"(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.([0-9])\Z")
 PROPOSAL_SCHEMA = "sentilab-open-proposal/1"
-VISITOR_NOTICE = "sentilab-public-visitor/1"
-VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected purpose are public. If you opt in, "
-                      "your declared name, reason and source category are also public. We keep a handle internally "
-                      "to count purpose passes; that handle is not published. These declarations are not verified identity. "
+VISITOR_NOTICE = "sentilab-public-visitor/2"
+VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected purpose are public. For a recognised agent "
+                      "or bot, the lab, service, category and verification level the detector recognised are public "
+                      "too; a person never gets them. If you opt in, your declared name, reason and source category "
+                      "are also public. We keep a handle internally to count purpose passes and to link a declaration "
+                      "to its pass's arrival; that handle is not published. These declarations are not verified identity. "
                       "Referrer URLs and query strings are not collected automatically, and the raw purpose-pass "
                       "credential is not added as a generated feed field. All text you enter in name or reason "
                       "is public. Do not include private information.")
@@ -95,7 +97,13 @@ ARRIVAL_SCHEMA = {
     "required": ["class"],
     "properties": {
         "class": {"enum": list(CLASSES)},
-        "operator": {"enum": list(OPERATORS)},
+        # The edge's recognition (AIdenID registry observation). Any other string is kept as nothing: an operator
+        # not in OPERATORS is "unknown"; a service, category or verification level not in the bundled registry's
+        # enums is null (service.lab_of). Never free text: only enum values are ever stored or published.
+        "operator": {"type": "string", "maxLength": 64},
+        "service": {"type": "string", "maxLength": 64},
+        "category": {"type": "string", "maxLength": 64},
+        "verification": {"type": "string", "maxLength": 64},
         "purpose": {"enum": list(PURPOSES)},
         "nonce": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
         "declaration": {

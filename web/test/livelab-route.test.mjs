@@ -26,6 +26,7 @@ import worker from "../src/worker.js";
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 const LIVE_LAB = "/sentilab/live/";
 const LIVE_3D = `${BASE}/sentilab/package/?feed=door&src=live`;
+const LIVE_LAB_URL = `${BASE}${LIVE_LAB}`;
 const HUMAN_COOKIE = "sl_view=human; Max-Age=1800; Path=/; Secure; SameSite=Lax";
 const LINK = '</agents/>; rel="alternate"; type="text/markdown"';
 const VARY = "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer";
@@ -277,12 +278,12 @@ test("5. caches keep the representations at / apart: the redirect and the agent 
 test("6. the wall: the earlier demo is /lab in HTML, markdown and JSON, and /lab shows that page to the agent that follows it", async (t) => {
   installApi(t);
   const html = new TextDecoder().decode((await now("/", agent(UA.gptbot))).bytes);
-  assert.ok(html.includes(`A person? <a href="${LIVE_3D.replace("&", "&#38;")}">Watch it live</a>, or see <a href="${BASE}/lab">the earlier demo</a>.`), "html");
+  assert.ok(html.includes(`A person? <a href="${LIVE_LAB_URL.replace("&", "&#38;")}">Watch it live</a>, or see <a href="${BASE}/lab">the earlier demo</a>.`), "html");
   const md = new TextDecoder().decode((await now("/", agent(UA.gptbot, { accept: "text/markdown" }))).bytes);
-  assert.ok(md.includes(`A person? [Watch it live](${LIVE_3D}), or see [the earlier demo](${BASE}/lab).`), "markdown");
+  assert.ok(md.includes(`A person? [Watch it live](${LIVE_LAB_URL}), or see [the earlier demo](${BASE}/lab).`), "markdown");
   const json = JSON.parse(new TextDecoder().decode((await now("/", agent(UA.curl, { accept: "application/json" }))).bytes));
   assert.equal(json.human_page, `${BASE}/lab`);
-  assert.equal(json.live_view, LIVE_3D);
+  assert.equal(json.live_view, LIVE_LAB_URL);
   for (const text of [html, md, JSON.stringify(json)]) assert.ok(!text.includes("view=human"), "the wall no longer sends people to /?view=human");
   const followed = await now("/lab", agent(UA.gptbot));
   assert.equal(followed.status, 200);

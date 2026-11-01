@@ -133,7 +133,7 @@ const groups = {
     ["the declare key under another domain tag", TOKEN, 'JSON.stringify(["sentilab-declare/1", site, nonce, version])', 'JSON.stringify(["sentilab-spt1", site, nonce, version])'],
   ],
   "the notice and the confirm form": [
-    ["the bundled notice's version drifts", DECLARE, 'version: "sentilab-public-visitor/1",', 'version: "sentilab-public-visitor/2",'],
+    ["the bundled notice's version drifts", DECLARE, 'version: "sentilab-public-visitor/2",', 'version: "sentilab-public-visitor/3",'],
     ["the bundled notice's text drifts", DECLARE, "Do not include private information.", "Do not include private data."],
     ["the confirm page without the notice", RENDER, '<blockquote class="notice">${esc(NOTICE.text)}</blockquote>', ""],
     ["the opt-in pre-ticked", RENDER, '<input type="checkbox" name="notice_version" value="${esc(NOTICE.version)}">', '<input type="checkbox" name="notice_version" value="${esc(NOTICE.version)}" checked>'],

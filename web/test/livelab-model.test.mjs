@@ -97,7 +97,7 @@ test("the live API data reaches the same geometry, result and receipt as /sentil
   assert.equal(M.runView(newest).metric.text, "113.23 °C");
   // Events: the Package view's events, plus the server's own time and nothing else.
   const theirEvents = mergeEvents([], normalizeEvents(doc("events.json")).events);
-  assert.deepEqual(feed.state.events.map(({ at, ...e }) => e), theirEvents);
+  assert.deepEqual(feed.state.events.map(({ at, purpose, operatorName, serviceName, verification, ...e }) => e), theirEvents);
   const rawAt = new Map(doc("events.json").events.map((e) => [e.seq, e.at]));
   for (const e of feed.state.events) assert.equal(e.at, rawAt.get(e.seq));
 });
@@ -324,14 +324,15 @@ test("copy: a run is titled by its short id, and its class is a separate visitor
   await feed.pollOnce();
   for (const L of feed.state.layouts) {
     assert.equal(M.runTitle(L), `Run ${L.short}`);
-    assert.equal(M.visitorType(L.cls), `visitor type: ${L.cls}`);
+    assert.equal(M.visitorType(L.cls), { unknown: "not identified", declared_agent: "automated visitor · says what it is", automation: "script or bot" }[L.cls]);
     assert.equal(M.runTitle(L).includes(L.cls), false, `${M.runTitle(L)} carries no class word`);
   }
   const pts = M.traceModel(feed.state.events).points;
   const run = pts.find((p) => p.kind === "run"), anon = pts.find((p) => p.kind === "arrival" && !p.label.includes(" · "));
-  assert.match(M.recordTitle(run), /^Run [0-9a-f]{4} /);
-  assert.equal(M.recordTitle(anon), `${anon.label} ${anon.line}`);
-  assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "Visitor 7c2e (visitor type: unknown) arrived at the door");
+  assert.match(M.recordTitle(run), /^The layout from visit [0-9a-f]{4} /);
+  assert.match(M.recordTitle(anon), /^(A script or bot|An automated visitor that says what it is|A visitor \(not identified\)) arrived$/);
+  assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "A visitor (not identified) arrived · visit 7c2e");
+  assert.equal(M.recordTitle({ kind: "arrival", label: "declared_agent · 82ea", line: "arrived at the door" }), "An automated visitor that says what it is arrived · visit 82ea");
 });
 
 // Warden's P1-2(b): the page honours Retry-After on 429 and 503, backs off with jitter otherwise (no fixed 5 s

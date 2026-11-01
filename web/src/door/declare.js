@@ -39,8 +39,8 @@ export const DEFAULT_IGNORABLE = Object.freeze([0x00AD, 0x00AD, 0x034F, 0x034F, 
   0x180B, 0x180F, 0x200B, 0x200F, 0x202A, 0x202E, 0x2060, 0x206F, 0x3164, 0x3164, 0xFE00, 0xFE0F, 0xFEFF, 0xFEFF, 0xFFA0,
   0xFFA0, 0xFFF0, 0xFFF8, 0x1BCA0, 0x1BCA3, 0x1D173, 0x1D17A, 0xE0000, 0xE0FFF]);
 export const NOTICE = Object.freeze({
-  version: "sentilab-public-visitor/1",
-  text: "Your visit time, detector classification and selected purpose are public. If you opt in, your declared name, reason and source category are also public. We keep a handle internally to count purpose passes; that handle is not published. These declarations are not verified identity. Referrer URLs and query strings are not collected automatically, and the raw purpose-pass credential is not added as a generated feed field. All text you enter in name or reason is public. Do not include private information.",
+  version: "sentilab-public-visitor/2",
+  text: "Your visit time, detector classification and selected purpose are public. For a recognised agent or bot, the lab, service, category and verification level the detector recognised are public too; a person never gets them. If you opt in, your declared name, reason and source category are also public. We keep a handle internally to count purpose passes and to link a declaration to its pass's arrival; that handle is not published. These declarations are not verified identity. Referrer URLs and query strings are not collected automatically, and the raw purpose-pass credential is not added as a generated feed field. All text you enter in name or reason is public. Do not include private information.",
 });
 // Whether a code point is in a table of sorted, disjoint [first, last] ranges, flattened (unicode16.js): a binary search.
 function inRanges(table, code) {

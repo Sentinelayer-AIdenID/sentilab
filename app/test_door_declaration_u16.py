@@ -36,7 +36,8 @@ DI_MARKS = tuple(chr(cp) for first, last in ((0x034F, 0x034F), (0x17B4, 0x17B5),
 RESERVED = ("human", "you", "senti", "participant", "unidentified participant", "system", "owner", "admin", "moderator")
 # Each notice version names exactly one text: its SHA-256 over the UTF-8 bytes. Changing the text means a new version
 # and a new line here (and in web/test/door-declaration-u16.test.mjs, which pins the Worker's copy).
-PINNED_NOTICES = {"sentilab-public-visitor/1": "89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b"}
+PINNED_NOTICES = {"sentilab-public-visitor/1": "89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b",
+                  "sentilab-public-visitor/2": "7c627fb07e928f5f474268a512459d1e70fda1cfcb06f6524c2eb47656241cf1"}
 
 
 def codes_of(ranges):

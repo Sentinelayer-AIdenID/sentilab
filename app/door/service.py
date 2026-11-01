@@ -23,11 +23,35 @@ from . import intake
 from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
 from .evaluator import ALIAS
-from .policy import CASE, CLASSES, NONCE, PURPOSES, Policy, parse_utc, principal_for, short_id, utc
+from .policy import CASE, CLASSES, NONCE, OPERATORS, PURPOSES, Policy, parse_utc, principal_for, short_id, utc
 from .presence import HERE, NOT_MEASURED, Presence
 from .scorer import ACTIVE_GUARD_C, METRIC, METRIC_ID, HttpScorer
 from .stats import Totals
+from .registry_enums import CATEGORIES, OPERATOR_NAMES, SERVICE_NAMES, SERVICES, VERIFICATIONS
 from .store import HIDE_REASONS, Store, label
+
+# A person never carries a lab: for these classes the operator is "unknown" and the service, category and
+# verification null, whatever the edge sent (Carter #58250; root's repair contract, 18:11Z).
+PERSON_CLASSES = ("likely_human", "unknown", "ours")
+LAB_FIELDS = ("operator", "service", "category", "verification")
+
+
+def lab_of(value: dict) -> dict:
+    """The recognised lab of one arrival, from exact enums only: operator in OPERATORS (else "unknown"); service,
+    category and verification in the bundled AIdenID registry's enums (else null). A person gets none of them."""
+    if value.get("class") not in CLASSES or value.get("class") in PERSON_CLASSES:
+        return {"operator": "unknown", "service": None, "category": None, "verification": None}
+    pick = lambda name, allowed: value.get(name) if value.get(name) in allowed else None  # noqa: E731
+    return {"operator": value.get("operator") if value.get("operator") in OPERATORS else "unknown",
+            "service": pick("service", SERVICES), "category": pick("category", CATEGORIES),
+            "verification": pick("verification", VERIFICATIONS)}
+
+
+def published_lab(value: dict) -> dict:
+    """lab_of plus display names from the bundled registry (the pages bundle no vendor names): operator_name for a
+    recognised operator, service_name for a recognised service; null otherwise, and always null for a person."""
+    lab = lab_of(value)
+    return {**lab, "operator_name": OPERATOR_NAMES.get(lab["operator"]), "service_name": SERVICE_NAMES.get(lab["service"])}
 
 RUN_ID = re.compile(r"open-[0-9a-f]{8}-[0-9a-f]{32}\Z")
 CURSOR_MAX = 2 ** 53 - 1
@@ -234,13 +258,20 @@ class Door:
         if found:
             return 400, {"schema": "sentilab-door-arrival/1", "state": "rejected", "codes": found}, {}
         short = short_id(principal_for(value["nonce"])) if "nonce" in value else None
-        # operator is accepted (lane 1's shape) and never kept: it leaves every open feed (AGENT-DOOR Amendment 3).
+        # The recognised lab is kept and published from exact enums only, and never for a person (lab_of).
         body = {"class": value["class"], "purpose": value.get("purpose"), "short_id": short,
-                "label": label(value["class"], short) if short else value["class"]}
+                "label": label(value["class"], short) if short else value["class"], **lab_of(value)}
+        handle = (self.policy.keyed("public-visitor/1", value["nonce"])
+                  if "nonce" in value and len(self.policy.k_challenge) >= 32 else None)
         if "declaration" in value:
             body["declaration"] = value["declaration"]
-            if "nonce" in value and len(self.policy.k_challenge) >= 32:
-                body["visitor_handle"] = self.policy.keyed("public-visitor/1", value["nonce"])
+            if handle is not None:
+                body["visitor_handle"] = handle
+            # The arrival this declaration belongs to: the latest passive arrival of the SAME pass (its keyed
+            # handle, from the nonce), never a short id match; null when that pass has none.
+            body["arrival"] = self.store.arrival_of_pass(handle) if handle is not None else None
+        elif handle is not None:
+            body["pass_handle"] = handle      # internal only: binds a later declaration to this arrival
         now = self.policy.clock()
         if not self.store.note_arrival(body, now=now, per_min=self.policy.flood.arrivals_per_min):
             codes = [violation("rate_limited", retry_after=utc(now + 60))]
@@ -384,7 +415,11 @@ class Door:
         for row in page:
             body = json.loads(row["body"])
             public = (hidden_declaration(body, row["hidden_reason"]) if row["hidden_reason"] is not None else
-                      {key: value for key, value in body.items() if key != "visitor_handle"})
+                      {key: value for key, value in body.items() if key not in ("visitor_handle", "pass_handle")})
+            if row["kind"] == "arrival" and row["hidden_reason"] is None:
+                public.update(published_lab(body))
+                if isinstance(body.get("declaration"), dict):
+                    public["arrival"] = body.get("arrival") if isinstance(body.get("arrival"), int) else None
             identity = {"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"]}
             events.append({**public, **identity} if row["hidden_reason"] is not None else {**identity, **public})
         return 200, {"schema": "sentilab-door-events/1", "events": events,
@@ -407,9 +442,12 @@ class Door:
                 continue
             # Explicit projection: legacy/private fields can never leak through this new view.
             item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
+            item.update(published_lab(body))
             declaration = body.get("declaration")
             item["event_kind"] = ("passive_arrival" if declaration is None else
                                   "declaration" if isinstance(declaration, dict) else "legacy_unclassified")
+            if item["event_kind"] == "declaration":
+                item["arrival"] = body.get("arrival") if isinstance(body.get("arrival"), int) else None
             item["declaration"] = ({key: declaration[key] for key in ("notice_version", "name", "reason", "source")
                                     if key in declaration}
                                    if isinstance(declaration, dict) else None)

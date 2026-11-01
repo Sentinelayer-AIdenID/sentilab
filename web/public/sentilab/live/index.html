@@ -33,6 +33,7 @@
       <div class="intro-caption"><span class="tiny-orbit"></span><p>One experiment. Every agent. The whole story.<small>Explore the model. Follow the work. Inspect the proof.</small></p></div>
     </section>
     <p class="wnotice" id="wnotice" role="note"></p>
+    <p class="temp-line" id="tempLine">Every temperature here comes from a published heat model. It is simulated, not measured on real chips.</p>
     <div class="feed-banner" id="feedBanner" role="status" hidden></div>
     <div class="mobile-tabs" role="tablist" aria-label="Workspace panels"><button type="button" class="active" data-mobile="model" role="tab" aria-selected="true" aria-controls="modelPanel">The model</button><button type="button" data-mobile="agents" role="tab" aria-selected="false" aria-controls="activityPanel">The work</button><button type="button" data-mobile="trace" role="tab" aria-selected="false" aria-controls="tracePanel">Flight record</button></div>
     <div class="mobile-experiments" id="mobileRuns" role="group" aria-label="Choose a run"></div>
@@ -45,7 +46,7 @@
         <button type="button" class="rail-help" data-modal="about"><span data-icon="info"></span> How to read this lab</button>
       </aside>
       <section class="model-panel panel" id="modelPanel" aria-label="Interactive package model">
-        <div class="panel-top"><div><span class="eyebrow">01 / THE PHYSICAL MODEL</span><h2 id="modelTitle">A closer look at the package.</h2><p class="model-sub" id="modelSub"></p></div><button type="button" class="subtle icon-button" id="modelReset" aria-label="Reset the camera" title="Reset view"><span data-icon="reset"></span></button></div>
+        <div class="panel-top"><div><span class="eyebrow">01 / THE PHYSICAL MODEL</span><h2 id="modelTitle">A closer look at the package.</h2><p class="model-sub" id="modelSub"></p><p class="model-cap" id="modelCap"></p></div><button type="button" class="subtle icon-button" id="modelReset" aria-label="Reset the camera" title="Reset view"><span data-icon="reset"></span></button></div>
         <div class="model-toolbar"><div class="segmented" role="group" aria-label="Package appearance"><button type="button" class="active" id="anatomyMode" aria-pressed="true">Anatomy</button><button type="button" id="heatMode" aria-pressed="false" disabled aria-describedby="fieldNote">Thermal view</button></div><span class="model-kind" id="modelKind"><i></i><span id="modelKindText">NO RUN</span></span><button type="button" class="text-button" data-modal="receipt">Inspect <span aria-hidden="true">↗</span></button></div>
         <div class="model-viewport" id="modelViewport">
           <div class="canvas-grid"></div>
@@ -68,11 +69,12 @@
       </section>
       <aside class="activity-panel panel" id="activityPanel" aria-label="The work, as the door records it">
         <div class="panel-top"><div><span class="eyebrow">02 / THE COLLECTIVE</span><h2>Follow the work.</h2></div><button type="button" class="subtle icon-button" data-modal="atlas" aria-label="Expand the door atlas"><span data-icon="expand"></span></button></div>
+        <div class="arrivals" id="arrivals" aria-live="polite"><p class="arrivals-head" id="arrivalsHead">VISITORS AND THEIR LATEST RECORDED ACTIVITY</p><div class="arrival-card" id="arrivalCard" hidden></div><div class="arrival-strip" id="arrivalStrip" role="list" aria-label="Recent arrivals"></div></div>
         <div class="replay-state" id="feedState"><span class="replay-dot"></span><span id="feedStateText">CONNECTING TO THE DOOR</span><button type="button" data-modal="live">What is live? <span aria-hidden="true">↗</span></button></div>
-        <dl class="door-facts" id="doorFacts" aria-label="The door, from its board"><div><dt>DOOR</dt><dd id="factDoor" class="na">unavailable</dd></div><div><dt>SCORER</dt><dd id="factScorer" class="na">unknown</dd></div><div><dt>QUEUE</dt><dd id="factQueue" class="na">unavailable</dd></div><div><dt>CPU BUDGET</dt><dd id="factBudget" class="na">unavailable</dd></div></dl>
-        <div class="agent-map"><svg id="atlasSvg" viewBox="0 0 300 150" role="img" aria-label="Door atlas: runs at their last reported state"></svg></div><p class="map-legend" id="mapLegend">A dot is a run at its last reported state, not a screen position</p>
+        <dl class="door-facts" id="doorFacts" aria-label="The door, from its board"><div><dt>DOOR</dt><dd id="factDoor" class="na">unavailable</dd></div><div><dt>SIMULATOR</dt><dd id="factScorer" class="na">unknown</dd></div><div><dt>WAITING</dt><dd id="factQueue" class="na">unavailable</dd></div><div><dt>COMPUTE LEFT TODAY</dt><dd id="factBudget" class="na">unavailable</dd></div></dl>
+        <div class="agent-map"><svg id="atlasSvg" viewBox="0 0 300 150" role="img" aria-label="Door atlas: runs at their last reported state"></svg></div><p class="map-legend" id="mapLegend">Each dot is a design, at the last step it reached</p>
         <div class="decl-list" id="declList" role="group" aria-label="Self-declared visitors, newest first" hidden></div>
-        <div class="agents-heading"><span class="eyebrow">RUNS · CLASS · SHORT ID</span><span id="visitorCount">--</span></div>
+        <div class="agents-heading"><span class="eyebrow">DESIGNS · WHO SENT THEM</span><span id="visitorCount">--</span></div>
         <div class="agent-list" id="visitorList" role="group" aria-label="Runs by full run id, newest record first, then the door's other records by label"></div>
         <div class="next-event"><span class="eyebrow" id="selectedEventLabel">NEWEST RECORD</span><button type="button" id="selectedEvent"><span class="event-glyph" aria-hidden="true">↗</span><span><strong id="eventTitle">No record yet</strong><small id="eventSubtitle">Waiting for the door</small></span><span aria-hidden="true">↗</span></button></div>
       </aside>
