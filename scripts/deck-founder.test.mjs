@@ -110,11 +110,13 @@ test("root's carried openings, the finding beat in root's words and Carter's add
     assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
     assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
-  // Slide 9's freeze fallback is aneta's plain13 from v1.32: v1.31's five rows and root's wording (root's +1 on v1.31's data,
-  // 12:12:03Z) with a narrower finite-element label. It replaces v1.22's plain8, which stays in the review evidence only.
+  // Slide 9's freeze fallback is aneta's plain13 from v1.32: v1.31's five rows and root's wording with a narrower
+  // finite-element label; root's scoped +1 (12:25:10Z). It replaces v1.22's plain8, which stays in the review evidence only.
   assert.equal(loaded.v4.figures.plain13.sha256, "bea8f1d5669654ff83078b1009c59af9a9fd689b4f90899c703074ba75d9fbbf");
-  assert.match(loaded.v4.figures.plain13.review, /^aneta's v1\.32 \(ZIP ea7d2995fe7a134648f798e48a6dba5d1899f1099c76989461f1ce3e2c491d4e, 41,053 bytes\): v1\.31's five rows and root's wording, root's \+1 on v1\.31's data \(12:12:03Z/);
+  assert.match(loaded.v4.figures.plain13.review, /^aneta's v1\.32 \(ZIP ea7d2995fe7a134648f798e48a6dba5d1899f1099c76989461f1ce3e2c491d4e, 41,053 bytes\): .*root's scoped \+1, 12:25:10Z \(reply to 57997\): no numerical token changed\./);
   assert.equal(loaded.v4.figures.plain13.pending, undefined);
+  // Every figure on the freeze branch is approved (the coordinator, 12:26Z): v1.24's, v1.30's plain7, v1.32's plain13.
+  for (const [id, f] of Object.entries(loaded.v4.figures)) assert.equal(f.pending, undefined, id);
   const p13 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain13-crosscheck.svg"), "utf8");
   for (const t of ["from our ask in the help room to replies reporting re-runs,", "Finite element, a separate code", "another team; extrapolated, later reply", "in five rows"]) assert.ok(p13.includes(t), t);
   assert.doesNotMatch(p13, /own solvers|own compute|Vortex/);
