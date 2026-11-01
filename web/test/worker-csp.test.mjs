@@ -50,8 +50,11 @@ const headerList = (res) => [...res.headers.entries()].sort();
 // The three pages with an agent version also carry the negotiation headers: they vary on Accept, stay out of shared
 // caches and name their agent version (worker-agents.test.mjs covers the negotiation).
 const negotiated = (alternate) => ({ vary: "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer", "cache-control": "private, no-store", link: `<${alternate}>; rel="alternate"; type="text/markdown"` });
-const ADDED = { "/sentilab/": negotiated("/agents/"), "/sentilab/package/": negotiated("/agents/physics.md"), "/sentilab/lab.js": {}, "/": negotiated("/agents/"),
+// /lab is the asset at / (the earlier replay page): a page without an agent version, so it adds only the CSP. / itself
+// sends a person to the Live Lab (below).
+const ADDED = { "/sentilab/": negotiated("/agents/"), "/sentilab/package/": negotiated("/agents/physics.md"), "/sentilab/lab.js": {}, "/lab": {},
   "/vendor/three/0.187.0/three.module.js": {}, "/sentilab/package/door-fixture.json": {} };
+const ASSET = { "/lab": "/" };
 
 test("the exported policy is exactly the reviewed one", () => {
   assert.equal(CSP, EXACT);
@@ -63,19 +66,28 @@ test("worker.js exports only its default handler (the Workers runtime refuses an
   assert.deepEqual(source.match(/^[ \t]*export\b.*$/gm), ["export default {"], "the only export statement");
 });
 
-for (const path of ["/sentilab/", "/sentilab/package/", "/sentilab/lab.js", "/", "/vendor/three/0.187.0/three.module.js", "/sentilab/package/door-fixture.json"]) {
+for (const path of ["/sentilab/", "/sentilab/package/", "/sentilab/lab.js", "/lab", "/vendor/three/0.187.0/three.module.js", "/sentilab/package/door-fixture.json"]) {
   test(`asset ${path}: the exact CSP is added; status, body bytes and every other header are the asset layer's (pages add their negotiation headers)`, async () => {
     const env = { ASSETS: assets(FILES), API_ORIGIN: ORIGIN };
-    const direct = await env.ASSETS.fetch(new Request(`https://sentilab.aidenid.com${path}`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } }));
+    const from = ASSET[path] ?? path;
+    const direct = await env.ASSETS.fetch(new Request(`https://sentilab.aidenid.com${from}`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } }));
     const res = await worker.fetch(new Request(`https://sentilab.aidenid.com${path}`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } }), env);
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("content-security-policy"), EXACT);
-    assert.deepEqual(await bytes(res), new Uint8Array(FILES[path].body), "the body is untouched");
+    assert.deepEqual(await bytes(res), new Uint8Array(FILES[from].body), "the body is untouched");
     const others = headerList(res).filter(([k]) => k !== "content-security-policy");
     const expected = Object.entries({ ...Object.fromEntries(headerList(direct)), ...ADDED[path] }).sort();
     assert.deepEqual(others, expected, "every other header is the asset layer's, plus a page's negotiation headers");
   });
 }
+test("/ for a person: a 302 to the Live Lab with the exact CSP and the page's negotiation headers; the asset layer is not asked", async () => {
+  const env = { ASSETS: assets(FILES), API_ORIGIN: ORIGIN };
+  const res = await worker.fetch(new Request("https://sentilab.aidenid.com/", { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } }), env);
+  assert.equal(res.status, 302);
+  assert.deepEqual(headerList(res), Object.entries({ "content-security-policy": EXACT, location: "/sentilab/live/", ...negotiated("/agents/") }).sort());
+  assert.deepEqual(await bytes(res), new Uint8Array(0));
+  assert.deepEqual(env.ASSETS.asked, []);
+});
 test("asset responses that aren't 200 keep their status and still carry the CSP (304, 404)", async () => {
   const env = { ASSETS: assets(FILES), API_ORIGIN: ORIGIN };
   const notModified = await worker.fetch(new Request("https://sentilab.aidenid.com/sentilab/", { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, "if-none-match": '"lab"' } }), env);

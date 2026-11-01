@@ -16,6 +16,7 @@ const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"]
 // request through this Worker (assets.run_worker_first: true); without that the asset layer would answer first and
 // this header would never be set.
 // The three pages with an agent version are negotiated on Accept (agent-view.js); /agents/ serves /agents/index.md.
+// The human version of / is the Live Lab, and the replay page / served before it is at /lab (humanVersion).
 
 async function asset(request, env) {
   const agent = await serveAgentAsset(request, env);
@@ -24,11 +25,29 @@ async function asset(request, env) {
 }
 
 async function humanAsset(request, env) {
-  const res = await env.ASSETS.fetch(request);
+  const res = await humanVersion(request, env);
   const headers = new Headers(res.headers);
   headers.set("content-security-policy", CSP);
   addHumanPageHeaders(request, headers);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+// The human version of a request: the asset layer's answer, except at / and /lab. A GET or HEAD that gets the human
+// version of / (a person's browser, an unclassified client whose Accept prefers HTML, ?view=human and its cookie, and
+// every fallback to the human page) is a same-origin 302 to the Live Lab (web/public/sentilab/live/, a plain asset
+// directory, so the redirect ends there), and humanAsset and withEdge give it the human page's headers as before: the
+// CSP, Vary, private, no-store, the Link to the agent version and the ?view=human cookie. The wall and the agent
+// versions never come here, and any other method at / reaches the asset layer as before. /lab is the earlier replay
+// page that / served (web/public/index.html), asked of the asset layer as / with this request's method and headers
+// (never as /index.html, which the asset layer answers with a 307 to /). It has no agent version, so every client gets
+// it as it is, like any other page without one.
+const LIVE_LAB = "/sentilab/live/";
+async function humanVersion(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname === "/" && ["GET", "HEAD"].includes(request.method)) return new Response(null, { status: 302, headers: { location: LIVE_LAB } });
+  if (url.pathname !== "/lab") return env.ASSETS.fetch(request);
+  url.pathname = "/";
+  return env.ASSETS.fetch(new Request(url, request));
 }
 
 async function proxy(request, env) {

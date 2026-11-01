@@ -109,6 +109,16 @@ the original page for 30 minutes, overriding both classification and Accept nego
 Existing Set-Cookie headers are preserved. These
 requests are not observed.
 
+**Live Lab.** The human version of `/` is the Live Lab: every GET or HEAD that gets the
+human version of `/` (a person's browser, an unclassified client whose Accept prefers HTML,
+`?view=human` and its cookie, and each fallback above) is a same-origin `302` to
+`/sentilab/live/` with that page's headers (the CSP, the `Vary` and `private, no-store`
+above, the alternate Link, and the cookie for `?view=human`); the Location never carries
+the query. The wall and the agent versions of `/` are unchanged, and other methods reach the
+asset layer as before. The replay page `/` served before (`web/public/index.html`) is at
+`/lab` for every client: the asset at `/`, with the CSP and the asset layer's own headers
+(it has no agent version). The wall's "the earlier demo" link points there.
+
 **Agent door.** `worker.js` passes `serveAgent: serveWallOrAgentVersion` (`src/door/door.js`),
 and `withEdge` hands it `{ identity, ctx }` as a third argument. With a usable
 `DOOR_TOKEN_KEY`, a classified agent's GET or HEAD of a mapped page gets the wall ("What are
@@ -222,7 +232,8 @@ Wrangler dry-run build and real local Workers runtime.
 
 After the content PR and operator deployment, request `/` with `User-Agent: GPTBot`
 and check the agent asset's bytes/type, CSP and private cache policy. Request the
-same page in a desktop browser and compare bytes against the original asset. Check
+same page in a desktop browser (a `302` to `/sentilab/live/`), then `/lab`, and compare
+its bytes against the original asset. Check
 `?view=human` and then its cookie using the agent user agent. Confirm no aquarium
 post with the default-off flag. After the separate collector fix, enable the flag
 and confirm the claimed service arrival **at SentiLab**, with its real path;

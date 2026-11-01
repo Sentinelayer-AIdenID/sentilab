@@ -43,12 +43,13 @@ test("classified agents get the wall on the three mapped pages; browsers get the
     }
   }
   const s = setup();
+  // The human page at / is the Live Lab: a redirect to it (web/test/livelab-route.test.mjs; the earlier page is at /lab).
   const human = await s.go("/", { headers: BROWSER });
-  assert.ok(same(human.bytes, file("index.html")), "a desktop browser gets the human page byte for byte");
+  assert.deepEqual([human.status, human.headers.get("location")], [302, "/sentilab/live/"], "a desktop browser gets the human page");
   for (const init of [{ headers: { "user-agent": UA.gptbot } }, { headers: { "user-agent": UA.gptbot, cookie: "sl_view=human" } }]) {
     const query = init.headers.cookie ? "" : "?view=human";
     const r = await s.go(`/${query}`, init);
-    assert.ok(same(r.bytes, file("index.html")), `override ${query || "cookie"}`);
+    assert.deepEqual([r.status, r.headers.get("location")], [302, "/sentilab/live/"], `override ${query || "cookie"}`);
   }
   assert.equal(arrivalsOf(calls).length, 15, "one arrival per agent wall view");
 });
@@ -146,13 +147,14 @@ test("the wall sends a person to the live 3D view, with both parameters, in all 
   const live = `${BASE}/sentilab/package/?feed=door&src=live`;
   const s = setup();
   const html = await s.go("/", agent(UA.gptbot));
-  assert.ok(html.text.includes(`A person? <a href="${live.replace("&", "&#38;")}">Watch it live</a>, or see <a href="${BASE}/?view=human">the earlier demo</a>.`), "html");
+  // The earlier demo, the replay page / served people before the Live Lab, is at /lab (web/test/livelab-route.test.mjs).
+  assert.ok(html.text.includes(`A person? <a href="${live.replace("&", "&#38;")}">Watch it live</a>, or see <a href="${BASE}/lab">the earlier demo</a>.`), "html");
   assert.ok(!html.text.includes("Open the normal site"), "the old label is gone");
   const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
-  assert.ok(md.text.includes(`A person? [Watch it live](${live}), or see [the earlier demo](${BASE}/?view=human).`), "markdown");
+  assert.ok(md.text.includes(`A person? [Watch it live](${live}), or see [the earlier demo](${BASE}/lab).`), "markdown");
   const json = JSON.parse((await s.go("/", agent(UA.curl, { accept: "application/json" }))).text);
   assert.equal(json.live_view, live);
-  assert.equal(json.human_page, `${BASE}/?view=human`);
+  assert.equal(json.human_page, `${BASE}/lab`);
   await s.drain();
 });
 

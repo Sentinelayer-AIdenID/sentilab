@@ -4,11 +4,14 @@
 // handler, for one); `wrangler deploy --dry-run` only bundles, so it can't either. This script:
 //   1. bundles it: wrangler deploy --dry-run --outdir <tmp> (no credentials, nothing uploaded);
 //   2. runs it: wrangler dev on 127.0.0.1, with the /api upstream switched off (API_ORIGIN=none), and checks
-//      - /sentilab/, /sentilab/package/, /sentilab/lab.js and /, and the Package view's 3D assets (render3d.mjs, the
-//        door fixture, the vendored three.js), answer 200 with the exact Content-Security-Policy and the bytes in web/public;
+//      - /sentilab/, /sentilab/package/, /sentilab/lab.js, /lab (the earlier replay page, web/public/index.html), the
+//        Live Lab /sentilab/live/, and the Package view's 3D assets (render3d.mjs, the door fixture, the vendored
+//        three.js), answer 200 with the exact Content-Security-Policy and the bytes in web/public;
 //      - the agent pages serve with the asset layer's own types (/llms.txt, /agents.json, /agents/*.md and *.json), and
 //        /agents/ plus the agent versions of / and /sentilab/package/ (Accept: markdown or JSON) serve their files with
-//        the Worker's types; a browser's Accept gets the human page, with Vary, private caching and the Link header;
+//        the Worker's types; a browser's Accept at / (GET and HEAD) gets the human version of /, a 302 to the Live Lab,
+//        with Vary, private caching and the Link header, and followed it ends there; /sentilab/live without its slash is
+//        the asset layer's redirect, as /sentilab/package is;
 //      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
 //      - a write to /api is refused (405 read_only) with no CSP added;
 //      - the agent door (src/door/door.js), opened with a boot-only DOOR_TOKEN_KEY: a classified agent's wall on /, a
@@ -86,7 +89,8 @@ check("the Workers runtime starts and answers", ready && !/\[ERROR\]/.test(strip
 if (ready) {
   const file = (rel) => new Uint8Array(readFileSync(join(WEB, "public", rel)));
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
-  for (const [path, rel] of [["/sentilab/", "sentilab/index.html"], ["/sentilab/package/", "sentilab/package/index.html"], ["/sentilab/lab.js", "sentilab/lab.js"], ["/", "index.html"],
+  for (const [path, rel] of [["/sentilab/", "sentilab/index.html"], ["/sentilab/package/", "sentilab/package/index.html"], ["/sentilab/lab.js", "sentilab/lab.js"], ["/lab", "index.html"],
+    ["/sentilab/live/", "sentilab/live/index.html"],
     ["/sentilab/package/render3d.mjs", "sentilab/package/render3d.mjs"], ["/sentilab/package/door-fixture.json", "sentilab/package/door-fixture.json"],
     ["/vendor/three/0.187.0/three.module.js", "vendor/three/0.187.0/three.module.js"], ["/vendor/three/0.187.0/three.core.js", "vendor/three/0.187.0/three.core.js"]]) {
     const r = await fetch(BASE + path, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } });
@@ -111,13 +115,30 @@ if (ready) {
       r.status === 200 && r.headers.get("content-type") === type && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
       `${r.status} · ${r.headers.get("content-type")}`);
   }
-  // A browser's Accept: the human page, byte for byte, varying on Accept, kept out of shared caches, naming its agent version.
-  const human = await fetch(`${BASE}/`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
-  const humanBody = new Uint8Array(await human.arrayBuffer());
-  check("GET / with a browser's Accept: the human page, with Vary: Accept, private caching and the Link header",
-    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer"
-      && human.headers.get("cache-control") === "private, no-store" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
-    `${human.status} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
+  // A browser's Accept at /: the human version of /, a same-origin 302 to the Live Lab, varying on Accept, kept out of
+  // shared caches, naming its agent version; HEAD the same. Followed, it ends at the Live Lab (a plain asset: no loop).
+  const browserAccept = { "user-agent": UNRECOGNIZED_CLIENT_UA, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" };
+  for (const method of ["GET", "HEAD"]) {
+    const human = await fetch(`${BASE}/`, { method, redirect: "manual", headers: browserAccept });
+    const humanBody = new Uint8Array(await human.arrayBuffer());
+    check(`${method} / with a browser's Accept: a 302 to /sentilab/live/, with Vary: Accept, private caching, the Link header and the exact CSP`,
+      human.status === 302 && human.headers.get("location") === "/sentilab/live/" && humanBody.length === 0
+        && human.headers.get("vary") === "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer"
+        && human.headers.get("cache-control") === "private, no-store" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"'
+        && human.headers.get("content-security-policy") === CSP,
+      `${human.status} · location ${human.headers.get("location")} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
+  }
+  const followed = await fetch(`${BASE}/`, { headers: browserAccept });
+  const followedBody = new Uint8Array(await followed.arrayBuffer());
+  check("GET / followed: it ends at /sentilab/live/, 200, the exact CSP, the bytes in web/public/sentilab/live/index.html",
+    followed.status === 200 && followed.redirected && followed.url === `${BASE}/sentilab/live/` && followed.headers.get("content-security-policy") === CSP
+      && same(followedBody, file("sentilab/live/index.html")), `${followed.status} · ${followed.url}`);
+  const bare = await fetch(`${BASE}/sentilab/live`, { redirect: "manual", headers: browserAccept });
+  const pkg = await fetch(`${BASE}/sentilab/package`, { redirect: "manual", headers: browserAccept });
+  await Promise.all([bare.arrayBuffer(), pkg.arrayBuffer()]);
+  check("GET /sentilab/live (no slash): the asset layer's redirect to /sentilab/live/, as /sentilab/package gets one to its slash",
+    [301, 302, 307, 308].includes(bare.status) && bare.status === pkg.status && bare.headers.get("location") === "/sentilab/live/"
+      && pkg.headers.get("location") === "/sentilab/package/", `${bare.status} ${bare.headers.get("location")} · package ${pkg.status} ${pkg.headers.get("location")}`);
   const api = await fetch(`${BASE}/api/view/runs`);
   const apiText = await api.text();
   check("GET /api/view/runs reaches the proxy (upstream off: 503) with no CSP added", api.status === 503 && apiText === "API origin not configured" && api.headers.get("content-security-policy") === null, `${api.status} ${apiText}`);
@@ -132,6 +153,11 @@ if (ready) {
   check("GET / as GPTBot: the wall, its purpose links and form, the exact CSP, private", wall.status === 200 && /what are you here to do\?/.test(wallText)
     && wallText.includes(`<a href="${BASE}/agents/intent?purpose=place-chiplets">`) && wallText.includes(`<form method="get" action="${BASE}/agents/intent">`)
     && wall.headers.get("content-security-policy") === CSP && wall.headers.get("cache-control") === "private, no-store", `${wall.status}`);
+  // The wall's "the earlier demo" link is /lab, which serves that page to the agent that follows it, never the wall.
+  const earlier = await fetch(`${BASE}/lab`, { headers: { "user-agent": GPTBOT } });
+  check("the wall links the earlier demo at /lab, and GET /lab as GPTBot is that page (200, the exact CSP, web/public/index.html)",
+    wallText.includes(`<a href="${BASE}/lab">the earlier demo</a>`) && earlier.status === 200 && earlier.headers.get("content-security-policy") === CSP
+      && same(new Uint8Array(await earlier.arrayBuffer()), file("index.html")), `${earlier.status}`);
   const chosen = await fetch(`${BASE}/agents/intent?purpose=place-chiplets`, { headers: { "user-agent": "curl/8.4.0", accept: "application/json" } });
   const token = (await chosen.json().catch(() => ({}))).t ?? "";
   check("GET /agents/intent?purpose=place-chiplets: a scoped purpose token for this host", chosen.status === 200 && /^spt1\.place-chiplets\.cpu-dram\.[0-9]{10}\.[0-9a-f]{16}\.[0-9a-f]{32}$/.test(token), `${chosen.status}`);

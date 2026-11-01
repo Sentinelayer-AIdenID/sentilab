@@ -44,6 +44,8 @@ function submitForm({ token, compact, terms, again, button }) {
 // A declaration is recorded only with the visitor's opt-in, under the notice the opt-in shows (declare.js).
 // The live 3D view for people: both parameters matter (feed=door picks the door feed, src=live the live source).
 export const LIVE_VIEW = "/sentilab/package/?feed=door&src=live";
+// The earlier demo: the replay page that / served people before the Live Lab, now at /lab for every client (worker.js).
+const EARLIER_DEMO = "/lab";
 export const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
 const RECORDED_JSON = "a guess at your assistant's type (class) and the time; plus the purpose and a short visit id if you pick one; published on the public activity feed";
 const SUBMISSIONS = Object.freeze({
@@ -139,7 +141,7 @@ ${source ? `<input type="hidden" name="via" value="${esc(source)}">\n` : ""}<but
 <p class="fine">${RECORDED}</p>
 ${declarations ? `<p class="fine">${OPT_IN_LINE} You can do that on the next page, after you pick a purpose.</p>
 ` : ""}<p class="fine">If you can only follow links, follow the one that fits.</p>
-<p class="fine">A person? <a href="${esc(origin + LIVE_VIEW)}">Watch it live</a>, or see <a href="${esc(origin)}/?view=human">the earlier demo</a>.</p>`);
+<p class="fine">A person? <a href="${esc(origin + LIVE_VIEW)}">Watch it live</a>, or see <a href="${esc(origin + EARLIER_DEMO)}">the earlier demo</a>.</p>`);
 }
 
 export function wallMarkdown(origin, submissions, { source = null, declarations = false } = {}) {
@@ -161,7 +163,7 @@ bound to your pass. A link never records a declaration.
 
 ` : ""}Simulated, not silicon.
 
-A person? [Watch it live](${origin}${LIVE_VIEW}), or see [the earlier demo](${origin}/?view=human).
+A person? [Watch it live](${origin}${LIVE_VIEW}), or see [the earlier demo](${origin}${EARLIER_DEMO}).
 `;
 }
 
@@ -170,7 +172,7 @@ export function wallJson(origin, submissions, { source = null, declarations = fa
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id, source) })),
     token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown", terms_url: `${origin}${TERMS_PAGE}`,
     recorded: RECORDED_JSON, ...(declarations ? { declare: declareObject(origin, { source }) } : {}), label: "simulated, not silicon", live_view: `${origin}${LIVE_VIEW}`,
-    human_page: `${origin}/?view=human` };
+    human_page: `${origin}${EARLIER_DEMO}` };
 }
 
 // ── the token page, after a purpose is chosen ─────────────────────────────────────────────────────────────────────
