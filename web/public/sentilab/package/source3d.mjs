@@ -157,13 +157,22 @@ export function normalizeItem(raw) {
   return { layout };
 }
 
-// The evaluator a feed result names, spelled as the API's identity string (#81 EVALUATOR_IDENTITY) only so the label
-// rule can read it; never taken as verified. null when it names none the page can read.
-export const evaluatorIdentity = (ev) => (isObj(ev) && typeof ev.binary_sha256 === "string" && HEX64.test(ev.binary_sha256) && ev.grid === 64
-  ? `hotspot6:${ev.binary_sha256}:grid:64x64` : null);
+// The evaluator a feed result names: since #85 the full identity string the run attests (contracts builds.json form,
+// e.g. "HotSpot-6.0:<commit>:binary_sha256:<hex>:config_sha256:<hex>:grid:64x64:build_sha256:<hex>"); before it, a
+// { binary_sha256, grid } object, still read for recorded fixtures and spelled as #81's alias "hotspot6:<binary>:grid:64x64".
+// Only identifier characters joined by ":" are read. It is shown as named and fed to the label rule, never taken as
+// verified (feedLabel). null when it names none the page can read.
+const IDENTITY = /^[A-Za-z0-9._+-]+(?::[A-Za-z0-9._+-]+)*$/;
+export function evaluatorIdentity(ev) {
+  if (typeof ev === "string") return ev.length <= 512 && IDENTITY.test(ev) ? ev : null;
+  return isObj(ev) && typeof ev.binary_sha256 === "string" && HEX64.test(ev.binary_sha256) && ev.grid === 64
+    ? `hotspot6:${ev.binary_sha256}:grid:64x64` : null;
+}
 // A feed result's label: the most cautious of the identity it names and none verified (labelForAll), so an unverified
-// identity is never more than "unvalidated"; the API's own temperature_label may only make it more cautious. rule: the
-// label rule (the tests pass one with their own lists).
+// identity is never more than "unvalidated", not even the reproduction-tested build's own identity: promoting a feed
+// result to a build's label needs the exact signed association (P5), which the unsigned feed does not have (root's
+// ruling on the #85 follow-up). The API's own temperature_label may only make it more cautious. rule: the label rule
+// (the tests pass one with their own lists).
 export function feedLabel(identity, apiLabel, rule = { labelForAll }) {
   const label = rule.labelForAll([identity ?? undefined, undefined]);
   return apiLabel === LABELS.withdrawn.state ? LABELS.withdrawn : label;
