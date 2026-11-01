@@ -288,3 +288,43 @@ test("6. the wall: the earlier demo is /lab in HTML, markdown and JSON, and /lab
   assert.equal(followed.status, 200);
   assert.ok(same(followed.bytes, file("index.html")), "the agent that follows the link gets the earlier page, not the wall");
 });
+
+// Old run links (forge's decision, 16:2xZ): /?run=<id> in posts and earlier decks keeps opening the run it names. A
+// person's request goes to the earlier replay at /lab with the full query, under the same 302, cache and Vary rules as
+// the redirect to the Live Lab; a URL that carries a door token never forwards its query; machine requests are unchanged.
+test("7. an old run link /?run=<id> keeps opening its run: a person goes to /lab with the full query; machines unchanged", async (t) => {
+  installApi(t);
+  const runRedirect = (r, location, why, { cookie = false } = {}) => {
+    assert.equal(r.status, 302, why);
+    assert.equal(r.get("location"), location, why);
+    assert.equal(r.bytes.length, 0, `${why}: no body`);
+    assert.deepEqual(r.headers, sorted([["cache-control", "private, no-store"], ["content-security-policy", CSP], ["link", LINK],
+      ["location", location], ["vary", VARY], ...(cookie ? [["set-cookie", HUMAN_COOKIE]] : [])]), `${why}: headers`);
+  };
+  for (const [path, init, location, why, cookie] of [
+    ["/?run=4f2a9c", { headers: BROWSER }, "/lab?run=4f2a9c", "a desktop browser"],
+    ["/?run=4f2a9c", { headers: IPHONE }, "/lab?run=4f2a9c", "iPhone Safari"],
+    ["/?run=4f2a9c&speed=4", { headers: BROWSER }, "/lab?run=4f2a9c&speed=4", "the full query"],
+    ["/?view=human&run=4f2a9c", { headers: BROWSER }, "/lab?view=human&run=4f2a9c", "with the human override", true],
+    ["/?run=4f2a9c&view=human", agent(UA.gptbot), "/lab?run=4f2a9c&view=human", "an agent with the human override", true],
+  ]) {
+    const get = await now(path, init), got = await now(path, head(init));
+    runRedirect(get, location, `GET ${path}: ${why}`, { cookie });
+    assert.deepEqual([got.status, got.headers, got.bytes.length], [get.status, get.headers, 0], `HEAD ${path} mirrors GET`);
+  }
+  // The run page it lands on is the earlier replay, which reads ?run= itself.
+  const lab = await now("/lab?run=4f2a9c", { headers: BROWSER });
+  assert.equal(lab.status, 200);
+  assert.ok(same(lab.bytes, file("index.html")), "/lab?run= is web/public/index.html byte for byte");
+  // A URL carrying a door token never forwards its query: the person goes to the Live Lab, as before.
+  const tok = await now("/?run=4f2a9c&t=abc", { headers: BROWSER });
+  assert.equal(tok.status, 302);
+  assert.equal(tok.get("location"), LIVE_LAB, "no query forwarded with a token");
+  // Machine requests at /?run= are byte for byte what they were.
+  for (const init of [agent(UA.gptbot), agent(UA.claudebot), agent(UA.curl), plain("text/markdown"), plain("application/json")]) {
+    const [after, before] = [await now("/?run=4f2a9c", init), await was("/?run=4f2a9c", init)];
+    const who = init.headers["user-agent"] ?? init.headers.accept;
+    assert.deepEqual([after.status, after.headers], [before.status, before.headers], `${who}: status and headers unchanged`);
+    assert.ok(same(after.bytes, before.bytes), `${who}: body unchanged`);
+  }
+});

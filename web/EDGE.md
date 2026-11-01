@@ -114,7 +114,9 @@ human version of `/` (a person's browser, an unclassified client whose Accept pr
 `?view=human` and its cookie, and each fallback above) is a same-origin `302` to
 `/sentilab/live/` with that page's headers (the CSP, the `Vary` and `private, no-store`
 above, the alternate Link, and the cookie for `?view=human`); the Location never carries
-the query. The wall and the agent versions of `/` are unchanged, and other methods reach the
+the query, except an old run link: `/?run=<id>` goes to `/lab` with its full query, so links in posts and decks keep
+opening their run (a URL that carries a door token never forwards its query). The wall and the agent versions of `/`
+are unchanged, and other methods reach the
 asset layer as before. The replay page `/` served before (`web/public/index.html`) is at
 `/lab` for every client: the asset at `/`, with the CSP and the asset layer's own headers
 (it has no agent version). The wall's "the earlier demo" link points there.

@@ -41,10 +41,15 @@ async function humanAsset(request, env) {
 // page that / served (web/public/index.html), asked of the asset layer as / with this request's method and headers
 // (never as /index.html, which the asset layer answers with a 307 to /). It has no agent version, so every client gets
 // it as it is, like any other page without one.
+// An old run link (/?run=<id>, in posts and earlier decks) keeps opening the run it names: the earlier replay at /lab,
+// with the full query, under the same 302. A URL that carries a door token never forwards its query.
 const LIVE_LAB = "/sentilab/live/";
 async function humanVersion(request, env) {
   const url = new URL(request.url);
-  if (url.pathname === "/" && ["GET", "HEAD"].includes(request.method)) return new Response(null, { status: 302, headers: { location: LIVE_LAB } });
+  if (url.pathname === "/" && ["GET", "HEAD"].includes(request.method)) {
+    const location = url.searchParams.has("run") && !carriesToken(url) ? `/lab${url.search}` : LIVE_LAB;
+    return new Response(null, { status: 302, headers: { location } });
+  }
   if (url.pathname !== "/lab") return env.ASSETS.fetch(request);
   url.pathname = "/";
   return env.ASSETS.fetch(new Request(url, request));
