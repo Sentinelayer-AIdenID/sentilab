@@ -56,6 +56,7 @@ def test_print_freeze_binds_actual_request_settings_caps_prices_and_all_files(tm
         'temperature': 0.3, 'top_p': 1, 'max_tokens_per_reply': 100, 'stream': False,
         'allow_redirects': False, 'timeout': 'remaining arm wall time'}
     assert descriptor['protocol'] == protocol
+    assert descriptor['output_schema'] == 'collab-study-output-v3'
     assert descriptor['caps'] == {'tokens_per_agent': protocol['caps'], 'wall_seconds': 900,
                                   'max_usd': '10', 'parallel_arms': 6}
     assert descriptor['turn_rule'] == {'order': [1, 2, 3], 'writer': 1, 'skip_stopped_agents': True}
@@ -82,7 +83,7 @@ def test_two_packet_dry_run_uses_no_network_and_produces_sealed_outputs(tmp_path
     assert accounting['scopes']['study']['attempts'] == 24
     assert accounting['scopes']['pilot']['attempts'] == 0
     manifest = json.loads((output / 'RUN-MANIFEST.json').read_text())
-    assert len(manifest['files']) == 20
+    assert len(manifest['files']) == 26
     assert json.loads((output / 'FREEZE.json').read_text()) == descriptor
     for relative, digest in manifest['files'].items():
         data = (output / relative).read_bytes()
@@ -260,3 +261,14 @@ def test_http_wall_deadline_is_an_unknown_cost_failure_without_waiting_for_trans
         assert failure.value.safe_to_retry is False
     finally:
         release.set()
+
+
+def test_output_cannot_modify_a_packet_directory(tmp_path, capsys):
+    args, _, _ = fixture(tmp_path)
+    output = tmp_path / 'packets/case-one/generated-output'
+    args[args.index('--output') + 1] = str(output)
+    _, args = freeze(tmp_path, args, capsys)
+    assert runner.main(args) == 2
+    assert 'outside' in capsys.readouterr().err
+    assert not output.exists()
+    assert len(list((tmp_path / 'packets/case-one').iterdir())) == 5

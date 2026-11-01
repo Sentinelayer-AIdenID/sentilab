@@ -1,6 +1,6 @@
 # Collaboration study runner
 
-`study_runner.py` runs protocol v2 with Amendment 1, using Python 3.12 and
+`study_runner.py` runs protocol v2 with Amendments 1 and 2, using Python 3.12 and
 `requests`. Packets are UTF-8 text only: the runner never imports or executes
 their `model.py`. The tests and example use synthetic packets exclusively.
 The operator obtains participant packets through the separate private handoff.
@@ -31,6 +31,8 @@ prompt bounds. It is not an approved study protocol. Supply the sealed values:
 The remaining example fields declare fixed protocol rules. Changing the model,
 caps, wall limit, turn order, writer, or finding format is refused. All prompts
 are read once before running. The same system prompt is used in every arm.
+`prompt.example.txt` is a placeholder only; the operator supplies the approved
+prompt files. The runner does not add instructions for emitting interim findings.
 The packet message uses headers `### README.md`, `### config.json`, etc., in the
 order above. A/B subsequently receive their own reply and the sealed continue
 prompt. C receives the packet, every prior reply as `Agent N:\n<verbatim reply>`,
@@ -75,7 +77,8 @@ The freeze includes runner/protocol/prompt/order SHA-256 values, sorted per-file
 packet hashes and tree hash, deployment/model, endpoint hash, request settings,
 caps, prices, turn/retry rules, pilot selection and parallelism. A live freeze
 cannot be used for a dry run or vice versa. A missing or mismatched freeze is
-refused before output creation and model calls. `--print-freeze` only prints the
+refused before output creation and model calls. Output must be outside the study
+and pilot packet directories. `--print-freeze` only prints the
 descriptor; it does not run the study. Output must start empty. No resume or
 overwrite mode exists.
 
@@ -83,7 +86,8 @@ overwrite mode exists.
 
 A has one 120,000-token agent. B runs three isolated 40,000-token agents
 concurrently, with independent findings. C rotates agents 1, 2, 3, skipping
-stopped agents; only writer 1's `FINAL` ends it with findings. Each arm has one
+stopped agents; a nonwriter's `FINAL` stops that agent's turns, while only writer
+1's `FINAL` ends the arm with findings. Each arm has one
 900-second deadline. Jobs start in order with at most `--parallel` arm workers
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
@@ -113,9 +117,20 @@ Each job contains:
 
 * `job.json`: metadata, UTC timestamps, wall duration, per-agent caps/usage,
   request IDs, failures, unknown charges, token overspend, job dollar charges,
-  and the run's dollar overshoot/stop state as of that job's completion.
+  the run's dollar overshoot/stop state as of that job's completion, and
+  `history_complete`. That flag is false after a failure, missing/unparsed reply,
+  or reply received beyond the deadline, even if a later retry succeeds.
 * `transcript.jsonl`: request-message hashes and every reply verbatim, including
   each attempt's scope, raw usage, reservations and accounting outcome.
+* `emitted_sets.jsonl`: every set introduced by an exact `FINDINGS` or `FINAL`
+  line anywhere in a reply, including C nonwriters' sets and malformed lines.
+  Entries contain `job_id`, `arm`, `agent`, `set_index` (per agent, from zero),
+  `kind`, `elapsed_s`, `findings`, `malformed`, and `discarded`. Malformed lines
+  preserve their text and carry `malformed: true`. Time is taken from the runner's
+  monotonic clock after parsing the reply, relative to the arm's first request;
+  model-written timestamps have no effect. Multiple sets in one reply share its
+  parsing-completion time. Interim sets do not stop the agent. Late replies are
+  retained for analysis even when they cannot supply the final arm result.
 * `findings.json`: `{findings, malformed, discarded}` for A/C; a map from agent
   number to that structure for B. No B merging is performed. At most 20 valid
   `{file, location, defect, evidence}` objects are kept. Malformed lines after
@@ -129,6 +144,10 @@ exclusive writes and never edits sealed results. Interrupted runs retain
 `.running` and partial transcript reservations rather than pretending to have a
 complete manifest. Exit 2 means invalid/inaccessible inputs or outputs; exit 0
 means a recorded run completed, which can include cap stops or model failures.
+The freeze declares `collab-study-output-v3` and the manifest hashes emitted-set
+histories too. The runner has no correctness key and does not calculate
+`first_correct`; analysis uses the histories and completeness flag to distinguish
+an unobserved result from a complete history with no correct finding.
 
 ## Offline proof
 
@@ -154,10 +173,10 @@ frozen = subprocess.run(command + ['--print-freeze'], check=True, capture_output
 subprocess.run(command + ['--freeze', str(demo / 'freeze.json')], check=True)
 manifest = json.loads((demo / 'output/RUN-MANIFEST.json').read_text())
 import hashlib
-assert len(manifest['files']) == 20
+assert len(manifest['files']) == 26
 for path, digest in manifest['files'].items():
     assert hashlib.sha256((demo / 'output' / path).read_bytes()).hexdigest() == digest
-print(demo, '6 jobs; 20 hashed output files')
+print(demo, '6 jobs; 26 hashed output files')
 PY
 ```
 
