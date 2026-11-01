@@ -88,6 +88,52 @@ export async function fetchBoard({ fetchImpl, signal } = {}) {
   return board ? { ok: true, board } : { ok: false, error: "answer is not a door board" };
 }
 
+// ── the request gate: every request the page makes goes through it (review item P1-2(b)) ────────────────────────────
+// Spacing: at least GAP_MS, plus up to GAP_JITTER_MS, between two requests, so a backlog of pages (the feed drains up
+// to 8 pages per feed per poll) never bursts. Backoff: after a 429 or 503 nothing is sent before the answer's
+// Retry-After (seconds or an HTTP date) has passed; after those and after any other failure, an exponential backoff
+// from BACKOFF_BASE_MS, doubling up to BACKOFF_MAX_MS, holds too. Each wait is stretched by a random factor of up to
+// 1 + JITTER, so many pages that failed together do not retry together. A good answer resets the backoff. The jitter
+// comes from crypto.getRandomValues: network timing only, never anything the page shows.
+export const GATE = Object.freeze({ GAP_MS: 300, GAP_JITTER_MS: 200, BACKOFF_BASE_MS: 5000, BACKOFF_MAX_MS: 60000, JITTER: 0.5 });
+const cryptoRandom = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+// Retry-After -> milliseconds from now, or null when absent or unreadable.
+export function retryAfterMs(value, nowMs) {
+  if (value === null || value === undefined) return null;
+  const v = String(value).trim();
+  if (/^\d{1,7}$/.test(v)) return Number(v) * 1000;
+  const at = Date.parse(v);
+  return Number.isFinite(at) ? Math.max(0, at - nowMs) : null;
+}
+function abortableSleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason ?? new Error("aborted")); return; }
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener?.("abort", () => { clearTimeout(id); reject(signal.reason ?? new Error("aborted")); }, { once: true });
+  });
+}
+export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date.now(), random = cryptoRandom, sleep = abortableSleep } = {}) {
+  let nextAt = -Infinity, failures = 0;
+  const backoff = (retryMs) => {
+    failures += 1;
+    const base = Math.max(retryMs ?? 0, Math.min(GATE.BACKOFF_MAX_MS, GATE.BACKOFF_BASE_MS * 2 ** (failures - 1)));
+    nextAt = now() + base * (1 + random() * GATE.JITTER);
+  };
+  async function gated(url, init = {}) {
+    const wait = nextAt - now();
+    if (wait > 0) await sleep(wait, init.signal);
+    if (init.signal?.aborted) throw init.signal.reason ?? new Error("aborted");
+    nextAt = now() + GATE.GAP_MS + random() * GATE.GAP_JITTER_MS;
+    let r;
+    try { r = await fetchImpl(url, init); } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
+    if (r.status === 429 || r.status === 503) backoff(retryAfterMs(r.headers?.get?.("retry-after"), now()));
+    else if (r.status !== 200) backoff(null);
+    else failures = 0;
+    return r;
+  }
+  return { fetch: gated, get failures() { return failures; }, get nextAt() { return nextAt; } };
+}
+
 // ── the connection state: the badge never says LIVE unless the door feed's last good answer is fresh ─────────────
 // connecting  no answer yet
 // live        the last poll answered, within LIVE_FRESH_MS, and there are records

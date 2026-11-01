@@ -65,7 +65,9 @@ const S = {
   selectedId: null, cursor: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
   board: { ok: null, board: null, error: "", at: null }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
-const feed = createDoorFeed({ onChange: () => render(), fetchEvents: M.fetchEventsTimed });
+// One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
+const gate = M.createGate();
+const feed = createDoorFeed({ onChange: () => render(), fetchEvents: M.fetchEventsTimed, fetchImpl: gate.fetch });
 
 // ── the 3D package ─────────────────────────────────────────────────────────────────────────────────────────────────
 const can3d = webgl2Available();
@@ -666,7 +668,7 @@ async function pollBoard() {
   clearTimeout(boardTimer);
   const mine = ++boardEpoch;
   if (!document.hidden) {
-    const got = await M.fetchBoard();
+    const got = await M.fetchBoard({ fetchImpl: gate.fetch });
     if (mine !== boardEpoch) return;
     S.board = got.ok ? { ok: true, board: got.board, error: "", at: Date.now() } : { ...S.board, ok: false, error: got.error };
     renderStatus();

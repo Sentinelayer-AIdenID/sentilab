@@ -121,3 +121,47 @@ test("P1-1: after pagehide, a back/forward-cache restore (pageshow, persisted) r
   assert.ok(after.filter((p) => p === "/api/open/v1/door/results").length >= 3, `the door feed resumes: ${after.join(", ")}`);
   assert.ok(after.includes("/api/open/v1/door/events") && after.includes("/api/open/v1/door/board"), "events and board resume too");
 });
+
+// P1-2(b) on the whole page: a backlog of result pages is fetched spaced out, never as a burst, and a 503 with
+// Retry-After stops every request until it has passed.
+test("P1-2(b): a backlog is spaced out, and a 503 with Retry-After silences the page until it passes", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T16:45:00Z") });
+  const requests = [];
+  installPage(t, requests);
+  // A backlog: results answer 8 pages (has_more), then a 503 with Retry-After: 30 for everything for 10 s.
+  const real = globalThis.fetch;
+  let page = 0, downUntil = 0;
+  globalThis.fetch = async (input, init = {}) => {
+    const url = new URL(String(input), "https://sentilab.aidenid.com");
+    if (downUntil && Date.now() < downUntil) {
+      requests.push({ path: url.pathname, method: init.method ?? "GET", at: Date.now(), down: true });
+      return new Response("{}", { status: 503, headers: { "retry-after": "30" } });
+    }
+    if (url.pathname === "/api/open/v1/door/results" && page < 8) {
+      page += 1;
+      requests.push({ path: url.pathname, method: "GET", at: Date.now() });
+      const d = JSON.parse(readFileSync(join(FIX, "results.json"), "utf8"));
+      return new Response(JSON.stringify({ ...d, items: [], next_after: page, has_more: page < 8 }), { status: 200 });
+    }
+    const r = await real(input, init);
+    requests.at(-1).at = Date.now();
+    return r;
+  };
+  await import(`${LIVE}?load=backoff`);
+  for (let k = 0; k < 120; k += 1) { t.mock.timers.tick(100); await settle(); }       // 12 s
+  const backlog = requests.filter((r) => r.path === "/api/open/v1/door/results").slice(0, 8).map((r) => r.at);
+  assert.equal(backlog.length, 8);
+  const gaps = backlog.slice(1).map((v, i) => v - backlog[i]);
+  assert.ok(gaps.every((g) => g >= 300), `backlog pages spaced at least 300 ms apart: ${gaps}`);
+  // Now the API answers 503 with Retry-After: 30. After the first refusal, nothing for 30 s.
+  downUntil = Date.now() + 10000;
+  for (let k = 0; k < 60; k += 1) { t.mock.timers.tick(100); await settle(); }        // up to the first 503
+  const firstDown = requests.find((r) => r.down);
+  assert.ok(firstDown, "the page met the 503");
+  const n = requests.length;
+  for (let k = 0; k < 280; k += 1) { t.mock.timers.tick(100); await settle(); }       // 28 s more
+  const during = requests.slice(n).filter((r) => r.at - firstDown.at < 30000);
+  assert.deepEqual(during.map((r) => r.path), [], "no request before Retry-After has passed");
+  for (let k = 0; k < 300; k += 1) { t.mock.timers.tick(100); await settle(); }       // 30 s more: it resumes
+  assert.ok(requests.slice(n).some((r) => r.path === "/api/open/v1/door/results" && !r.down), "polling resumes after Retry-After");
+});

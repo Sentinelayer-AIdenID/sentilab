@@ -333,3 +333,72 @@ test("copy: a run is titled by its short id, and its class is a separate visitor
   assert.equal(M.recordTitle(anon), `${anon.label} ${anon.line}`);
   assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "Visitor 7c2e (visitor type: unknown) arrived at the door");
 });
+
+// Warden's P1-2(b): the page honours Retry-After on 429 and 503, backs off with jitter otherwise (no fixed 5 s
+// retry), and spaces its requests so a backlog of pages never bursts. Every request goes through one gate.
+test("P1-2(b): the request gate honours Retry-After, backs off with jitter and spaces requests", async () => {
+  let t = 1_000_000;
+  const waits = [];
+  const sleep = async (ms) => { waits.push(Math.round(ms)); t += ms; };
+  const answers = [];
+  const fetchImpl = async () => answers.shift() ?? new Response("{}", { status: 200 });
+  const make = (rand) => M.createGate({ fetchImpl, now: () => t, sleep, random: () => rand });
+  // Retry-After in seconds: nothing is sent before it has passed (plus jitter), whatever the backoff would say.
+  let g = make(0.5);
+  answers.push(new Response("{}", { status: 503, headers: { "retry-after": "20" } }));
+  await g.fetch("/api/open/v1/door/results?after=0");
+  waits.length = 0;
+  await g.fetch("/api/open/v1/door/results?after=0");
+  assert.equal(waits.length, 1);
+  assert.ok(waits[0] >= 20000, `waited ${waits[0]} ms for Retry-After: 20`);
+  assert.ok(waits[0] <= 30000, "jitter stays within half the wait");
+  // Retry-After as an HTTP date, on a 429.
+  g = make(0);
+  answers.push(new Response("{}", { status: 429, headers: { "retry-after": new Date(t + 42000).toUTCString() } }));
+  await g.fetch("/a");
+  waits.length = 0;
+  await g.fetch("/a");
+  assert.ok(waits[0] >= 41000 && waits[0] <= 43000, `HTTP-date Retry-After: ${waits[0]}`);
+  // Without Retry-After: exponential backoff from 5 s, each wait jittered (two pages with different random draws
+  // retry at different times), and a good answer resets it.
+  const backoffs = async (rand) => {
+    const gg = make(rand);
+    const seen = [];
+    for (let k = 0; k < 4; k += 1) {
+      answers.push(new Response("{}", { status: 503 }));
+      waits.length = 0;
+      await gg.fetch("/b");
+      seen.push(waits[0] ?? 0);
+    }
+    return seen;
+  };
+  const a = await backoffs(0.1), b = await backoffs(0.9);
+  assert.deepEqual(a.slice(1).map((w) => w >= 5000), [true, true, true], `waits ${a}`);
+  assert.ok(a[2] > a[1] && a[3] > a[2], `the backoff grows: ${a}`);
+  assert.notDeepEqual(a.slice(1), b.slice(1), "jittered: different draws, different retry times");
+  assert.ok(a.slice(1).every((w) => w !== 5000) || b.slice(1).every((w) => w !== 5000), "not a fixed 5 s retry");
+  g = make(0);
+  answers.push(new Response("{}", { status: 503 }));
+  await g.fetch("/c");
+  await g.fetch("/c");                                   // waits out the backoff, then answers 200
+  waits.length = 0;
+  await g.fetch("/c");
+  assert.ok(waits[0] < 1000, `a good answer resets the backoff: ${waits[0]}`);
+  // Spacing: back-to-back requests are at least GAP_MS apart.
+  g = make(0);
+  waits.length = 0;
+  for (let k = 0; k < 4; k += 1) await g.fetch("/d");
+  assert.ok(waits.length === 3 && waits.every((w) => w >= M.GATE.GAP_MS), `spaced: ${waits}`);
+  // A stopped page (aborted signal) sends nothing.
+  let sent = 0;
+  const g2 = M.createGate({ fetchImpl: async () => { sent += 1; return new Response("{}", { status: 503, headers: { "retry-after": "60" } }); },
+    now: () => t, random: () => 0 });
+  await g2.fetch("/e");
+  const ac = new AbortController();
+  const pending = g2.fetch("/e", { signal: ac.signal });
+  ac.abort();
+  await assert.rejects(pending);
+  assert.equal(sent, 1, "nothing sent after the abort");
+  assert.equal(M.retryAfterMs("12", 0), 12000);
+  assert.equal(M.retryAfterMs("soon", 0), null);
+});
