@@ -454,10 +454,15 @@ def main(argv: list[str] | None = None) -> int:
         if name in ("record", "report"):
             p.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
-    RUNS = (Path("/srv/gate0/coupling/runs") if getattr(args, "manifest", "gate0") == "coupling"
+    coupling = getattr(args, "manifest", "gate0") == "coupling"
+    RUNS = (Path("/srv/gate0/runs/coupling") if coupling
             else Path("/srv/gate0/runs"))
     CPU_FILE, LOG = RUNS / "cpu-used.json", RUNS / "operator-log.jsonl"
-    RUNS.mkdir(parents=True, exist_ok=True)
+    if coupling:
+        if not RUNS.is_dir():
+            raise SystemExit(f"coupling runs directory must already exist in the mounted runs directory: {RUNS}")
+    else:
+        RUNS.mkdir(parents=True, exist_ok=True)
     if args.command == "grant":
         return cmd_grant(args)
     if args.command == "run":

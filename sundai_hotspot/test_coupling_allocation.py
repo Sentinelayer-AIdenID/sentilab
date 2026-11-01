@@ -414,13 +414,52 @@ print(module.reference_validation.__file__)
         paths = []
         with mock.patch.object(gate0_operator, "cmd_grant", side_effect=lambda args: paths.append(
                 (gate0_operator.RUNS, gate0_operator.CPU_FILE, gate0_operator.LOG)) or 0), \
-                mock.patch.object(Path, "mkdir"):
+                mock.patch.object(Path, "is_dir", return_value=True), mock.patch.object(Path, "mkdir"):
             gate0_operator.main(["grant", "--manifest", "coupling", "--grant-id", "g49-coupling"])
             gate0_operator.main(["grant", "--grant-id", "g49-default"])
-        self.assertEqual(paths[0], (Path("/srv/gate0/coupling/runs"),
-            Path("/srv/gate0/coupling/runs/cpu-used.json"), Path("/srv/gate0/coupling/runs/operator-log.jsonl")))
+        self.assertEqual(paths[0], (Path("/srv/gate0/runs/coupling"),
+            Path("/srv/gate0/runs/coupling/cpu-used.json"), Path("/srv/gate0/runs/coupling/operator-log.jsonl")))
         self.assertEqual(paths[1], (Path("/srv/gate0/runs"), Path("/srv/gate0/runs/cpu-used.json"),
                                    Path("/srv/gate0/runs/operator-log.jsonl")))
+
+    def test_cli_refuses_missing_coupling_directory_before_dispatch(self):
+        mounted = self.root / "mounted"
+        mounted.mkdir()
+
+        def local_path(value):
+            return mounted / Path(value).relative_to("/srv/gate0")
+
+        with mock.patch.object(gate0_operator, "Path", side_effect=local_path), \
+                mock.patch.object(gate0_operator, "cmd_run") as run:
+            with self.assertRaisesRegex(SystemExit, "coupling.*must already exist"):
+                gate0_operator.main(["run", "--manifest", "coupling", "--grant-id", "g49-coupling"])
+            run.assert_not_called()
+        self.assertEqual(list(mounted.iterdir()), [])
+
+    def test_cli_retains_coupling_cpu_carry_and_log_in_existing_directory(self):
+        mounted = self.root / "mounted"
+        coupling = mounted / "runs/coupling"
+        coupling.mkdir(parents=True)
+        (coupling / "cpu-used.json").write_text('{"used_cpu_s": 123}')
+        (coupling / "operator-log.jsonl").write_text("prior log\n")
+
+        def dispatch(args):
+            self.assertEqual(gate0_operator.RUNS, coupling)
+            self.assertEqual(gate0_operator.carried_cpu_s(), 123)
+            gate0_operator.save_cpu(124)
+            gate0_operator.log("test_persisted")
+            return 0
+
+        with mock.patch.object(gate0_operator, "Path", side_effect=lambda value:
+                               mounted / Path(value).relative_to("/srv/gate0")), \
+                mock.patch.object(gate0_operator, "cmd_run", side_effect=dispatch), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(gate0_operator.main(
+                ["run", "--manifest", "coupling", "--grant-id", "g49-coupling"]), 0)
+        self.assertEqual(json.loads((coupling / "cpu-used.json").read_text())["used_cpu_s"], 124)
+        lines = (coupling / "operator-log.jsonl").read_text().splitlines()
+        self.assertEqual(lines[0], "prior log")
+        self.assertEqual(json.loads(lines[1])["event"], "test_persisted")
 
     def test_coupling_grant_preserves_the_consumed_gate_ledger(self):
         gate = self.grant()

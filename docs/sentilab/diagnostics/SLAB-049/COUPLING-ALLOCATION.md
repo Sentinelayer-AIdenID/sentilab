@@ -18,8 +18,10 @@ Loading a manifest path alone never selects coupling: `--manifest coupling` is r
 The four rows retain the call-list order: Ascend primary/replay, then CPU-DRAM primary/replay. Each reserves
 58.5 CPU-s (50 solver + 8.5 overhead), for a binding cap of 234 CPU-s, concurrency one, with no retries. The
 existing signed ledger and create-only tag machinery handles admission, reservation, launch and settlement.
-Ledger directories already include the manifest hash. Coupling uses `/srv/gate0/coupling/runs` for its output,
-CPU carry and operator log; gate zero keeps `/srv/gate0/runs`.
+Ledger directories already include the manifest hash. Coupling uses `/srv/gate0/runs/coupling` for its output,
+CPU carry and operator log, inside the wrapper's mounted `/srv/gate0/runs`. The operator must provision that
+directory on the host before starting the container; coupling commands refuse if it does not already exist.
+Gate zero keeps `/srv/gate0/runs`.
 
 ## Binary identity and provenance
 
