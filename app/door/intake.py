@@ -42,7 +42,7 @@ VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected pur
                       "Referrer URLs and query strings are not collected automatically, and the raw purpose-pass "
                       "credential is not added as a generated feed field. All text you enter in name or reason "
                       "is public. Do not include private information.")
-DISPLAY_TEXT = r"^[^\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]*$"
+DISPLAY_TEXT = r"^[^\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]*$"
 COMMON = SCHEMAS["common"]["$id"]
 SUBMIT_SCHEMA = {
     "type": "object",
