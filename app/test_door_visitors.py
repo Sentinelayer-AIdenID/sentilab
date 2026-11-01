@@ -142,6 +142,44 @@ class VisitorTests(unittest.TestCase):
         self.assertTrue(all(row['declaration']['reason'] == 'System' for row in page['items']))
         self.assertEqual(page['counts']['recorded_arrivals'], len(names))
 
+    def test_unicode16_outlined_reserved_names_match_the_worker(self):
+        def outlined(text):
+            return ''.join(chr(0x1ccd6 + ord(char) - ord('A')) if 'A' <= char <= 'Z' else char
+                           for char in text.upper())
+
+        labels = ('human', 'you', 'senti', 'participant', 'unidentified participant',
+                  'system', 'owner', 'admin', 'moderator')
+        for label in labels:
+            variants = (outlined(label),
+                        ''.join(outlined(char) if index % 2 == 0 else char for index, char in enumerate(label)),
+                        '\u00a0' + '\u200b'.join(outlined(label)).replace(' ', '\u2003  ') + '\u00a0')
+            for name in variants:
+                with self.subTest(codepoints=[hex(ord(char)) for char in name]):
+                    status, body, _ = self.arrival(declaration={
+                        'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                        'reason': 'outlined-reserved-storage-canary'})
+                    self.assertEqual(status, 400)
+                    self.assertEqual(body['codes'], [
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': 'not'}])
+        self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
+        self.assertNotIn(b'outlined-reserved-storage-canary', Path(self.store.path).read_bytes())
+
+    def test_benign_outlined_names_and_boundary_characters_are_preserved(self):
+        def outlined(text):
+            chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            return ''.join(chr(0x1ccd6 + chars.index(char)) if char in chars else char
+                           for char in text.upper())
+
+        names = (outlined('HELPER'), outlined('SYSTEM BOT'), outlined('ADMIN2'),
+                 outlined('ADMIN') + '\u0301', '\U0001ccd5Admin', 'Admin\U0001ccfa')
+        for name in names:
+            declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                           'reason': outlined('SYSTEM')}
+            self.assertEqual(self.arrival(declaration=declaration)[0], 204)
+        page = self.door.visitors(None, None)[1]
+        self.assertEqual([row['declaration']['name'] for row in page['items']], list(names))
+        self.assertTrue(all(row['declaration']['reason'] == outlined('SYSTEM') for row in page['items']))
+
     def test_new_read_projection_drops_legacy_private_fields(self):
         self.store.note_arrival({'class': 'unknown', 'operator': 'hidden-operator-canary', 'nonce': 'secret',
                                  'referrer': 'https://example.com/?token=secret'}, now=1, per_min=600)

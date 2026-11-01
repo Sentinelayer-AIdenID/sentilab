@@ -36,6 +36,9 @@ The comparison matches the Worker: NFKC, remove Unicode format characters (Cf),
 collapse ECMAScript whitespace runs, trim and lowercase. A refused name returns
 `schema_invalid` at `/declaration/name` with keyword `not`, before storage.
 This comparison does not rewrite accepted text or apply to the reason field.
+Python 3.12's Unicode 15 normalizer is supplemented with the Unicode 16 outlined
+ASCII A–Z and 0–9 mappings (U+1CCD6..U+1CCF9) used by the Worker. These mappings
+affect only the comparison key; other unfamiliar characters are not rejected.
 
 The declaration is public self-reported display data, including in `/events`.
 All accepted name and reason text is public, including any URL, query string or
