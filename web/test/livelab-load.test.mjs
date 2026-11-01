@@ -96,8 +96,9 @@ test("loading Live Lab and leaving it open past 30 s never asks /api/view/runs (
   assert.ok(paths.includes("/api/open/v1/door/events") && paths.includes("/api/open/v1/door/board"), "events and board too");
   assert.deepEqual(paths.filter((p) => p === "/api/view/runs"), [], "no request to /api/view/runs, at load or later");
   assert.ok(requests.every((r) => r.method === "GET"), "read-only");
-  assert.deepEqual([...new Set(paths)].sort(), ["/api/open/v1/door/board", "/api/open/v1/door/events", "/api/open/v1/door/results", "/api/open/v1/door/visitors"],
-    "the door's read-only feeds are the only requests");
+  // Terms v1: the page also reads the static licence allowlist (same origin), which gates every package download.
+  assert.deepEqual([...new Set(paths)].sort(), ["/api/open/v1/door/board", "/api/open/v1/door/events", "/api/open/v1/door/results", "/api/open/v1/door/visitors",
+    "/sentilab/packages/licensed-runs.json"], "the door's read-only feeds and the licence allowlist are the only requests");
 });
 
 // Warden's P1-1: pagehide stops the feed and the timers; a page restored from the back/forward cache (pageshow with

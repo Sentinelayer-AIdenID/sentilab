@@ -73,6 +73,19 @@ const gate = M.createGate();
 // Each results page the feed reads is also kept as the feed returned it (newest row per run id), so a package for
 // engineers copies the feed exactly; the same gated request, read once more under the same size cap.
 const rawResults = new Map();
+// The licence allowlist (Terms v1): a download only for a run whose full run id is listed. Read through the gate at
+// load and every 5 minutes; an unreadable list is an empty one (no downloads).
+let licences = new Map();
+async function pollLicences() {
+  try {
+    const r = await gate.fetch(M.LICENSED_PATH, { method: "GET", cache: "no-store", redirect: "error", headers: { accept: "application/json" } });
+    if (r?.status === 200) {
+      const body = await readBodyCapped(r, MAX_API_BYTES, "too_large");
+      licences = body.ok ? M.readLicences(JSON.parse(new TextDecoder().decode(body.bytes))) : new Map();
+    } else { r?.body?.cancel?.()?.catch?.(() => {}); licences = new Map(); }
+  } catch { licences = new Map(); }
+  renderProposals(); renderPackageButton();
+}
 async function feedFetch(url, init) {
   const r = await gate.fetch(url, init);
   if (r?.status === 200 && String(url).includes(M.RESULTS_PATH) && typeof r.clone === "function") {
@@ -247,20 +260,20 @@ function download(name, text, type) {
 }
 function downloadPackage(runId) {
   const raw = rawResults.get(runId);
-  if (!M.packageable(raw)) return;
-  const pkg = M.engineerPackage(raw, { submittedAt: M.proposedAt(runId, [...S.records.values(), ...feed.state.events]),
+  if (!M.downloadable(raw, licences)) return;
+  const pkg = M.engineerPackage(raw, { licence: licences.get(runId), submittedAt: M.proposedAt(runId, [...S.records.values(), ...feed.state.events]),
     pageUrl: location.href ?? null, generatedAt: new Date().toISOString() });
   download(M.packageName(raw), `${JSON.stringify(pkg, null, 2)}\n`, "application/json");
 }
 function downloadTop() {
-  const { json, csv } = M.topBundle([...rawResults.values()], { pageUrl: location.href ?? null, generatedAt: new Date().toISOString() });
+  const { json, csv } = M.topBundle([...rawResults.values()], { licences, pageUrl: location.href ?? null, generatedAt: new Date().toISOString() });
   if (!json.layouts.length) return;
   download("sentilab-top-layouts.json", `${JSON.stringify(json, null, 2)}\n`, "application/json");
   download("sentilab-top-layouts.csv", csv, "text/csv");
 }
 function renderPackageButton() {
   const L = shownRun().L, b = $("packageButton");
-  const ok = Boolean(L) && M.packageable(rawResults.get(L.id));
+  const ok = Boolean(L) && M.downloadable(rawResults.get(L.id), licences);
   b.hidden = !ok;
   b.setAttribute("title", W.PACKAGE.title);
 }
@@ -294,12 +307,13 @@ function renderProposals() {
     // The selected proposal, once accepted with a matching replay, can be packaged for engineers.
     const raw = rawResults.get(L.id);
     if (!(shown && shown.id === L.id && M.packageable(raw))) return [row];
+    if (!M.downloadable(raw, licences)) return [row, h("p", { class: "view-only" }, W.PACKAGE.viewOnly)];
     const pack = h("button", { type: "button", class: "engineer-package text-button", title: W.PACKAGE.title }, W.PACKAGE.button);
     pack.addEventListener("click", () => downloadPackage(L.id));
     return [row, pack];
   }));
   const top = $("topLayouts");
-  top.hidden = ![...rawResults.values()].some(M.packageable);
+  top.hidden = ![...rawResults.values()].some((x) => M.downloadable(x, licences));
   top.setAttribute("title", W.PACKAGE.topTitle);
   if (!list.length) box.append(h("p", { class: "rail-empty" }, W.PROPOSALS.none));
   $("proposalsHead").textContent = W.PROPOSALS.head;
@@ -1172,6 +1186,8 @@ try { if (!sessionStorage.getItem("sentilab-intro-seen")) showIntro(); } catch {
 feed.start();
 pollBoard();
 pollVisitors();
+pollLicences();
+setInterval(pollLicences, 5 * 60 * 1000);
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
 setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); renderPresence(); if (namesChanged()) render(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A

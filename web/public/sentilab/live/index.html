@@ -20,7 +20,7 @@
   <div id="app">
   <header class="topbar">
     <button type="button" class="brand" id="brand" aria-label="Replay the SentiLab entrance"><img src="/sentilab/live/mark.svg" width="28" height="28" alt=""><span>Senti<span class="brand-light">Lab</span></span></button>
-    <nav aria-label="Main"><a class="nav-item active" href="/sentilab/live/" aria-current="page">Workspace</a><button type="button" class="nav-item" data-modal="atlas">Door atlas</button><button type="button" class="nav-item" data-modal="evidence">Evidence</button></nav>
+    <nav aria-label="Main"><a class="nav-item active" href="/sentilab/live/" aria-current="page">Workspace</a><button type="button" class="nav-item" data-modal="atlas">Door atlas</button><button type="button" class="nav-item" data-modal="evidence">Evidence</button><a class="nav-item" href="/sentilab/packages/">Packages</a><a class="nav-item" href="/docs/">Docs</a></nav>
     <div class="header-end">
       <span class="live-badge" id="liveBadge" data-state="connecting" role="status" aria-live="polite"><i></i><b id="liveWord">CONNECTING</b><small id="liveAge"></small></span>
       <button type="button" class="quiet icon-button" id="motionToggle" aria-pressed="false" aria-label="Pause all motion" title="Pause all motion"><span data-icon="pause"></span></button>
@@ -86,7 +86,7 @@
         <div class="mobile-event-list" id="mobileEventList" aria-label="Newest records"></div>
       </section>
     </div>
-    <footer><div><img src="/sentilab/live/mark.svg" width="14" height="14" alt=""> <span>Science you can inspect.</span><span class="footer-divider">/</span><button type="button" data-modal="sources">Sources &amp; scope</button><span class="footer-divider">/</span><a href="/sentilab/package/?feed=door">Package view</a><span class="footer-divider">/</span><a href="/lab">Earlier demo</a></div><div><button type="button" id="replayIntro">Replay entrance</button><span class="footer-divider">·</span><span>AIdenID × Senti</span></div></footer>
+    <footer><div><img src="/sentilab/live/mark.svg" width="14" height="14" alt=""> <span>Science you can inspect.</span><span class="footer-divider">/</span><button type="button" data-modal="sources">Sources &amp; scope</button><span class="footer-divider">/</span><a href="/sentilab/package/?feed=door">Package view</a><span class="footer-divider">/</span><a href="/lab">Earlier demo</a><span class="footer-divider">/</span><a href="/sentilab/packages/">Packages</a><span class="footer-divider">/</span><a href="/docs/">Docs</a></div><div><button type="button" id="replayIntro">Replay entrance</button><span class="footer-divider">·</span><span>AIdenID × Senti</span></div></footer>
   </main>
   </div>
   <dialog id="modal" aria-labelledby="modalTitle"><div class="modal-shell"><div class="modal-top"><span class="eyebrow" id="modalEyebrow">SENTILAB</span><button type="button" id="closeModal" class="icon-button subtle" aria-label="Close dialog"><span data-icon="close"></span></button></div><h2 id="modalTitle"></h2><div id="modalBody"></div></div></dialog>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09110f">
+  <title>SentiLab · Packages</title>
+  <meta name="description" content="SentiLab packages: every accepted layout whose replay matched, with the door's own result, ready for engineers. Simulated, not silicon.">
+  <link rel="icon" href="/sentilab/live/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/sentilab/packages/packages.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/sentilab/live/"><img src="/sentilab/live/mark.svg" width="22" height="22" alt=""> SentiLab</a>
+    <nav aria-label="Main"><a href="/sentilab/live/">Workspace</a><a href="/sentilab/packages/" aria-current="page">Packages</a><a href="/docs/">Docs</a></nav>
+  </header>
+  <main>
+    <h1 id="pageTitle">Packages: every accepted layout, ready for engineers</h1>
+    <p class="note" id="pageNote">Simulated, not measured on real chips. Each package lists what is not claimed.</p>
+    <p class="lead" id="pageLead"></p>
+    <p class="licence-note" id="licenceNote">Downloads are offered only for layouts their owners have licensed for redistribution. The door’s terms cover evaluation, keeping the evidence and public display, so every other accepted layout is shown here view only. <a href="/docs/">How it works</a></p>
+    <div class="actions">
+      <button type="button" id="allJson" disabled>Download all (JSON)</button>
+      <button type="button" id="allCsv" disabled>Download all (CSV)</button>
+      <a href="/docs/" id="docsLink">How it works</a>
+    </div>
+    <p class="state" id="feedState" role="status">Reading the door's results…</p>
+    <ol class="packages" id="packageList"></ol>
+  </main>
+  <script type="module" src="/sentilab/packages/packages.mjs"></script>
+</body>
+</html>

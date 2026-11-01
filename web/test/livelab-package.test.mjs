@@ -1,7 +1,8 @@
 // node --test test/livelab-package.test.mjs (from web/)
-// Carter (22:08Z): "package the good results and ship to engineers". A "Package for engineers" download on the
-// selected accepted proposal, and "Download top layouts" for the coolest accepted ones, built in the page from the
-// public results feed's own rows, copied exactly, with no claim the feed does not make.
+// Carter (22:08Z): "package the good results and ship to engineers". Terms v1 (the terms review, 22:16Z): the door's
+// terms grant evaluation, keeping the evidence and public display, not redistribution; so a package exists only for a
+// run on the licence allowlist (web/public/sentilab/packages/licensed-runs.json, by full run id), shipped empty. Every
+// other accepted run is view only. A package copies the public results feed's own row exactly and adds no claim.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -149,10 +150,10 @@ function door() {
 }
 let lastDom = null;
 const installedText = () => lastDom.page().text.join(" ");
-async function open(t, tag) {
+async function open(t, tag, allow = null) {
   t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
   const d = door();
-  lastDom = installPage(t, d.answer);
+  lastDom = installPage(t, (url) => (url.pathname === "/sentilab/packages/licensed-runs.json" ? allow : d.answer(url)));
   await import(`${LIVE}?proposals=${tag}`);
   await settleFor(t, 4000);
   return d;
@@ -162,13 +163,17 @@ const text = (el) => el.textContent;
 
 
 const P = await import(pathToFileURL(join(HERE, "..", "public", "sentilab", "live", "package-export.mjs")).href);
+const W = await import(pathToFileURL(join(HERE, "..", "public", "sentilab", "live", "words.mjs")).href);
 const RAW = () => doc("results.json");
 const VENDORS = /\b(openai|chatgpt|gpt-?\d|claude|anthropic|gemini|copilot|mistral|llama)\b/i;
+const entry = (id, extra = {}) => ({ run_id: id, visit: null, owner_role: "team", licence: "CC BY 4.0", confirmed_by: "the team", confirmed_at: "2026-11-01T22:30:00Z", ...extra });
+const allowlist = (...ids) => ({ schema: "sentilab-licensed-runs/1", items: ids.map((id) => entry(id)) });
 
-test("package: every field is copied from the feed's own row exactly, including not_claimed", () => {
+test("package: every field is copied from the feed's own row exactly, including not_claimed, and it carries its licence", () => {
   const raw = RAW().items[0];
-  const pkg = P.engineerPackage(raw, { submittedAt: "2026-11-01T10:18:42.328Z", pageUrl: "https://sentilab.aidenid.com/sentilab/live/", generatedAt: "2026-11-01T22:20:00.000Z" });
+  const pkg = P.engineerPackage(raw, { licence: entry(raw.id), submittedAt: "2026-11-01T10:18:42.328Z", pageUrl: "https://sentilab.aidenid.com/sentilab/live/", generatedAt: "2026-11-01T22:20:00.000Z" });
   assert.equal(pkg.schema, "sentilab-engineer-package/1");
+  assert.equal(pkg.licence, "CC BY 4.0"); assert.equal(pkg.owner_role, "team");
   assert.equal(pkg.run_id, raw.id); assert.equal(pkg.visit, raw.short_id); assert.equal(pkg.submitted_at, "2026-11-01T10:18:42.328Z");
   const compact = [...raw.dies].sort((a, b) => a.die - b.die).map((d) => `${d.x_um / 500}.${d.y_um / 500}.${d.rot_deg / 90}`).join(",");
   assert.equal(pkg.layout.compact, compact, "the door's compact l= string for the same dies");
@@ -182,84 +187,110 @@ test("package: every field is copied from the feed's own row exactly, including 
   assert.deepEqual(pkg.evaluator, raw.result.evaluator);
   assert.deepEqual(pkg.labels, { label: raw.result.label, temperature_label: raw.result.temperature_label }, "the feed's own labels, as given");
   assert.deepEqual(pkg.source, { page: "https://sentilab.aidenid.com/sentilab/live/", feed: "/api/open/v1/door/results", generated_at: "2026-11-01T22:20:00.000Z" });
-  assert.match(pkg.readme, /simulated, not measured on silicon/);
-  assert.equal(/\b(beat|beats|margin|better|best|validated)\b/i.test(pkg.readme), false, "the readme adds no claim");
   assert.equal(P.packageName(raw), "sentilab-79d3-e724279d.json", "the run id's own part, never the door part every run shares");
 });
 
-test("package: refused, unreproduced or unscored runs get no package", () => {
+test("package: the README carries each required point and the licence line from the allowlist", () => {
+  const raw = RAW().items[0];
+  const readme = P.engineerPackage(raw, { licence: entry(raw.id) }).readme;
+  for (const point of ["highest chiplet-centre average", "HotSpot 6.0", "grid 64", "simulated", "no warranty",
+    "+1.39%", "HotSpot 7.0 reads very differently on the same inputs",
+    "proxy computed from chip-to-chip distances, not routed wire",
+    "not a manufacturing design", "not an optimum", "not checked on hardware",
+    "route it", "run your own thermal model", "Licence: CC BY 4.0"]) assert.ok(readme.includes(point), `the README says: ${point}`);
+  assert.equal(/\b(beat|beats|margin|better|best|validated)\b/i.test(readme), false, "the readme adds no claim");
+});
+
+test("package: ready only once the fresh replay matched; downloadable only for a run on the allowlist, by its full run id", () => {
   const ok = RAW().items[0];
   assert.equal(P.packageable(ok), true);
   assert.equal(P.packageable({ ...ok, status: "rejected", result: null }), false);
   assert.equal(P.packageable({ ...ok, status: "not_reproduced", result: { ...ok.result, verification: { ...ok.result.verification, replay: "not_reproduced" } } }), false);
-  assert.equal(P.packageable({ ...ok, result: { ...ok.result, verification: { ...ok.result.verification, replay: "pending" } } }), false);
+  assert.equal(P.packageable({ ...ok, result: { ...ok.result, verification: { ...ok.result.verification, replay: "pending" } } }), false, "never at replay pending");
+  assert.equal(P.packageable({ ...ok, result: { ...ok.result, replay: { ...ok.result.replay, match: false } } }), false);
   assert.equal(P.packageable({ ...ok, status: "evaluated" }), false);
-  assert.equal(P.packageable(null), false);
+  assert.equal(P.downloadable(ok, new Map()), false, "an empty allowlist: no download");
+  assert.equal(P.downloadable(ok, P.readLicences(allowlist(ok.id))), true);
+  assert.equal(P.downloadable(ok, P.readLicences({ schema: "sentilab-licensed-runs/1", items: [entry(ok.short_id), entry(`open-e4fde196-${"0".repeat(32)}`)] })), false, "never by short id or another run");
+  assert.equal(P.readLicences({ schema: "sentilab-licensed-runs/1", items: [entry(ok.short_id)] }).size, 0);
+  assert.equal(P.readLicences({ schema: "other", items: [entry(ok.id)] }).size, 0);
+  assert.equal(P.readLicences(null).size, 0);
+  const shipped = JSON.parse(readFileSync(join(HERE, "..", "public", "sentilab", "packages", "licensed-runs.json"), "utf8"));
+  assert.deepEqual(shipped, { schema: "sentilab-licensed-runs/1", items: [] }, "the allowlist ships empty");
 });
 
-test("package: top layouts are the accepted, replay-matched ones, coolest first, at most N, with a CSV row each and the reference marked", () => {
+test("package: top layouts are the licensed, replay-matched ones, coolest first, with a CSV row each and the reference marked", () => {
   const items = RAW().items;
-  const extra = { ...items[0], id: "open-0000dead-0000000000000000000000000000dead", short_id: "dead", seq: 999, status: "not_reproduced",
-    result: { ...items[0].result, max_chiplet_centre_cell_mean_C: 50, verification: { ...items[0].result.verification, replay: "not_reproduced" } } };
-  const all = P.topLayouts([...items, extra], 10);
-  assert.equal(all.length, 9, "every accepted one (fewer than 10), never the unreproduced one");
+  const all = P.topLayouts(items, 10);
   const values = all.map((x) => x.result.max_chiplet_centre_cell_mean_C);
-  assert.deepEqual(values, [...values].sort((a, b) => a - b), "coolest first");
-  assert.equal(P.topLayouts(items, 3).length, 3);
-  const { json, csv } = P.topBundle([...items, extra], { pageUrl: "https://sentilab.aidenid.com/sentilab/live/", generatedAt: "2026-11-01T22:20:00.000Z" });
-  assert.equal(json.schema, "sentilab-top-layouts/1");
+  assert.equal(all.length, 9); assert.deepEqual(values, [...values].sort((a, b) => a - b), "coolest first");
+  const none = P.topBundle(items, {});
+  assert.deepEqual(none.json.layouts, [], "an empty allowlist: nothing to download");
+  assert.equal(none.csv.trim().split("\n").length, 1, "only the header");
+  const licences = P.readLicences(allowlist(...items.map((x) => x.id)));
+  const { json, csv } = P.topBundle(items, { licences, n: 5, pageUrl: "https://sentilab.aidenid.com/sentilab/live/", generatedAt: "2026-11-01T22:20:00.000Z" });
+  assert.equal(json.layouts.length, 5, "top N");
   assert.deepEqual(json.reference, { layout: "raw", value_C: 115.935 });
-  assert.deepEqual(json.layouts.map((x) => x.rank), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  assert.deepEqual(json.layouts.map((x) => x.wire_proxy_mm), all.map((x) => x.wire_proxy_mm), "wire proxy alongside");
+  assert.deepEqual(json.layouts.map((x) => x.licence), Array(5).fill("CC BY 4.0"));
   const lines = csv.trim().split("\n");
-  assert.equal(lines[0], "rank,visit,run_id,max_chiplet_centre_cell_mean_C,wire_proxy_mm,replay,geometry_sha256,layout");
+  assert.equal(lines[0], "rank,visit,run_id,max_chiplet_centre_cell_mean_C,wire_proxy_mm,replay,licence,geometry_sha256,layout");
   assert.match(lines[1], /^reference \(for comparison only\),,raw,115\.935,/);
-  assert.equal(lines.length, 2 + 9);
-  assert.ok(lines[2].startsWith(`1,${all[0].short_id},${all[0].id},${all[0].result.max_chiplet_centre_cell_mean_C},${all[0].wire_proxy_mm},reproduced,`));
+  assert.equal(lines.length, 2 + 5);
+  assert.ok(lines[2].startsWith(`1,${all[0].short_id},${all[0].id},${all[0].result.max_chiplet_centre_cell_mean_C},${all[0].wire_proxy_mm},reproduced,CC BY 4.0,`));
   assert.ok(lines[2].endsWith(`"${P.compactLayout(all[0].dies)}"`), "the compact layout, quoted");
-  assert.equal(/\b(beat|beats|margin|better)\b/i.test(json.readme), false);
+  const one = P.topBundle(items, { licences: P.readLicences(allowlist(items[3].id)) });
+  assert.deepEqual(one.json.layouts.map((x) => x.run_id), [items[3].id], "only licensed runs");
 });
 
-test("package: the selected accepted proposal downloads its exact package; refused and unreproduced ones get no button", async (t) => {
-  const d = await open(t, "page");
+function stubDownloads(t) {
   const blobs = [];
   const saved = { create: URL.createObjectURL, revoke: URL.revokeObjectURL };
   URL.createObjectURL = (blob) => { blobs.push(blob); return `blob:test/${blobs.length}`; };
   URL.revokeObjectURL = () => {};
   t.after(() => { URL.createObjectURL = saved.create; URL.revokeObjectURL = saved.revoke; });
-  const pkgButtons = () => walk(document.getElementById("proposalList")).filter((el) => el.tag === "button" && /\bengineer-package\b/.test(el.className));
-  assert.equal(document.getElementById("packageButton").hidden, false, "the followed run is accepted and replay-matched");
-  assert.equal(pkgButtons().length, 1, "one button, on the selected row");
+  return blobs;
+}
+const pkgButtons = () => walk(document.getElementById("proposalList")).filter((el) => el.tag === "button" && /\bengineer-package\b/.test(el.className));
+const viewOnly = () => walk(document.getElementById("proposalList")).filter((el) => el.className === "view-only").map((el) => el.textContent);
+
+test("package page: with an empty allowlist there is no download anywhere; the selected accepted proposal is view only", async (t) => {
+  await open(t, "empty");
+  const blobs = stubDownloads(t);
+  assert.equal(document.getElementById("packageButton").hidden, true, "no package on the model");
+  assert.equal(pkgButtons().length, 0, "no package on the timeline");
+  assert.equal(document.getElementById("topLayouts").hidden, true, "no top layouts download");
+  assert.deepEqual(viewOnly(), ["View only: shown under the door’s terms, not licensed for redistribution"]);
+  document.getElementById("packageButton").click(); document.getElementById("topLayouts").click();
+  await settle();
+  assert.equal(blobs.length, 0, "nothing downloads");
+});
+
+test("package page: an allowlisted run gets its package with its licence; an accepted run not on the list is view only", async (t) => {
+  const followed = RAW().items.find((x) => x.short_id === "5cb8");
+  await open(t, "licensed", allowlist(followed.id));
+  const blobs = stubDownloads(t);
+  assert.equal(document.getElementById("packageButton").hidden, false);
+  assert.equal(pkgButtons().length, 1);
   pkgButtons()[0].click();
   await settle();
-  assert.equal(blobs.length, 1);
   const pkg = JSON.parse(await blobs[0].text());
-  const raw = RAW().items.find((x) => x.id === pkg.run_id);
-  assert.ok(raw, "a run from the feed");
-  assert.deepEqual(pkg.verification, raw.result.verification);
-  const anchors = walk(document.body).filter((el) => el.tag === "a" && el.getAttribute("download"));
-  assert.equal(anchors.at(-1).getAttribute("download"), P.packageName(raw));
+  assert.equal(pkg.run_id, followed.id); assert.equal(pkg.licence, "CC BY 4.0"); assert.equal(pkg.owner_role, "team");
+  assert.match(pkg.readme, /Licence: CC BY 4\.0/);
+  assert.equal(walk(document.body).filter((el) => el.tag === "a" && el.getAttribute("download")).at(-1).getAttribute("download"), P.packageName(followed));
   document.getElementById("topLayouts").click();
   await settle();
-  assert.equal(blobs.length, 3, "top layouts: a JSON and a CSV");
-  assert.equal(JSON.parse(await blobs[1].text()).schema, "sentilab-top-layouts/1");
-  assert.match(await blobs[2].text(), /^rank,visit,run_id/);
-  assert.deepEqual(walk(document.body).filter((el) => el.tag === "a").slice(-2).map((a) => a.getAttribute("download")), ["sentilab-top-layouts.json", "sentilab-top-layouts.csv"]);
-  // A refused proposal and one whose replay did not match: no package.
-  d.add("e005", ["rejected"], { at: Date.now() });
-  d.add("e006", ["queued", "evaluating", "evaluated", "replaying", "not_reproduced"], { at: Date.now() });
-  await settleFor(t, 4000);
-  for (const hex of ["e005", "e006"]) {
-    rows().find((el) => el.textContent.includes(`visit ${hex}`)).click();
-    await settle();
-    assert.equal(document.getElementById("packageButton").hidden, true, `${hex}: no package button on the model`);
-    assert.equal(pkgButtons().length, 0, `${hex}: no package button on the row`);
-  }
+  assert.deepEqual(JSON.parse(await blobs[1].text()).layouts.map((x) => x.run_id), [followed.id], "top layouts: licensed runs only");
+  assert.equal((await blobs[2].text()).trim().split("\n").length, 3, "CSV: header, reference, the one licensed layout");
+  // Another accepted run, not on the list: view only.
+  rows().find((el) => el.textContent.includes("visit c991")).click();
+  await settle();
+  assert.equal(document.getElementById("packageButton").hidden, true);
+  assert.equal(pkgButtons().length, 0);
+  assert.deepEqual(viewOnly(), [W.PACKAGE.viewOnly]);
 });
 
 test("package: nothing on the page says unvalidated or names a vendor", async (t) => {
-  const d = await open(t, "words");
-  void d;
+  await open(t, "words");
   const page = installedText();
   assert.equal(/unvalidated/i.test(page), false, "no visible unvalidated");
   assert.equal(VENDORS.test(page), false, "no vendor names");

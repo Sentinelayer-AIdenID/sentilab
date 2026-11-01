@@ -138,22 +138,43 @@ export const PACKAGE = Object.freeze({
   title: "Download this layout and the door\u2019s result for it as JSON. Simulated, not silicon.",
   top: "Download top layouts",
   topTitle: "Download the accepted layouts whose replay matched, lowest board metric first, as JSON and CSV. Simulated, not silicon.",
-  readme: "SentiLab engineer package. One layout proposed through the SentiLab agent door for the case named in case, "
-    + "and the door\u2019s own result for it, copied as the public results feed gives it. layout.dies is the layout as the feed gives it (die, x_um, y_um, "
-    + "rot_deg); layout.compact is the same layout as the door’s compact l= string (x.y.r per die, x and y in 500 um "
-    + "steps, r in 90 degree steps), or null when it is off that lattice. case gives the interposer and die "
-    + "sizes. result.max_chiplet_centre_cell_mean_C is the board metric, defined in result.metric.definition, with the "
-    + "reference in result.metric.reference. result.per_die_C is each die\u2019s value. result.active_layer_peak_C is the "
-    + "hottest active-layer value, and result.active_guard the feed\u2019s own rule on it. result.replay is the fresh-process "
-    + "replay. wire_proxy_mm is the feed\u2019s wire-length proxy; geometry_sha256 the door\u2019s hash of the geometry. "
-    + "verification lists the checks the feed reports, and verification.not_claimed what it does not claim. Every "
-    + "temperature here is simulated, not measured on silicon; labels keeps the feed\u2019s own labels as given. This file "
-    + "adds no claim of its own.",
-  topReadme: "SentiLab top layouts: the accepted layouts whose fresh-process replay matched, as the public results feed "
-    + "gives them, sorted by the board metric (max_chiplet_centre_cell_mean_C, lower first), with wire_proxy_mm alongside. "
-    + "The reference value is shown for comparison only. Every temperature is simulated, not measured on silicon; each "
-    + "layout\u2019s verification.not_claimed lists what the feed does not claim. This file adds no claim of its own.",
+  // Terms v1 (the terms review, 22:16Z): the door\u2019s terms grant evaluation, keeping the evidence and public display,
+  // not redistribution. A package exists only for a run on the licence allowlist; its readme carries that licence.
+  readme: (licence) => [
+    "SentiLab engineer package: one layout proposed through the SentiLab agent door, with the door\u2019s own result for it, copied as the public results feed gives it.",
+    "The number: result.max_chiplet_centre_cell_mean_C is the highest chiplet-centre average. For each chiplet, the mean of its central cells on a 64 x 64 grid, then the highest over the chiplets, computed by HotSpot 6.0 at grid 64 (result.metric.definition). It is simulated, not measured, and comes with no warranty.",
+    "Known limit: the saved heat balance is off by +1.39% on this CPU-DRAM case, and HotSpot 7.0 reads very differently on the same inputs.",
+    "The wire figure: wire_proxy_mm is a proxy computed from chip-to-chip distances, not routed wire.",
+    "What it is not: not a manufacturing design, not an optimum, and not checked on hardware. verification.not_claimed lists what the feed itself does not claim.",
+    "Next steps for an engineer: route it, and run your own thermal model.",
+    "The fields: layout.dies is the layout as the feed gives it (die, x_um, y_um, rot_deg); layout.compact is the same layout as the door\u2019s compact l= string (x.y.r per die, x and y in 500 um steps, r in 90 degree steps), or null off that lattice; case gives the interposer and die sizes; result.per_die_C, result.active_layer_peak_C with result.active_guard, and result.replay are copied from the feed; labels keeps the feed\u2019s own labels as given.",
+    `Licence: ${licence?.licence ?? "none"}${licence?.owner_role ? ` (granted by its ${licence.owner_role} owner)` : ""}.`,
+  ].join("\n\n"),
+  viewOnly: "View only: shown under the door\u2019s terms, not licensed for redistribution",
+  topReadme: "SentiLab top layouts: only layouts whose owners licensed them for redistribution (each row carries its "
+    + "licence), accepted with a matching fresh-process replay, sorted by the highest chiplet-centre average (lower first) "
+    + "with wire_proxy_mm alongside. The reference value is for comparison only. Every temperature is simulated "
+    + "(HotSpot 6.0, grid 64), not measured, with no warranty; wire_proxy_mm is a proxy from chip distances, not routed "
+    + "wire; none of these is a manufacturing design, an optimum, or checked on hardware.",
   referenceRow: "reference (for comparison only)",
+});
+// The Packages page (/sentilab/packages/): every accepted layout whose replay matched, coolest first.
+export const PACKAGES_PAGE = Object.freeze({
+  lead: (n) => (n ? `${n} accepted layout${n === 1 ? "" : "s"} whose fresh-process replay matched, coolest first, as the door’s public results feed gives them.` : "No accepted layout whose replay matched yet."),
+  reading: "Reading every page of the door’s results…",
+  done: (n) => `Every page read · ${n} listed`,
+  failed: (e) => `The door’s results could not be read (${e}). Nothing is listed in their place.`,
+  visit: (short) => (short ? `visit ${short}` : "a visit"),
+  facts: (value, wire) => `highest chiplet-centre average ${Number.isFinite(value) ? value.toFixed(2) : "?"} °C · simulated · wire proxy ${Number.isFinite(wire) ? wire : "?"} mm`,
+  outcome: "replay matched",
+  submitted: (t) => `submitted ${t}`,
+  timeLoading: "submission time: reading…",
+  noTime: "submission time not recorded",
+  download: "Download package",
+  licence: (l) => `licensed ${l}`,
+  allReadme: "SentiLab packages: every accepted layout whose fresh-process replay matched, coolest first, each as the "
+    + "same package the Live Lab downloads (see each package’s readme). Every temperature is simulated, not measured on "
+    + "silicon; each package’s verification.not_claimed lists what the feed does not claim. This file adds no claim of its own.",
 });
 export const YOUR_PICK = "your pick";
 

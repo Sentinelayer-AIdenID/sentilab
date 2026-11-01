@@ -20,8 +20,27 @@ export function keepRawResults(store, doc, max = 2000) {
   return store;
 }
 // A layout ships to engineers only once it was accepted and a fresh replay matched (status and replay as the feed says).
+// Ready only once the fresh replay matched (verification.replay "reproduced" and replay.match true), never at
+// "Accepted \u00b7 replay pending".
 export const packageable = (raw) => Boolean(raw && (raw.status === "reproduced" || raw.status === "cross_checked")
-  && isObj(raw.result) && raw.result.verification?.replay === "reproduced");
+  && isObj(raw.result) && raw.result.verification?.replay === "reproduced" && raw.result.replay?.match === true);
+// The licence allowlist (Terms v1: the door's terms do not grant redistribution). A download exists only for a run
+// whose FULL run id is listed; never matched on a short id or a visit. An unreadable list is an empty one.
+export const LICENSED_PATH = "/sentilab/packages/licensed-runs.json";
+export const LICENSED_SCHEMA = "sentilab-licensed-runs/1";
+const RUN_ID = /^open-[0-9a-f]{8}-[0-9a-f]{32}$/;
+const field = (v, max) => (typeof v === "string" && v.length > 0 && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v) ? v : null);
+export function readLicences(doc) {
+  const out = new Map();
+  if (!isObj(doc) || doc.schema !== LICENSED_SCHEMA || !Array.isArray(doc.items)) return out;
+  for (const x of doc.items) {
+    if (!isObj(x) || typeof x.run_id !== "string" || !RUN_ID.test(x.run_id) || !field(x.licence, 80) || !field(x.owner_role, 40)) continue;
+    out.set(x.run_id, { run_id: x.run_id, visit: field(x.visit, 8), owner_role: x.owner_role, licence: x.licence,
+      confirmed_by: field(x.confirmed_by, 80), confirmed_at: field(x.confirmed_at, 40) });
+  }
+  return out;
+}
+export const downloadable = (raw, licences) => packageable(raw) && Boolean(licences instanceof Map && licences.has(raw.id));
 export const ENGINEER_SCHEMA = "sentilab-engineer-package/1";
 const copy = (v) => (v === undefined ? null : JSON.parse(JSON.stringify(v)));
 // The feed's dies, with exactly the four contract fields.
@@ -37,10 +56,11 @@ export function compactLayout(dies) {
 // The run id's own part (open-<door>-<32 hex>: the middle part is shared by every run of a door), first 8 characters.
 export const shortRunId = (id) => (String(id).split("-").at(-1) ?? String(id)).slice(0, 8);
 export const packageName = (raw) => `sentilab-${raw.short_id ?? "visit"}-${shortRunId(raw.id)}.json`;
-export function engineerPackage(raw, { submittedAt = null, pageUrl = null, generatedAt = null } = {}) {
+export function engineerPackage(raw, { licence = null, submittedAt = null, pageUrl = null, generatedAt = null } = {}) {
   const r = raw.result;
   return {
     schema: ENGINEER_SCHEMA,
+    licence: licence?.licence ?? null, owner_role: licence?.owner_role ?? null,
     run_id: raw.id, visit: raw.short_id ?? null, submitted_at: submittedAt,
     layout: { compact: compactLayout(raw.dies), dies: diesOf(raw.dies) },
     case: { id: CASE_ID, title: CASE_TITLE, interposer_mm: INTERPOSER_MM,
@@ -52,7 +72,7 @@ export function engineerPackage(raw, { submittedAt = null, pageUrl = null, gener
     evaluator: copy(r.evaluator),
     labels: { label: copy(r.label), temperature_label: copy(r.temperature_label) },
     source: { page: pageUrl, feed: RESULTS_PATH, generated_at: generatedAt },
-    readme: W.PACKAGE.readme,
+    readme: W.PACKAGE.readme(licence),
   };
 }
 // The accepted, replay-matched layouts, lowest board metric first (the feed's own numbers), at most n.
@@ -61,16 +81,16 @@ export function topLayouts(raws, n = 10) {
     .sort((a, b) => a.result.max_chiplet_centre_cell_mean_C - b.result.max_chiplet_centre_cell_mean_C || a.seq - b.seq).slice(0, n);
 }
 const csvCell = (v) => (v === null || v === undefined ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
-export const TOP_CSV_HEADER = ["rank", "visit", "run_id", "max_chiplet_centre_cell_mean_C", "wire_proxy_mm", "replay", "geometry_sha256", "layout"];
-export function topBundle(raws, { n = 10, pageUrl = null, generatedAt = null } = {}) {
-  const top = topLayouts(raws, n);
+export const TOP_CSV_HEADER = ["rank", "visit", "run_id", "max_chiplet_centre_cell_mean_C", "wire_proxy_mm", "replay", "licence", "geometry_sha256", "layout"];
+export function topBundle(raws, { licences = new Map(), n = 10, pageUrl = null, generatedAt = null } = {}) {
+  const top = topLayouts([...(raws ?? [])].filter((x) => downloadable(x, licences)), n);
   const reference = copy(top[0]?.result?.metric?.reference ?? null);
   const layouts = top.map((raw, i) => ({ rank: i + 1, run_id: raw.id, visit: raw.short_id ?? null, max_chiplet_centre_cell_mean_C: raw.result.max_chiplet_centre_cell_mean_C,
-    wire_proxy_mm: raw.wire_proxy_mm ?? null, replay: raw.result.verification.replay, geometry_sha256: raw.geometry_sha256 ?? null, layout: compactLayout(raw.dies),
+    wire_proxy_mm: raw.wire_proxy_mm ?? null, replay: raw.result.verification.replay, licence: licences.get(raw.id)?.licence ?? null, geometry_sha256: raw.geometry_sha256 ?? null, layout: compactLayout(raw.dies),
     verification: copy(raw.result.verification) }));
   const rows = [TOP_CSV_HEADER.join(",")];
-  if (reference) rows.push([W.PACKAGE.referenceRow, "", reference.layout ?? "", reference.value_C, "", "", "", ""].map(csvCell).join(","));
-  for (const x of layouts) rows.push([x.rank, x.visit, x.run_id, x.max_chiplet_centre_cell_mean_C, x.wire_proxy_mm, x.replay, x.geometry_sha256, x.layout].map(csvCell).join(","));
+  if (reference) rows.push([W.PACKAGE.referenceRow, "", reference.layout ?? "", reference.value_C, "", "", "", "", ""].map(csvCell).join(","));
+  for (const x of layouts) rows.push([x.rank, x.visit, x.run_id, x.max_chiplet_centre_cell_mean_C, x.wire_proxy_mm, x.replay, x.licence, x.geometry_sha256, x.layout].map(csvCell).join(","));
   return { json: { schema: "sentilab-top-layouts/1", reference, metric: copy(top[0]?.result?.metric ?? null), layouts,
     labels: { label: copy(top[0]?.result?.label ?? null), temperature_label: copy(top[0]?.result?.temperature_label ?? null) },
     source: { page: pageUrl, feed: RESULTS_PATH, generated_at: generatedAt }, readme: W.PACKAGE.topReadme }, csv: `${rows.join("\n")}\n` };
