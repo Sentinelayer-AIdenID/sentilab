@@ -95,3 +95,8 @@ def events(after: str | None = None, limit: str | None = None) -> Response:
 @router.get("/board")
 def board(x_door_nonce: str | None = Header(default=None)) -> Response:
     return _reply(*runtime().board(x_door_nonce))
+
+
+@router.get("/visitors")
+def visitors(after: str | None = None, limit: str | None = None) -> Response:
+    return _reply(*runtime().visitors(after, limit))

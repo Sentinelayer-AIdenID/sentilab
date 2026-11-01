@@ -14,8 +14,8 @@
                pinned catalogue: a CPU may take r 0 or 1 (0 or 90 degrees), a DRAM only r 0; anything else is
                refused by the contract (rotation_not_allowed, or schema_invalid for 180 and 270)
 
-Nothing the visitor sends is stored or echoed: violations carry only codes, schema-known paths and keywords, die
-indices and whole micrometres; a request_key is kept only as a keyed digest.
+Submission violations carry only codes, schema-known paths and keywords, die indices and whole micrometres;
+a request_key is kept only as a keyed digest. Arrival declarations are a separate opt-in public display record.
 """
 from __future__ import annotations
 
@@ -35,6 +35,12 @@ MAX_BODY_BYTES = 4096
 MAX_COMPACT_CHARS = 128
 COMPACT_ITEM = re.compile(r"(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.([0-9])\Z")
 PROPOSAL_SCHEMA = "sentilab-open-proposal/1"
+VISITOR_NOTICE = "sentilab-public-visitor/1"
+VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected purpose are public. If you opt in, "
+                      "your declared name, reason and source category are also public, together with a handle "
+                      "that links visits using this purpose pass. These declarations are not verified identity. "
+                      "Do not include private information. No referrer URL, query string or pass token is published.")
+DISPLAY_TEXT = r"^[^\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069]*$"
 COMMON = SCHEMAS["common"]["$id"]
 SUBMIT_SCHEMA = {
     "type": "object",
@@ -69,6 +75,15 @@ ARRIVAL_SCHEMA = {
         "operator": {"enum": list(OPERATORS)},
         "purpose": {"enum": list(PURPOSES)},
         "nonce": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "declaration": {
+            "type": "object", "additionalProperties": False, "required": ["notice_version"],
+            "properties": {
+                "notice_version": {"const": VISITOR_NOTICE},
+                "name": {"type": "string", "maxLength": 64, "pattern": DISPLAY_TEXT},
+                "reason": {"type": "string", "maxLength": 160, "pattern": DISPLAY_TEXT},
+                "source": {"enum": ["moltbook", "senti", "github", "direct", "other"]},
+            },
+        },
     },
 }
 _SUBMIT = StrictValidator(SUBMIT_SCHEMA, registry=REGISTRY)

@@ -560,6 +560,23 @@ class Store:
                 "SELECT seq, at, kind, run_id, body FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
                 (after, limit)).fetchall()]
 
+    def visitors(self, after: int, limit: int) -> tuple:
+        """Arrival rows and counts from the same read snapshot; no backfill or new identity table."""
+        with self.read() as db:
+            rows = [dict(row) for row in db.execute(
+                "SELECT seq, at, body FROM events WHERE kind = 'arrival' AND seq > ? "
+                "ORDER BY seq LIMIT ?", (after, limit)).fetchall()]
+            classes = {row[0]: row[1] for row in db.execute(
+                "SELECT json_extract(body, '$.class'), COUNT(*) FROM events "
+                "WHERE kind = 'arrival' GROUP BY json_extract(body, '$.class')")}
+            handles, without, through = db.execute(
+                "SELECT COUNT(DISTINCT json_extract(body, '$.visitor_handle')), "
+                "COALESCE(SUM(json_extract(body, '$.visitor_handle') IS NULL), 0), COALESCE(MAX(seq), 0) "
+                "FROM events WHERE kind = 'arrival'").fetchone()
+            return rows, {"recorded_arrivals": sum(classes.values()), "arrivals_by_class": classes,
+                          "unique_observed_handles": handles, "arrivals_without_handle": without,
+                          "through_seq": through}
+
     def last_seq(self) -> int:
         with self.read() as db:
             return db.execute("SELECT COALESCE(MAX(seq), 0) FROM events").fetchone()[0]
