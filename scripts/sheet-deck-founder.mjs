@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { FOUNDER_DECK_DIR, FOUNDER_DIR } from "./build-deck-founder.mjs";
+import { FOUNDER_DECK_DIR, FOUNDER_DIR, sheetFillLine } from "./build-deck-founder.mjs";
 
 const args = process.argv.slice(2);
 const at = args.indexOf("--shots");
@@ -26,7 +26,7 @@ const cells = main.map(({ s, k }) => {
 const u = data.budget;
 const head = `<h1>SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${esc(data.deck.talk)} · ${esc(data.deck.cutoff)}${data.deck.draft ? " · draft" : ""}</h1>`
   + `<p class="clock">${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm + ${u.transitionSeconds} s transitions = ${u.totalSeconds} s of ${u.talkCapSeconds} s · at ${u.slowWordsPerMinute} wpm ${u.slowTotalSeconds} s</p>`
-  + (data.placeholders.length ? `<p class="fill">Still measuring (shown as "measuring…"): ${data.placeholders.map((p) => esc(p.label)).join(" · ")}</p>` : "");
+  + (sheetFillLine(data) ? `<p class="fill">${esc(sheetFillLine(data))}</p>` : "");
 const page = `<!doctype html><meta charset="utf-8"><style>
 body { margin: 0; padding: 36px 40px; width: 3000px; background: #0b1216; color: #eef3f2; font: 20px/1.4 "Segoe UI", system-ui, sans-serif; }
 h1 { margin: 0; font: 650 40px "Segoe UI", system-ui, sans-serif; }

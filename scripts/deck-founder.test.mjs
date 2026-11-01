@@ -6,8 +6,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import {
-  FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, countWords, fillInTable, founderPdfName,
-  loadFounder, outputsMatch, scriptPath, serialize, speakerScript,
+  FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, checkUnnamed, countWords, fillInTable,
+  founderPdfName, handoffFiles, inputFiles, loadFounder, loadMetrics, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList,
+  speakerScript, windowShown,
 } from "./build-deck-founder.mjs";
 import { PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 
@@ -15,12 +16,23 @@ const require = createRequire(import.meta.url);
 const deck = require(join(FOUNDER_DECK_DIR, "deck.js"));
 const loaded = loadFounder();
 const data = buildFounderData(loaded);
-const committed = JSON.parse(readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
-// A build of a changed copy of the source, for the refusal tests.
-const variant = (mutate, metrics = loaded.metrics) => {
+// The source as it stood before the freeze: V4.json in draft mode, with METRICS.json's numbers only. The tests that
+// describe placeholders, the fallback and the draft build from it, so they hold before and after the freeze lands.
+const pre = (() => {
   const v4 = structuredClone(loaded.v4);
+  delete v4.build;
+  delete v4.metrics.freezeSha256;
+  delete v4.metrics.freezeNote;
+  return { ...loaded, v4, metrics: { ...loadMetrics(), freezeSha256: null } };
+})();
+// The draft, built explicitly: the tests that describe placeholders and the DRAFT tag hold before and after the freeze.
+const draft = buildFounderData(pre, { final: false });
+const committed = JSON.parse(readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
+// A build of a changed copy of the pre-freeze source, for the refusal tests.
+const variant = (mutate, metrics = pre.metrics) => {
+  const v4 = structuredClone(pre.v4);
   mutate(v4);
-  return buildFounderData({ ...loaded, v4, metrics });
+  return buildFounderData({ ...pre, v4, metrics });
 };
 const slide = (d, id) => d.slides.find((s) => s.id === id);
 const html = (d) => deck.renderSlides(d);
@@ -44,14 +56,15 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   const u = data.budget;
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 200, `${u.totalSeconds} s`); // 3:00 to 3:20, Carter's slot (57411): 3-4 minutes of talk, then the demo
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [382, 152.8, 15, 167.8]);
+  const d = draft.budget;
+  assert.deepEqual([d.talkWords, d.talkSeconds, d.transitionSeconds, d.totalSeconds], [400, 160, 15, 175]);
   assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(50); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
-  assert.equal(slide(data, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
+  assert.equal(slide(draft, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
   // v4-short: two minutes of talk, transitions included, then the demo.
-  const short = buildFounderData(loaded, { slot: "2min" });
+  const short = buildFounderData(loaded, { slot: "2min", final: false });
   assert.deepEqual(short.slides.filter((x) => x.main).map((x) => x.id), SHORT);
-  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [247, 98.8, 10, 108.8]);
+  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [250, 100, 10, 110]);
   // The cut slides lead the backup, then the backup pages.
   assert.deepEqual(short.slides.filter((x) => !x.main).map((x) => x.id), ["senti", "times", "link", "point", "sources", "cost", "solvers"]);
   assert.throws(() => buildFounderData(loaded, { slot: "4min" }), /--slot must be one of 3min, 2min/);
@@ -62,11 +75,13 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // Root, reply to 57809 at 07:04Z: the two paragraph openings, as written.
   assert.ok(say("hook").startsWith("In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at the hottest modeled grid cells, for the same design and input files."));
   // Slide 7, the scorecard: aneta's first sentence (57906), root's preferred wording (reply to 57902, 08:04Z), then the beat.
-  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
+  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is within rounding in our own run and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
   assert.match(slide(data, "scorecard").notes.cue, /Pause before "I nodded\."/);
   assert.equal(slide(data, "scorecard").content.title, "Passing one check isn't passing them all.");
   // Aneta's shortening (57816), with the distinction kept in the footer.
-  assert.ok(say("link").endsWith("Two other teams reported results from changing that link."));
+  assert.ok(say("link").endsWith("Two other teams reported results from changing that link. We ran it too, against a bar we fixed in advance, and it met it."));
+  assert.match(slide(data, "link").notes.cue, /"We ran it too" is the configured diagnostic, as Carter's Q&A has it .*localizes the difference to this term in this configured model/);
+  assert.equal(slide(data, "link").content.line, "Two other teams reported results from changing that link.", "the slide itself is unchanged");
   assert.match(slide(data, "link").content.footer, /^Delfie \(delphisci team\) and ScienceClaw reported results from changing that modeled link; those reports are separate from our verified reference reproduction\./);
   // Carter's additions (57800): the chip joke's second half, what the tech does for agents, the room, the closer.
   assert.ok(say("chips").endsWith("All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design."));
@@ -77,20 +92,38 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.doesNotMatch(say("room") + shown(data, "room"), /most teams/i);
   assert.match(slide(data, "room").notes.cue, /^Carter's option, not a verified fact .*"Most teams had never had their agents talk to another lab's agents\."/);
   // The participants line in aneta's wording (57906), with the metrics pass's numbers (root, 07:52Z).
-  assert.ok(say("room").endsWith("422 messages from 28 identities: 5 human, 23 agent."));
-  assert.match(shown(data, "room"), /11 in the help room, 9 in our team room/);
+  // The room's numbers are the metrics file's (its facts hold each to METRICS.json, refreshed at the freeze).
+  const help = (k) => loaded.metrics.byId.get(k).value;
+  assert.match(say("room"), new RegExp(`${help("crosscheck.help.messages")} messages from ${help("crosscheck.help.posting_identities")} identities: \\d+ human, ${help("crosscheck.help.members_plus_posting_agents") - help("crosscheck.help.members")} agent\\.$`));
+  // Slide 3 is aneta's plain14-room v4 (root's scoped +1 at 14:56:50Z): its footer and SOURCES carry root's three
+  // qualifications, and the picture its own counts, links, help outcomes and ticket split.
+  assert.equal(slide(data, "room").content.figure.id, "plain14");
+  for (const q of ["Messages posted by 14:30 UTC, with the structure read at 14:36 UTC and a later edit retained.", "Links are thread author plus mentions: a message reaching five handles counts five times. They're links, not confirmed exchanges or usefulness.", "30 tickets = 21 in the help room + 9 in our team room, at 14:31 UTC."]) {
+    assert.ok(slide(data, "room").content.footer.includes(q), q);
+    assert.ok(shown(data, "sources").includes(q), q);
+  }
+  assert.ok(shown(data, "sources").includes("Accepted for structure and picture, with 546 of 583 rows corroborated; not a complete raw-history verification."));
+  const p14 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain14-room.svg"), "utf8");
+  for (const t of ["21 in the help room, 9 in our team room", "4 reported checks of our test case", "2 of the other 5 said it was useful", "We offered help to 9 outside groups, by 12:46 UTC"]) assert.ok(p14.includes(t), t);
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
   // Rev 5 (aneta 57941): one 8 on the slide; the posting-group estimate stays on the sources page.
   assert.doesNotMatch(shown(data, "room"), /posting groups/);
-  assert.match(shown(data, "sources"), /8 agent posting groups plus 3 human-only groups/);
-  assert.equal(slide(data, "room").content.tiles.length, 5);
-  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
-  // Rev 4: help offered, in the teams' own words, in place of the model-rated count, which moves to the sources page.
-  assert.match(shown(data, "room"), /3 outside groups checked our test case; we offered help to 8, and 2 said other help was useful/);
-  assert.doesNotMatch(shown(data, "room"), /\b281\b/);
-  assert.match(shown(data, "sources"), /Model-rated, not confirmed usefulness: our intent model rated 281 of the 399/);
-  assert.match(shown(data, "sources"), /Help offered, to 04:01 UTC, refresh at the freeze: 8 outside groups\./);
-  assert.match(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), /## Refresh at the freeze/);
+  assert.ok(shown(data, "sources").includes("The slide 3 picture: 583 messages posted by 14:30 UTC, from 28 posting identities."));
+  assert.equal(slide(data, "room").content.tiles, undefined, "the picture takes the tiles' place");
+  assert.doesNotMatch(shown(data, "room"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
+  // Help offered, in the groups' own reports, in place of the model-rated count, which moves to the sources page. Refreshed
+  // to 12:46 UTC in root's explicit disjoint wording, word for word (aneta 58014; root's +1, reply to 57809 at 12:57:04Z).
+  // The help outcomes (4/9/2) stay the separately accepted line, with root's +1 at 12:57:04Z, in SOURCES.
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording"));
+  assert.doesNotMatch(shown(data, "room"), /\b281\b|04:01|we offered help to 8|3 outside groups/);
+  assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case/);
+  assert.match(shown(data, "sources"), new RegExp(`Model-rated, not confirmed usefulness, to 1 Nov \\d\\d:\\d\\d UTC: our intent model rated ${help("helpful.messages")} of the ${help("helpful.scored_messages")}`));
+  // Root's content P2 (14:45:47Z): the cost page's intent-model line is the freeze file's, in its own window, with no dollar claim.
+  assert.ok(shown(data, "cost").includes(`Our intent model: ${help("intent_model.calls")} recorded successful calls (109 dry run, 448 live, 77 host scores), 31 Oct 22:13 to 1 Nov 14:18 UTC; its cost is not measured.`));
+  assert.doesNotMatch(shown(data, "cost"), /\b480 calls\b|hackathon window/);
+  assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case: .*; another outside team, after 04:01\. Two of the other five said our help was useful \(21:13:28; 00:04:12 and 00:08:14\)\. Three unconfirmed\./);
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording (reply to 57809, 12:57:04Z)"));
+  assert.match(fillInTable(draft), /## Refresh at the freeze/);
   assert.match(say("closer"), /^My ambition\? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub\. Okay, not GitHub\. Yet\./);
   assert.match(slide(data, "closer").notes.cue, /"Okay, not GitHub\. Yet\." is the quiet aside\. Naming the network out loud is Carter's call \(aneta recommends naming it\)/);
   assert.ok(say("closer").endsWith("I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade."));
@@ -105,23 +138,41 @@ test("root's carried openings, the finding beat in root's words and Carter's add
     assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
     assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
-  assert.equal(loaded.v4.figures.plain8.sha256, "7a7f00842bc80ff287af95073043a1578be08ebb70ba7bdc9b00a99443fed88e");
-  assert.equal(loaded.v4.figures.plain8.pending, undefined, "plain8 is v1.22, which root +1'd");
+  // Slide 9's freeze fallback is aneta's plain12-tradeoff from v1.25, root's scoped +1 (10:42:24Z), with the QR code (the
+  // coordinator, 14:13Z): the board the audience is invited to. plain13 is the demo's figure at 1:15 and leaves the deck,
+  // as v1.22's plain8 did; both stay in the review evidence.
+  assert.equal(loaded.v4.figures.plain12.sha256, "31176c7d13ef96c987b5775c9c9ee41a4b739e6bafac1314eef838a59f69524a");
+  assert.match(loaded.v4.figures.plain12.review, /^aneta's v1\.25 \(ZIP 824dd6a6f13838d0628b98136778440aea826d04254cb395f780eb656eae73a0, 44,927 bytes\); root's scoped \+1, 10:42:24Z \(reply to 57940\)/);
+  // Every figure on the freeze branch is approved: v1.24's, v1.25's plain12, v1.30's plain7.
+  for (const [id, f] of Object.entries(loaded.v4.figures)) assert.equal(f.pending, undefined, id);
+  const p12 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain12-tradeoff.svg"), "utf8");
+  for (const t of ["Each dot is one team run, reproduced by a fresh-process replay", "Not a frontier or an optimum: an adaptive search that stopped early chose these points."]) assert.ok(p12.includes(t), t);
+  assert.equal(loaded.v4.slides.find((x) => x.id === "invite").finalFallback.figure, "plain12");
+  for (const gone of ["plain8", "plain13"]) {
+    assert.equal(loaded.v4.figures[gone], undefined, gone);
+    for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith(gone)), `${dir}: ${gone}`);
+  }
   assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
   assert.doesNotMatch(html(data), /figure pending review/);
-  // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z).
-  assert.match(shown(data, "senti"), /Staging output, 08:39 UTC, 1 November: our own team's test runs/);
+  // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z): the figure carries the caveat, the footer
+  // only the place and time (aneta's audience read, 13:43:46Z).
+  assert.equal(slide(data, "senti").content.footer, "Staging door, 08:39 UTC, 1 November.");
+  assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain9-senti-door.svg"), "utf8").includes("These are our own team's test runs, not outside arrivals."));
   assert.equal(slide(data, "senti").content.figure.minFont, 21, "plain9's own 21 px text stays as drawn, recorded for the renderer");
-  // The scorecard is aneta's v1.19 plain7 (root's three repairs drawn in), with one declared edit and this deck's label.
+  // The scorecard is aneta's v1.30 plain7, with root's +1 (12:12:03Z): its third row is our own run, served as drawn, with
+  // its own alt text (the expanded description, now with our run) and this deck's label.
   const fig = slide(data, "scorecard").content.figure;
   assert.equal(fig.id, "plain7");
-  assert.equal(loaded.v4.figures.plain7.sha256, "6bc037d767d6cc8e9f65bc96bd49bb31fbc97280d2c79369a9a32fbd67840d36");
+  assert.equal(loaded.v4.figures.plain7.sha256, "b5d487be828a694d8e9b22c23a79e5b355970805042243ad20683adcaf657ae9");
+  assert.match(loaded.v4.figures.plain7.review, /^aneta's v1\.30 \(ZIP 251fee39fa8c3e9982aabaed27840deae6cb5461e44ef4b0875c0c5d3ec89cfd, 45,938 bytes\).*root's \+1, 12:12:03Z \(reply to 57988\), covering the g1 heat balance and attribution$/);
+  assert.equal(loaded.v4.figures.plain7.pending, undefined);
+  assert.equal(loaded.v4.figures.plain7.edits, undefined);
+  assert.equal(loaded.v4.figures.plain7.alt, undefined);
   const served = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain7-scorecard.svg"), "utf8");
-  for (const t of ["Each column uses its own reading.", "Rounding limit: about 0.43 W, 0.063%; not a total error bound.", "Older: our pinned 6.0 build", "as ScienceClaw reports", "as Delfie reports; ScienceClaw reports too"]) assert.ok(served.includes(t), t);
-  assert.ok(!served.includes("re-ran it"), "the participant-report boundary");
-  assert.equal(fig.alt, loaded.v4.figures.plain7.alt);
-  // Aneta's expanded description (57915): the selector, rounding and provenance qualifications, with the reported attribution.
-  for (const t of ["The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound.", "The paper column uses the native all-block reading, 232.67 degrees for 7.0.", "The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0", "as Delfie reports and ScienceClaw reports too"]) assert.ok(fig.alt.includes(t), t);
+  for (const t of ["Each column uses its own reading.", "Rounding limit: about 0.43 W, 0.063%; not a total error bound.", "Older: our pinned 6.0 build", "our run; also Delfie and ScienceClaw"]) assert.ok(served.includes(t), t);
+  assert.ok(!served.includes("re-ran it") && !served.includes("as ScienceClaw reports"), "our own run, no longer only reported");
+  // The expanded description (57915): the selector, rounding and provenance qualifications, with our run.
+  for (const t of ["The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound.", "The paper column uses the native all-block reading, 232.67 degrees for 7.0.", "The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0", "our own run, with the same result reported by Delfie and ScienceClaw"]) assert.ok(fig.alt.includes(t), t);
   assert.ok(served.includes("aria-label=\"Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build"));
   assert.ok(shown(data, "scorecard").includes("Delfie (delphisci team) reports the one-step change; ScienceClaw reports reproducing it"));
 });
@@ -149,29 +200,31 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
   refuses("an unconsented team", /has not consented/, (v) => { v.slides[4].footer += " Kiln solved it too."; });
   refuses("Delfie in another form", /form the team asked for/, (v) => { v.slides[4].footer += " Delfie checked it."; });
   refuses("science not labelled", /without saying "simulated"/, (v) => { v.slides[3].label = "two versions"; v.slides[3].footer = "Hottest modeled grid cells."; });
-  refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].tiles[0].value = "512"; });
+  refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].footer += " 512 more."; });
   refuses("a duration its records don't give", /is not its records'/, (v) => { v.slides[4].times = [{ show: "30 min", what: "from a question to a suspect", from: "2026-10-31T12:43:33.374Z", to: "2026-10-31T13:15:38.133Z", rule: "round" }]; });
   refuses("a bar not its value", /is not 119.07 rounded/, (v) => { v.slides[3].bars[0].show = "120 °C"; });
   refuses("17 people", /17 is member accounts/, (v) => { v.slides[2].say += " 17 people took part."; });
   refuses("a solver library named", /unresolved 115.93 against 115.94/, (v) => { v.slides[6].footer += " SuperLU explains it."; });
   refuses("money on a main slide", /money on a main slide/, (v) => { v.slides[2].footer += " It cost USD 8,232.41."; });
-  refuses("a number that is not the metrics file's", /but METRICS.json gives 422/, (v) => { v.slides[2].tiles[0].value = "421"; v.slides[2].facts[0].shows = ["421"]; });
+  const msgs = pre.metrics.byId.get("crosscheck.help.messages").value;
+  refuses("a number that is not the metrics file's", new RegExp(`but METRICS.json gives ${msgs.toLocaleString("en-US")}`), (v) => { v.slides[2].facts[0].shows = [String(msgs - 1)]; });
   refuses("a different metrics file", /is not the file V4.json pins/, (v) => { v.metrics.sha256 = "0".repeat(64); });
 });
 
 test("a number not measured yet shows \"measuring…\" and is listed to fill in; METRICS.json fills it", () => {
   const want = ["moltbook.post_votes", "door.visits", "door.agents_passed", "view.agent_bytes"];
-  assert.deepEqual(data.placeholders.map((p) => p.id).sort(), [...want].sort());
-  assert.equal((html(data).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
-  assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data));
-  for (const id of want) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${id}\``), id);
-  assert.match(slide(data, "invite").notes.text, /^We're inviting agents on Moltbook: \[votes on our Moltbook invitation: measuring\]/);
-  assert.doesNotMatch(shown(data, "invite") + slide(data, "invite").notes.text, /\bWe invited\b|\bour (?:Moltbook )?post\b/, "no past tense about Moltbook before the post exists");
-  assert.ok(data.deck.measuring && founderPdfName(data).endsWith("-draft.pdf"));
+  assert.deepEqual(draft.placeholders.map((p) => p.id).sort(), [...want].sort());
+  assert.equal((html(draft).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
+  assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data), "FILL-IN is the committed build's");
+  for (const id of want) assert.ok(fillInTable(draft).includes(`\`${id}\``), id);
+  for (const p of data.placeholders) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${p.id}\``), p.id);
+  assert.match(slide(draft, "invite").notes.text, /^We're inviting agents on Moltbook: \[votes on our Moltbook invitation: measuring\]/);
+  assert.doesNotMatch(shown(draft, "invite") + slide(draft, "invite").notes.text, /\bWe invited\b|\bour (?:Moltbook )?post\b/, "no past tense about Moltbook before the post exists");
+  assert.ok(draft.deck.measuring && founderPdfName(draft).endsWith("-draft.pdf"));
   // With the metrics on file, the tiles carry them and the words read them out.
   const keys = ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"];
-  const byId = new Map([...loaded.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
-  const filled = variant(() => {}, { sha256: loaded.metrics.sha256, byId });
+  const byId = new Map([...pre.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
+  const filled = variant(() => {}, { sha256: pre.metrics.sha256, byId });
   assert.equal(filled.placeholders.length, 0);
   assert.doesNotMatch(html(filled), /class="measuring"/);
   assert.match(slide(filled, "invite").notes.text, /^We're inviting agents on Moltbook: 100 votes, 101 visits, 102 passed\.$/);
@@ -188,35 +241,45 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
   }
   for (const f of ["sheet-main.png", "sheet-main-2min.png"]) assert.ok(existsSync(join(FOUNDER_DIR, f)), f);
   // Root's timing note: with the demo, and a real timed rehearsal before the talk.
-  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 287\.8 s \(4:48\) at 150 wpm, or 304\.8 s \(5:05\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
-  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 168\.8 s \(2:49\)/);
+  assert.match(speakerScript(draft, pre.v4), /\*\*With the demo:\*\* 120 s of demo makes 295 s \(4:55\) at 150 wpm, or 312\.8 s \(5:13\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
+  assert.match(speakerScript(buildFounderData(pre, { slot: "2min", final: false }), pre.v4), /60 s of demo makes 170 s \(2:50\)/);
   assert.match(committed.slides[0].notes.cue, /one real timed rehearsal with the actual demo/);
   assert.equal(readFileSync(scriptPath("2min"), "utf8"), speakerScript(short, loaded.v4));
 });
 
 test("--final drops every number without a receipt, speaks the no-numbers line, and loses the DRAFT tag", () => {
   // The freeze refuses a figure still pending review; with root's +1 on v1.24, none is.
-  const pending = structuredClone(loaded.v4);
+  const pending = structuredClone(pre.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
-  assert.throws(() => buildFounderData({ ...loaded, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
-  const reviewed = structuredClone(loaded.v4);
+  assert.throws(() => buildFounderData({ ...pre, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
+  const reviewed = structuredClone(pre.v4);
   for (const slot of ["3min", "2min"]) {
-    const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
+    const fin = buildFounderData({ ...pre, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
     assert.equal(fin.deck.measuring, false);
     assert.doesNotMatch(html(fin), /measuring…|class="measuring"|DRAFT/, slot);
     assert.equal(slide(fin, "invite").content.tiles, undefined, "slide 9's tiles have no receipt yet, so none is shown");
-    assert.equal(slide(fin, "invite").content.figure.id, "plain8", "the fallback picture at the freeze");
+    assert.equal(slide(fin, "invite").content.figure.id, "plain12", "the fallback picture at the freeze");
     assert.equal(slide(fin, "invite").notes.text, "We're inviting other people's agents to the chip challenge: scan the code and send yours.");
     assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
+    // Root's copy P2 (relayed 13:49Z): the final's script lists what was dropped, and claims no "measuring…" for it.
+    const script = speakerScript(fin, reviewed);
+    assert.ok(fin.placeholders.length > 0 && fin.placeholders.every((p) => p.dropped && script.includes(`\`${p.id}\``)), slot);
+    assert.match(script, /## Not shown: dropped at the freeze\n\nEach had no number on its slide at the freeze, so the slide does not show it and the words do not read it \(no receipt\):/);
+    assert.doesNotMatch(script, /## Still measuring|shows "measuring…" on its slide/, slot);
+    // The script and FILL-IN say what the build is: the freeze's final, not a review.
+    assert.match(speakerScript(fin, reviewed).split("\n")[0], /, final \d{4}-\d\d-\d\d \d\d:\d\d UTC$/, slot);
+    assert.match(fillInTable(fin), /^# FILL-IN: the founder deck's placeholders\n\nThe freeze, \d{4}-\d\d-\d\d \d\d:\d\d UTC\. Each below had no receipt/);
     assert.ok(fin.budget.totalSeconds <= fin.budget.talkCapSeconds);
   }
+  assert.match(speakerScript(draft, pre.v4).split("\n")[0], /, draft \d{4}-\d\d-\d\d \d\d:\d\d UTC$/);
+  assert.match(speakerScript(draft, pre.v4), /## Still measuring\n\nEach shows "measuring…" on its slide and is read out only once it is filled:/, "a draft keeps its wording");
   // The draft keeps the placeholders and the tag.
-  assert.match(html(data), /DRAFT · numbers still measuring/);
+  assert.match(html(draft), /DRAFT · numbers still measuring/);
   // A slide whose words need a missing number must say what to speak at the freeze instead.
   const noLine = structuredClone(reviewed);
   delete noLine.slides.find((x) => x.id === "invite").sayIfUnmeasured;
-  assert.throws(() => buildFounderData({ ...loaded, v4: noLine }, { final: true }), /no sayIfUnmeasured line/);
+  assert.throws(() => buildFounderData({ ...pre, v4: noLine }, { final: true }), /no sayIfUnmeasured line/);
 });
 
 test("founder deck files are LF-only, with no control bytes", () => {
@@ -243,7 +306,8 @@ test("cost and the other solvers are backup pages, each with its scope, never on
   assert.ok(solvers.includes("Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate."));
   assert.match(solvers, /die-centre readings from those implementations against HotSpot's selector values/);
   assert.match(solvers, /one finite-element implementation is ours/);
-  assert.match(solvers, /unnamed until it consents/);
+  assert.match(solvers, /another outside team's, unnamed at its request\./);
+  assert.doesNotMatch(solvers, /until it consents/);
   assert.doesNotMatch(solvers, /three outside teams|within 0\.01 K in both cases/i);
 });
 
@@ -261,10 +325,10 @@ test("the optional D1 layout result is Carter's call: in the notes and FILL-IN w
 });
 
 test("the freeze drops tiles without a receipt even with no fallback picture, and a figure's own words face the public-render rule", () => {
-  const reviewed = structuredClone(loaded.v4);
+  const reviewed = structuredClone(pre.v4);
   for (const fig of Object.values(reviewed.figures)) delete fig.pending;
   delete reviewed.slides.find((x) => x.id === "invite").finalFallback;
-  const fin = buildFounderData({ ...loaded, v4: reviewed }, { final: true });
+  const fin = buildFounderData({ ...pre, v4: reviewed }, { final: true });
   assert.deepEqual(slide(fin, "invite").content.tiles, [], "no receipt, no tile");
   // A vendor name drawn into a figure stops the build like one typed on the slide.
   const named = structuredClone(loaded.v4);
@@ -273,9 +337,9 @@ test("the freeze drops tiles without a receipt even with no fallback picture, an
 });
 
 test("a figure still pending review is marked on its draft slide", () => {
-  const pending = structuredClone(loaded.v4);
+  const pending = structuredClone(pre.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
-  const d = buildFounderData({ ...loaded, v4: pending });
+  const d = buildFounderData({ ...pre, v4: pending });
   const section = (id) => html(d).split("\n").find((x) => x.includes(`id="s-${id}"`));
   assert.match(section("point"), /DRAFT · figure pending review/);
   assert.doesNotMatch(section("chips"), /figure pending review/);
@@ -290,8 +354,8 @@ test("slide 9's QR code is read from its pixels: exactly https://sentilab.aideni
     assert.deepEqual([r.text, r.version, r.ec], ["https://sentilab.aidenid.com", 3, "M"], p);
   }
   // The slide prints the same door, and the image is the one the build checks.
-  assert.ok(slide(data, "invite").content.points.includes("The agent door: sentilab.aidenid.com"));
-  assert.equal(slide(data, "invite").content.still.id, "qr");
+  assert.ok(slide(draft, "invite").content.points.includes("The agent door: sentilab.aidenid.com"));
+  assert.equal(slide(draft, "invite").content.still.id, "qr");
   // A damaged module fails the read instead of returning other text, and a QR that reads otherwise stops the build.
   const img = decodePng(readFileSync(join(FOUNDER_DIR, "figures", Q.file)));
   const flip = { ...img, px: Buffer.from(img.px) };
@@ -307,14 +371,16 @@ test("slide 9's QR code is read from its pixels: exactly https://sentilab.aideni
   assert.throws(() => buildFounderData({ ...loaded, v4: wrong }), (e) => e instanceof FounderError && /encodes "https:\/\/sentilab\.aidenid\.com", not/.test(e.message));
 });
 
-test("root's rev 5 review: the timeline keeps its qualifications, help says refresh at the freeze, and no script heading is undefined", () => {
+test("root's rev 5 review: the timeline keeps its qualifications, the help line is dated, and no script heading is undefined", () => {
   // Page 5: the accepted v1.24 timeline travels with its qualifications; the fuller account sits on the sources page.
   assert.equal(slide(data, "times").content.footer, "Room posting times, not earlier local freezes. One agent saw a one-line preview; Agent4 had already read the suspect. Lanes show contributions, not independence. No savings baseline.");
   assert.equal(slide(data, "times").content.figure.id, "plain4");
   for (const t of ["room posting times, not earlier local freezes", "one agent had seen a one-line preview", "having already read the suspect", "not independence", "No savings figure: there is no baseline", "every plotted time kept"]) assert.ok(shown(data, "sources").includes(t), t);
-  // Page 3: the help count is to be refreshed, not refreshed already.
-  assert.match(shown(data, "room"), /refresh at the freeze\./);
-  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refreshed at the freeze/);
+  // Page 3: the help count carries its date (refreshed to 12:46 UTC, root's +1 at 12:57:04Z); aneta's 14:05Z re-check is
+  // on the FILL-IN refresh list, and nothing claims a refresh the build has not made.
+  assert.ok(slide(data, "room").content.footer.startsWith("Help room record, 31 Oct 13:46 to 1 Nov 14:30 UTC; handles, not people."));
+  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refresh(?:ed)? at the freeze/);
+  assert.match(fillInTable(draft), /\| room \| Help offered: four checked, nine offered in all, two of the other five said it was useful \(to 12:46 UTC, root's \+1 at 12:57:04Z\) \| Aneta re-checks at about 14:05Z/);
   // The scripts: every main slide has a real heading, in both cuts.
   for (const slot of ["3min", "2min"]) {
     const heads = [...readFileSync(scriptPath(slot), "utf8").matchAll(/^## (\d+)\. (.*) \(([^)]*)\)$/gm)];
@@ -323,4 +389,234 @@ test("root's rev 5 review: the timeline keeps its qualifications, help says refr
   }
   assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 8\. Check the grader before celebrating the score\. \(The point\)$/m);
   assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 10\. Whoever owns the decision layer on agent traffic\. \(Why it matters\)$/m);
+});
+
+test("V4.json's build sets the committed build's mode: \"final\" is the freeze, anything else but \"draft\" stops the build", () => {
+  const frozen = structuredClone(pre.v4);
+  frozen.build = "final";
+  const fin = buildFounderData({ ...pre, v4: frozen });
+  assert.equal(fin.deck.draft, false);
+  assert.doesNotMatch(html(fin), /DRAFT/);
+  assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
+  // At the freeze, a number with no receipt is listed as dropped, not as still measuring.
+  assert.match(fillInTable(fin), /votes on our Moltbook invitation \(dropped at the freeze: no receipt\)/);
+  // With the coordinator's receipt for what slide 9 does not show, FILL-IN carries it and points each row to it.
+  const noted = structuredClone(frozen);
+  noted.metrics.freezeNote = "Counted to 14:30:00Z: none from outside (test).";
+  const withNote = fillInTable(buildFounderData({ ...pre, v4: noted }));
+  assert.match(withNote, /votes on our Moltbook invitation \(not shown at the freeze: see "At the freeze"\)/);
+  assert.ok(withNote.includes("## At the freeze\n\nSlide 9 (invite) shows its no-numbers fallback: plain12-tradeoff.svg, with the QR code to https://sentilab.aidenid.com and the door's address.\n\nCounted to 14:30:00Z: none from outside (test).\n"));
+  assert.match(withNote, /^# FILL-IN: the founder deck's placeholders\n\nThe freeze, .*the receipt is under "At the freeze"\./);
+  // The refresh list is a draft's to-do for the freeze: the final lists none.
+  assert.match(fillInTable(draft), /## Refresh at the freeze/);
+  assert.doesNotMatch(fillInTable(fin), /Refresh at the freeze/);
+  assert.ok(!fillInTable(buildFounderData({ ...pre, v4: noted }, { final: false })).includes("## At the freeze"), "a draft carries no freeze note");
+  assert.doesNotMatch(fillInTable(draft), /dropped at the freeze/);
+  const odd = structuredClone(loaded.v4);
+  odd.build = "rehearsal";
+  assert.throws(() => buildFounderData({ ...loaded, v4: odd }), /V4.json build must be "draft" or "final"/);
+});
+
+test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
+  const { readQr } = await import("./qr-read.mjs");
+  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_start: "2026-11-01T07:13:20Z", window_end: "2026-11-01T14:20:05Z", window: "2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: pre.metrics.sha256, byId: new Map([...pre.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
+  for (const [name, keys] of Object.entries(cases)) {
+    const d = freeze(keys);
+    const inv = slide(d, "invite");
+    assert.equal(inv.content.title, "We're inviting other people's agents to the chip challenge.", `${name}: the invitation stays`);
+    // The call to action, in every case: the QR code (read from its pixels) and the door's address.
+    assert.equal(inv.content.still?.id, "qr", `${name}: the QR code stays`);
+    assert.equal(readQr(readFileSync(join(FOUNDER_DIR, "figures", loaded.v4.stills[inv.content.still.id].file))).text, "https://sentilab.aidenid.com", name);
+    assert.match(shown(d, "invite"), /The agent door: sentilab\.aidenid\.com/, `${name}: the door's address stays, as drawn`);
+    const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
+    assert.match(section, /data-still="qr"/, `${name}: the QR code is drawn`);
+    assert.doesNotMatch(html(d), /measuring…|DRAFT/, name);
+    const receipts = sourcesList(d).split("## invite")[1]?.split("\n## ")[0] ?? "";
+    if (name === "none") {
+      assert.equal(inv.content.layout, "fallback");
+      assert.equal(inv.content.figure.id, "plain12", "the fallback picture only when nothing is measured");
+      assert.match(section, /data-fig="plain12"/, "the fallback picture is drawn");
+      assert.equal(inv.content.tiles, undefined);
+      // No tile, so no tile receipt; the picture's numbers have theirs in SOURCES.md, and FILL-IN names the fallback.
+      assert.match(receipts, /^\n\n- 115\.94, 113\.23, 108\.85, 104\.62, 98\.29, 96\.51, 2\.71, 19\.43, 1\.49, 0\.2: plain12-tradeoff, aneta's v1\.25 \(ZIP 824dd6a6\.\.\., 44,927 bytes; root's scoped \+1 at 10:42:24Z, reply to 57940\)/);
+      assert.ok(fillInTable(d).includes("Slide 9 (invite) shows its no-numbers fallback: plain12-tradeoff.svg, with the QR code to https://sentilab.aidenid.com and the door's address."));
+      // The footer was plain13's line; plain12 carries its own small print, so the fallback adds none.
+      assert.equal(inv.content.footer, "");
+    } else {
+      assert.equal(inv.content.layout, "numbers");
+      assert.equal(inv.content.figure, undefined, `${name}: no fallback picture while a number is measured`);
+      assert.deepEqual(inv.content.tiles.map((t) => t.metric), loaded.v4.slides.find((x) => x.id === "invite").tiles.map((t) => t.metric).filter((id) => keys.includes(loaded.v4.metrics.wanted[id].key ?? id)), `${name}: each measured tile, in order`);
+      // The footer's promise: each count is shown with its time window; and each has its receipt in SOURCES.md.
+      for (const t of inv.content.tiles) assert.equal(t.when, "Nov 1, 07:13–14:20 UTC", `${name}: ${t.metric} shows its window`);
+      assert.equal((section.match(/<span class="tw">Nov 1, 07:13–14:20 UTC<\/span>/g) ?? []).length, keys.length, `${name}: one window per tile`);
+      for (const k of keys) assert.match(receipts, new RegExp(`METRICS-FREEZE\\.json ${k.replace(/\./g, "\\.")} = \\d+ \\(d; window 2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z; scope s\\)`), `${name}: ${k}'s receipt`);
+    }
+  }
+});
+
+test("the deck's own words on the cross-check follow root's P2: never \"their own solvers\", never a rerun duration", () => {
+  const texts = [
+    ...[join(FOUNDER_DIR, "V4.json"), scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources].map((p) => readFileSync(p, "utf8")),
+    html(draft),
+    html(variant((v) => { v.build = "final"; })),
+  ];
+  for (const t of texts) assert.doesNotMatch(t, /own solvers|re-?ran (?:it )?(?:with)?in (?:under )?(?:six|6) minutes/i);
+});
+
+test("a slide with a QR code also prints the address it encodes, on the draft and at the freeze", () => {
+  const noDoor = (v) => { v.slides.find((x) => x.id === "invite").points = []; };
+  assert.throws(() => variant(noDoor), /slide invite shows a QR code without the address it encodes \(sentilab\.aidenid\.com\)/);
+  assert.throws(() => variant((v) => { noDoor(v); v.build = "final"; }), /slide invite shows a QR code without the address it encodes/);
+});
+
+test("a team that has not consented to be named appears in nothing the deck publishes: Vortex stays \"another team\"", () => {
+  assert.ok(loaded.v4.teams.unnamed.includes("Vortex"));
+  // Everything the build writes (deck data, both scripts, FILL-IN, SOURCES, every figure as served, text and alt) and
+  // Carter's handoff files: none names an unnamed team, and none holds "vortex" in any letter case, even inside a word.
+  const files = [...publicOutputs(data, loaded.v4, loaded), ...handoffFiles(loaded.v4), ...inputFiles()];
+  assert.ok(files.some(([p]) => p.endsWith("METRICS.json")) && files.some(([p]) => p.endsWith("METRICS.md")), "the metrics files are scanned too");
+  for (const f of [scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources, join(FOUNDER_DIR, "CARTER-QA.md"), join(FOUNDER_DIR, "DEMO-RUN-SHEET.md")]) assert.ok(files.some(([p]) => p === f), f);
+  checkUnnamed(files, loaded.v4);
+  for (const [p, b] of files) if (/\.(json|js|md|svg)$/.test(p)) assert.doesNotMatch(String(b).replace(/data:[^"')\s]+/g, ""), /vortex/i, p);
+  // The guard reads every surface, in any letter case: the notes, a figure's alt text, SOURCES, a handoff file.
+  const built = (mutate) => { const v4 = structuredClone(loaded.v4); mutate(v4); const l = { ...loaded, v4 }; return [...publicOutputs(buildFounderData(l), v4, l)]; };
+  assert.throws(() => checkUnnamed(built((v) => { v.slides.find((x) => x.id === "link").cue += " As vORtex said."; }), loaded.v4), (e) => e instanceof FounderError && /names Vortex, who has not consented/.test(e.message));
+  assert.throws(() => checkUnnamed(built((v) => { v.figures.plain7.alt = "Read by VORTEX."; }), loaded.v4), /names Vortex/);
+  assert.throws(() => checkUnnamed(built((v) => { v.slides.find((x) => x.id === "hook").facts[0].source += " (vortex)"; }), loaded.v4), /names Vortex/);
+  assert.throws(() => checkUnnamed([[join(FOUNDER_DIR, "CARTER-QA.md"), "Team Vortex re-ran it."]], loaded.v4), /CARTER-QA\.md names Vortex/);
+  // Embedded image data is not text: a run of base64 that happens to spell a name is not a mention.
+  checkUnnamed([[join(FOUNDER_DECK_DIR, "figures", "x.svg"), '<image href="data:image/png;base64,QQ+vortex+QQ"/>']], loaded.v4);
+});
+
+test("root's P2 (12:55:54Z): the unnamed-team scan reads an SVG as it renders, decoded, and a markdown file as it renders", () => {
+  const at = join(FOUNDER_DECK_DIR, "figures", "control.svg");
+  const refused = (body) => assert.throws(() => checkUnnamed([[at, body]], loaded.v4), (e) => e instanceof FounderError && /control\.svg names Vortex, who has not consented/.test(e.message), body);
+  // Root's two controls: a decimal character reference in the drawn text, a hex one in the label.
+  refused('<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="20">Vor&#116;ex</text></svg>');
+  refused('<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vor&#x74;ex"></svg>');
+  // The same name split by markup, behind a comment or CDATA, or in a title, a description or an alt attribute.
+  refused('<svg><text>Vor<tspan font-weight="700">tex</tspan></text></svg>');
+  refused('<svg><text>Vor<!-- a comment -->tex</text></svg>');
+  refused('<svg><text><![CDATA[Vor]]><![CDATA[tex]]></text></svg>');
+  refused('<svg><title>V&#111;rtex</title></svg>');
+  refused('<svg><desc>VORT&#X45;X</desc></svg>');
+  refused('<svg><image alt="&#86;ortex" href="x.png"/></svg>');
+  // A markdown file renders character references too.
+  assert.throws(() => checkUnnamed([[join(FOUNDER_DIR, "CARTER-QA.md"), "Team Vor&#116;ex re-ran it."]], loaded.v4), /CARTER-QA\.md names Vortex/);
+  // No DTD, so no entity it could declare: refused outright, never expanded.
+  assert.throws(() => checkUnnamed([[at, '<!DOCTYPE svg [<!ENTITY t "x">]><svg><text>&t;</text></svg>']], loaded.v4), /control\.svg declares a DTD or an entity; it is refused, not expanded/);
+  // Binary image data stays out: base64 PNG that happens to spell a name is not a mention.
+  checkUnnamed([[at, '<svg><image href="data:image/png;base64,QQ+Vortex+QQ"/></svg>']], loaded.v4);
+  // An embedded SVG is text, base64 or percent-encoded: it is decoded and read too.
+  refused(`<svg><image href="data:image/svg+xml;base64,${Buffer.from("<svg><text>Vortex</text></svg>").toString("base64")}"/></svg>`);
+  refused('<svg><image href="data:image/svg+xml,%3Csvg%3E%3Ctext%3EVor%74ex%3C/text%3E%3C/svg%3E"/></svg>');
+  // Root (13:30:15Z): the attribute value is decoded before a data: URI is recognized, so an encoded scheme or parameter
+  // cannot hide an embedded SVG; data: URIs in a style element and attributes after a quoted ">" are read too.
+  const named = Buffer.from("<svg><text>Vortex</text></svg>").toString("base64");
+  refused(`<svg><image href="d&#97;ta:image/svg+xml;base64,${named}"/></svg>`);
+  refused(`<svg><image href="data:image/svg+xml;b&#97;se64,${named}"/></svg>`);
+  refused('<svg><image href="d&#x61;ta:image/svg+xml,%3Csvg%3E%3Ctext%3EVortex%3C/text%3E%3C/svg%3E"/></svg>');
+  refused(`<svg><style>.a{fill:url(data:image/svg+xml;base64,${named})}</style></svg>`);
+  refused('<svg><image title="a>b" alt="Vor&#116;ex"/></svg>');
+  // Still excluded once decoded: binary image data. And literal CDATA stays literal: it shows "Vor&#116;ex".
+  checkUnnamed([[at, '<svg><image href="d&#97;ta:image/png;b&#97;se64,QQ+Vortex+QQ"/></svg>']], loaded.v4);
+  checkUnnamed([[at, "<svg><text><![CDATA[Vor&#116;ex]]></text></svg>"]], loaded.v4);
+  // One decoding pass, as a renderer makes: an escaped ampersand stays literal text ("Vor&#116;ex" is what shows).
+  checkUnnamed([[at, '<svg><text>Vor&amp;#116;ex &lt;b&gt; &quot;q&quot; &apos;a&apos;</text></svg>']], loaded.v4);
+});
+
+test("a figure's drawn words are read decoded, as they render, for the public-render rule", async () => {
+  const { svgText } = await import("./build-deck-founder.mjs");
+  assert.equal(svgText('<svg><text>Cloudfl&#97;re <tspan>AI</tspan></text><text>x&lt;y</text></svg>'), "Cloudflare AI \n x<y");
+});
+
+test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brings the freeze under 5:00 with the demo", async () => {
+  const { cutsPlan } = await import("./build-deck-founder.mjs");
+  const plan = cutsPlan(loaded);
+  assert.ok(plan.saved >= 30, `${plan.saved} words`);
+  assert.equal(plan.saved, plan.cut.reduce((a, c) => a + countWords(c.from) - countWords(c.to), 0));
+  // Root's arithmetic (12:55:54Z) for now; with the cut, the slot's 5:00 holds at 135 wpm, at the freeze too.
+  const clock = Object.fromEntries(plan.clocks.map(([k, u]) => [k, u]));
+  assert.deepEqual([clock["Now, draft"].talkWords, clock["Now, draft"].withDemoSeconds, clock["Now, draft"].slowWithDemoSeconds], [400, 295, 312.8]);
+  for (const k of ["With the cut, draft", "With the cut, at the freeze (slide 9's no-numbers line)"]) assert.ok(clock[k].slowWithDemoSeconds <= 300, `${k}: ${clock[k].slowWithDemoSeconds} s`);
+  // Not applied: the deck speaks every word it did, and no slide, figure or number moves.
+  assert.equal(draft.budget.talkWords, 400);
+  for (const c of [...plan.cut, ...plan.alternates]) assert.ok(slide(data, c.slide).notes.text.includes(c.from.trim()), c.slide);
+  // The document is the build's, with each passage before and after.
+  const doc = readFileSync(join(FOUNDER_DIR, "CUTS.md"), "utf8");
+  assert.ok(doc.startsWith("# CUTS: a proposed cut of the spoken words, not applied"));
+  for (const c of plan.cut) assert.ok(doc.includes(`- Before: "${c.from.trim()}"`) && doc.includes(`After: ${c.after}`), c.slide);
+  // The demo sheet runs about 110 s, not 120 (aneta, relayed 13:40Z): CUTS.md stays as root reviewed it, and FILL-IN
+  // carries the caveat for every clock figure, in the coordinator's words.
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes("## Clock\n\ndemo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\n"));
+  assert.ok(fillInTable(draft).includes("demo sheet ≈110 s"));
+  // The build refuses a passage that is not there exactly once, or one that touches a number or a placeholder.
+  const bad = (mutate, re) => { const v4 = structuredClone(loaded.v4); mutate(v4.cuts); assert.throws(() => cutsPlan({ ...loaded, v4 }), re); };
+  bad((k) => { k.cut[0].from = " not in the words"; }, /must appear once in slide room's words, found 0/);
+  const counted = / \d[\d,]* messages from \d+ identities/.exec(loaded.v4.slides.find((x) => x.id === "room").say)[0];
+  bad((k) => { k.cut.push({ slide: "room", from: counted, to: " Messages", why: "test" }); }, /may not touch a number/);
+  bad((k) => { k.cut.push({ slide: "invite", from: " {m:door.visits} visits,", to: "", why: "test" }); }, /may not touch a measured placeholder/);
+  bad((k) => { k.cut.push({ slide: "sources", from: "x", to: "", why: "test" }); }, /sources is not a main slide of the full talk/);
+});
+
+test("a final build claims no \"measuring\" in any cue or the sheet header, and slide 9's fallback QR is at least 320 px (final-2)", async () => {
+  const B = await import("./build-deck-founder.mjs");
+  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_end: "2026-11-01T14:20:05Z", window: "to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: pre.metrics.sha256, byId: new Map([...pre.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  for (const [name, keys] of Object.entries({ none: [], some: ["door.visits"], all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"] })) {
+    const d = freeze(keys);
+    // The coordinator (relayed 14:42Z): the final says what the slide does; no "measuring" claim in a cue or the sheet header.
+    for (const s of d.slides) assert.doesNotMatch(s.notes?.cue ?? "", /measuring/i, `${name}: ${s.id}'s cue`);
+    assert.equal(typeof B.sheetFillLine, "function", "the sheet header line is the build's");
+    assert.doesNotMatch(B.sheetFillLine(d), /measuring/i, name);
+    if (name === "none") {
+      assert.match(slide(d, "invite").notes.cue, /^No outside numbers at the 14:30 freeze: the slide shows the team board \(plain12\) and the QR\. Don't read numbers from it\. Carter's option, not spoken unless he asks: the D1 layout line/);
+      assert.match(B.sheetFillLine(d), /^Not shown: dropped at the freeze \(no receipt\): votes on our Moltbook invitation/);
+      // Aneta's P2 (14:41Z): the fallback's QR code at least 320 px on the 1920 canvas (about 240 px on a 1400 px page).
+      const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
+      const qr = /<img [^>]*width="(\d+)"[^>]*data-still="qr"/.exec(section);
+      assert.ok(qr && Number(qr[1]) >= 320, `fallback QR width ${qr?.[1]}`);
+    }
+  }
+  // Drafts keep today's wording.
+  assert.match(slide(draft, "invite").notes.cue, /until then this slide says "measuring…"/);
+  assert.match(B.sheetFillLine(draft), /^Still measuring \(shown as "measuring…"\): /);
+});
+
+test("SUBMISSION-INDEX.md: every in-repo entry reads back exactly, and the index has no signed link or declined name", () => {
+  const { createHash } = createRequire(import.meta.url)("node:crypto");
+  const index = readFileSync(join(REPO_ROOT, "docs", "sentilab", "SUBMISSION-INDEX.md"), "utf8");
+  const rows = [...index.matchAll(/^\| [^|]+ \| `([^`]+)` \| ([\d,]+) \| `([0-9a-f]{64})` \|$/gm)];
+  assert.ok(rows.length >= 9, `${rows.length} in-repo rows`);
+  for (const [, path, bytes, sha] of rows) {
+    const b = readFileSync(join(REPO_ROOT, path));
+    assert.equal(b.length, Number(bytes.replace(/,/g, "")), path);
+    assert.equal(createHash("sha256").update(b).digest("hex"), sha, path);
+  }
+  // The final PDFs are the ones the deck exports, the handoff files the ones V4.json pins.
+  for (const d of [data, buildFounderData(loaded, { slot: "2min" })]) assert.ok(index.includes(`\`docs/sentilab/deck/${founderPdfName(d)}\``), d.deck.slot);
+  for (const [f, h] of Object.entries(loaded.v4.handoff)) assert.ok(index.includes(`\`docs/sentilab/deck/founder-v4/${f}\` | ${readFileSync(join(FOUNDER_DIR, f)).length.toLocaleString("en-US")} | \`${h.sha256}\``), f);
+  assert.doesNotMatch(index, /[?&](?:sig|se|sv|sp)=|vortex/i);
+});
+
+test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
+  const pins = { "CARTER-QA.md": "4dd1e2ae1e957e0aa5d106b7be3224e7b759e007b5755405eee4810fce04a267", "DEMO-RUN-SHEET.md": "1567ae683ad57f3b4026213e205db67bb28721196516178715431ee5999c61eb" };
+  assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
+  assert.equal(handoffFiles(loaded.v4).size, 2);
+  for (const f of Object.keys(pins)) assert.ok(existsSync(join(FOUNDER_DIR, f)) && !existsSync(join(FOUNDER_DECK_DIR, f)), f);
+  // Root's P2 wording is already in the answer sheet's 2.71-degree row.
+  assert.match(readFileSync(join(FOUNDER_DIR, "CARTER-QA.md"), "utf8"), /Within six minutes of our ask, two other teams reported reruns in their own setups, and both reported the same direction/);
+  const moved = structuredClone(loaded.v4);
+  moved.handoff["CARTER-QA.md"].sha256 = "0".repeat(64);
+  assert.throws(() => handoffFiles(moved), /handoff file CARTER-QA\.md is not the file V4\.json pins \(00000000…\)/);
+});
+
+test("a measured tile's time window, as the slide prints it", () => {
+  assert.equal(windowShown({ window_start: "2026-11-01T07:13:20.235Z", window_end: "2026-11-01T14:20:05Z" }), "Nov 1, 07:13–14:20 UTC");
+  assert.equal(windowShown({ window_start: "2026-10-31T13:46:10.752Z", window_end: "2026-11-01T07:39:30.156Z" }), "Oct 31, 13:46 – Nov 1, 07:39 UTC");
+  assert.equal(windowShown({ window_end: "2026-11-01T14:20:05Z" }), "as of Nov 1, 14:20 UTC");
+  assert.equal(windowShown({ window_start: "2026-10-31T04:55:00.660910+00:00", window_end: "2026-11-01T07:41:05.745Z" }), "Oct 31, 04:55 – Nov 1, 07:41 UTC");
+  assert.equal(windowShown({ window: "the door's first hour" }), "the door's first hour");
 });

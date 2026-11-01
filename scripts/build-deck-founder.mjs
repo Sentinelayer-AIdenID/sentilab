@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DECK_ROOT, NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 import { readQr } from "./qr-read.mjs";
@@ -26,9 +26,12 @@ import { readQr } from "./qr-read.mjs";
 export const FOUNDER_DIR = join(PDF_DIR, "founder-v4");
 export const FOUNDER_SOURCE = join(FOUNDER_DIR, "V4.json");
 export const FOUNDER_METRICS = join(FOUNDER_DIR, "METRICS.json");
+// Numbers measured at the freeze (slide 9's door and Moltbook counts, the refreshed help count), in METRICS.json's item
+// schema; when present it is pinned by V4.json metrics.freezeSha256 and its items add to (or replace) METRICS.json's.
+export const FOUNDER_METRICS_FREEZE = join(FOUNDER_DIR, "METRICS-FREEZE.json");
 export const FOUNDER_DECK_DIR = join(DECK_ROOT, "founder-v4");
 export const FOUNDER_FIGURE_DIR = join(FOUNDER_DECK_DIR, "figures");
-export const FOUNDER_OUTPUTS = { script: join(FOUNDER_DIR, "SCRIPT.md"), fillIn: join(FOUNDER_DIR, "FILL-IN.md"), sources: join(FOUNDER_DIR, "SOURCES.md") };
+export const FOUNDER_OUTPUTS = { script: join(FOUNDER_DIR, "SCRIPT.md"), fillIn: join(FOUNDER_DIR, "FILL-IN.md"), sources: join(FOUNDER_DIR, "SOURCES.md"), cuts: join(FOUNDER_DIR, "CUTS.md") };
 
 export class FounderError extends Error {}
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -76,16 +79,30 @@ export function loadMetrics(path = FOUNDER_METRICS) {
   const raw = JSON.parse(bytes.toString("utf8"));
   const list = Array.isArray(raw.items) ? raw.items : Array.isArray(raw.metrics) ? raw.metrics : [];
   const byId = new Map();
+  const from = basename(path);
   for (const m of list) {
     const id = m.key ?? m.id;
     if (m.value === null || m.value === undefined) continue;
     const window = m.window ?? (m.window_end ? `${m.window_start ?? "?"} to ${m.window_end}` : null);
     for (const [k, v] of [["key", id], ["definition", m.definition], ["scope", m.scope], ["window", window], ["source", m.source]]) {
-      if (v === undefined || v === null || v === "") throw new FounderError(`METRICS.json: ${id ?? "an item"} has no ${k}`);
+      if (v === undefined || v === null || v === "") throw new FounderError(`${from}: ${id ?? "an item"} has no ${k}`);
     }
-    byId.set(id, { ...m, id, window, display: String(m.display ?? fmt(m.value)) });
+    byId.set(id, { ...m, id, window, display: String(m.display ?? fmt(m.value)), from });
   }
   return { sha256: sha256(bytes), byId };
+}
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// A measured tile's time window as the slide prints it, from the item's own window: "Nov 1, 07:13–14:20 UTC" within a
+// day, "Oct 31, 13:46 – Nov 1, 14:20 UTC" across days, "as of Nov 1, 14:20 UTC" with no start; else the window as given.
+export function windowShown(m) {
+  const at = (iso) => {
+    const d = new Date(iso ?? NaN);
+    return Number.isNaN(d.getTime()) ? null : { day: `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`, hm: d.toISOString().slice(11, 16) };
+  };
+  const a = at(m.window_start), b = at(m.window_end);
+  if (a && b) return a.day === b.day ? `${b.day}, ${a.hm}–${b.hm} UTC` : `${a.day}, ${a.hm} – ${b.day}, ${b.hm} UTC`;
+  if (b) return `as of ${b.day}, ${b.hm} UTC`;
+  return m.window;
 }
 // A fact tied to the metrics file: the number the slide shows must be the file's value, or a stated derivation of it.
 export function metricValue(fact, metrics, where) {
@@ -115,18 +132,23 @@ export function loadFounder() {
   const bytes = readFileSync(FOUNDER_SOURCE);
   const v4 = JSON.parse(bytes.toString("utf8"));
   if (v4.schema !== "sentilab-deck-founder-source/1") throw new FounderError(`unsupported source schema ${JSON.stringify(v4.schema)}`);
-  return { v4, sourceSha256: sha256(bytes), metrics: loadMetrics() };
+  const metrics = loadMetrics();
+  const freeze = loadMetrics(FOUNDER_METRICS_FREEZE);
+  if (freeze.sha256 && v4.metrics.freezeSha256 !== freeze.sha256) throw new FounderError(`METRICS-FREEZE.json is not the file V4.json pins (${String(v4.metrics.freezeSha256).slice(0, 8)}…)`);
+  if (!freeze.sha256 && v4.metrics.freezeSha256) throw new FounderError("V4.json pins a METRICS-FREEZE.json that is not there");
+  for (const [k, m] of freeze.byId) metrics.byId.set(k, m);
+  return { v4, sourceSha256: sha256(bytes), metrics: { ...metrics, freezeSha256: freeze.sha256 } };
 }
 
 const SCIENCE = new Set(["chips", "hook", "link", "scorecard"]);
-const LAYOUTS = new Set(["joke", "flow", "numbers", "bars", "times", "figure", "tiles", "statement", "closer", "sources"]);
+const LAYOUTS = new Set(["joke", "flow", "numbers", "bars", "times", "figure", "tiles", "statement", "closer", "sources", "fallback"]);
 
 // The text a slide shows, for the checks: everything but the pictures.
 function shownText(c) {
   const parts = [c.title, c.caption, c.footer, c.line, c.apps, c.punch, c.text, c.label, c.still?.label];
   for (const k of ["chips", "points", "flow", "items"]) parts.push(...(c[k] ?? []));
   for (const s of c.steps ?? []) parts.push(s.verb, s.what);
-  for (const t of [...(c.tiles ?? []), ...(c.stats ?? [])]) parts.push(t.value, t.label, t.head, t.body);
+  for (const t of [...(c.tiles ?? []), ...(c.stats ?? [])]) parts.push(t.value, t.label, t.when, t.head, t.body);
   for (const b of c.bars ?? []) parts.push(b.show, b.label);
   for (const t of c.times ?? []) parts.push(t.show, t.what);
   return parts.filter((x) => x !== undefined && x !== null && x !== "").join(" \n ");
@@ -149,7 +171,8 @@ function checkTimes(s) {
 export const FOUNDER_SLOTS = ["3min", "2min"];
 // --final is the freeze: a number without a receipt is dropped from its slide (never "measuring…" on stage), and a slide
 // whose words need one speaks its sayIfUnmeasured line instead. Drafts keep the placeholders and the DRAFT tag.
-export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min", final = false } = {}) {
+export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min", final = v4.build === "final" } = {}) {
+  if (![undefined, "draft", "final"].includes(v4.build)) throw new FounderError(`V4.json build must be "draft" or "final", not ${JSON.stringify(v4.build)}`);
   if (!FOUNDER_SLOTS.includes(slot)) throw new FounderError(`--slot must be one of ${FOUNDER_SLOTS.join(", ")}`);
   const S = v4.slots[slot];
   const wanted = v4.metrics.wanted;
@@ -161,7 +184,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     if (!Object.hasOwn(wanted, id)) throw new FounderError(`${where}: metric ${id} is not one the deck asks for`);
     const m = metrics.byId.get(wanted[id].key ?? id);
     if (!m) placeholders.push({ id, where, label: wanted[id].label, need: wanted[id].need, dropped: final });
-    return m ? { value: m.display, label: wanted[id].label, metric: id, measuring: false, window: m.window } : { value: v4.metrics.placeholder, label: wanted[id].label, metric: id, measuring: true };
+    return m ? { value: m.display, label: wanted[id].label, metric: id, measuring: false, when: windowShown(m) } : { value: v4.metrics.placeholder, label: wanted[id].label, metric: id, measuring: true };
   };
   const ids = new Set();
   for (const id of S.main) if (!v4.slides.some((s) => s.id === id)) throw new FounderError(`slot ${slot}: no slide ${id}`);
@@ -170,6 +193,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     ...v4.slides.filter((s) => !S.main.includes(s.id)).map((s) => ({ ...s, main: false })),
     ...v4.backup.map((s) => ({ ...s, main: false })),
   ];
+  let fallbackShown = null; // the slide and picture that took the tiles' place at the freeze, for FILL-IN
   const slides = all.map((s, i) => {
     if (ids.has(s.id)) throw new FounderError(`duplicate slide id ${s.id}`);
     ids.add(s.id);
@@ -199,19 +223,28 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       const alt = /<svg\b[^>]*?\saria-label="([^"]*)"/.exec(svg)?.[1];
       const minFont = Math.min(...[...svg.matchAll(/font-size\s*[:=]\s*["']?\s*([\d.]+)/g)].map((m) => Number(m[1])));
       if (!alt || !Number.isFinite(minFont)) throw new FounderError(`${where}: ${f.file} has no label or no text sizes`);
-      const words = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((m) => m[1].replace(/<[^>]+>/g, "")).join(" \n ");
-      publicRule(words, `${where} figure ${id}`);
-      for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(words)) throw new FounderError(`${where} figure ${id} names ${t}, who has not consented`);
-      return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: alt.replace(/&quot;/g, '"').replace(/&amp;/g, "&"), pending: f.pending ?? null };
+      // Its drawn words, decoded as they render, face the public-render rule; everything readable in it, the consent rule.
+      publicRule(svgText(svg), `${where} figure ${id}`);
+      const readable = svgReadable(svg, `${where} figure ${id}`);
+      for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(readable)) throw new FounderError(`${where} figure ${id} names ${t}, who has not consented`);
+      return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: decodeXml(alt), pending: f.pending ?? null };
     };
     if (s.picture?.figure) content.figure = figureContent(s.picture.figure);
-    // At the freeze, a slide whose numbers have no receipt shows its fallback picture instead of its tiles.
-    if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric && !metrics.byId.get(wanted[t.metric]?.key ?? t.metric))) {
-      for (const k of ["tiles", "points", "still", "title"]) delete content[k];
-      content.layout = "figure";
+    // At the freeze (the coordinator, 11:45Z): each tile with a receipt stays, each without one is dropped and the rest
+    // reflow; only when no tile has a receipt does the fallback picture take their place. The QR code and the door's
+    // address stay on the slide in every case: they are the audience's call to action.
+    const measuredTiles = (s.tiles ?? []).filter((t) => t.metric && metrics.byId.get(wanted[t.metric]?.key ?? t.metric));
+    if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric) && measuredTiles.length === 0) {
+      delete content.tiles;
+      content.layout = "fallback";
       content.figure = figureContent(s.finalFallback.figure);
       content.footer = s.finalFallback.footer;
+      if (s.main) fallbackShown = { slide: s.id, n: S.main.indexOf(s.id) + 1, figure: content.figure.src.replace(/^figures\//, ""), qr: v4.stills[content.still?.id]?.payload ?? null };
     }
+    if (s.picture?.still === "qr" && !content.still) throw new FounderError(`${where} lost its QR code`);
+    // A QR code comes with the address it encodes, printed on the slide, for anyone who cannot scan it.
+    const encodes = content.still && v4.stills[content.still.id].payload;
+    if (encodes && !shownText(content).includes(new URL(encodes).host)) throw new FounderError(`${where} shows a QR code without the address it encodes (${new URL(encodes).host})`);
     if (s.bars) {
       const top = Math.max(...s.bars.map((b) => b.value));
       content.bars = s.bars.map((b) => {
@@ -237,7 +270,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
         if (f.shows[0] !== v) throw new FounderError(`${where} shows ${f.shows[0]} for ${[].concat(f.metric).join(" - ")}, but METRICS.json gives ${v}`);
       }
       const declared = new Set((s.facts ?? []).flatMap((f) => (f.source || f.metric ? f.shows : [])));
-      const measured = new Set((content.tiles ?? []).filter((t) => t.metric && !t.measuring).flatMap((t) => numberTokens(t.value)));
+      const measured = new Set((content.tiles ?? []).filter((t) => t.metric && !t.measuring).flatMap((t) => numberTokens(`${t.value} ${t.when}`)));
       for (const n of numberTokens(shown)) if (!declared.has(n) && !measured.has(n)) throw new FounderError(`${where} shows ${n}, which none of its facts declares`);
     }
     // The spoken words, with each metric read out or marked for the presenter. A metric counts as one word, measured or
@@ -257,14 +290,22 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       claimRules(say, `${where} words`, SAY_BANNED);
       for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(say)) throw new FounderError(`${where} words name ${t}, who has not consented`);
       const words = countWords(raw.replace(/\{m:[\w.]+\}/g, "N"));
-      notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: s.cue ?? null };
+      // The cue says what the slide does: at the freeze, the fallback's own cue or the final cue, never a draft's "measuring…".
+      const cue = final ? (content.layout === "fallback" ? s.finalFallback?.cue : s.cueFinal) ?? s.cue : s.cue;
+      notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: cue ?? null };
     }
     const main = S.main.length;
-    // For SOURCES.md: a metrics fact is described by the file's own definition, window and scope.
-    const facts = (s.facts ?? []).map((f) => (f.metric ? {
-      shows: f.shows,
-      source: `METRICS.json ${[].concat(f.metric).map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
-    } : f));
+    // For SOURCES.md: a metrics fact, and each measured tile, is described by its file's own definition, window and scope.
+    const receipt = (keys) => `${[...new Set(keys.map((k) => metrics.byId.get(k).from))].join(" and ")} ${keys.map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}`;
+    const facts = [
+      ...(s.facts ?? []).map((f) => (f.metric ? {
+        shows: f.shows,
+        source: `${receipt([].concat(f.metric))}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
+      } : f)),
+      ...(content.tiles ?? []).filter((t) => t.metric && !t.measuring).map((t) => ({ shows: [t.value, t.when], source: `${receipt([wanted[t.metric].key ?? t.metric])}.` })),
+      // The fallback picture's numbers and their source, when it is shown.
+      ...(content.layout === "fallback" && s.finalFallback.source ? [{ shows: s.finalFallback.shows ?? [], source: s.finalFallback.source }] : []),
+    ];
     // The script's heading for the slide: its source heading, else its on-screen title, else its kicker; never empty.
     const heading = [s.heading, content.title, s.kicker].find((x) => typeof x === "string" && x.trim());
     if (!heading) throw new FounderError(`${where} has no heading, title or kicker for the script`);
@@ -293,13 +334,23 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       demoSeconds: S.demoSeconds ?? 0, withDemoSeconds: tenths(total + (S.demoSeconds ?? 0)), slowWithDemoSeconds: tenths(slowSeconds + c.transitionSeconds + (S.demoSeconds ?? 0)) },
     placeholders: fills,
     options: v4.options ?? [],
+    // The clock's caveat for Carter (the coordinator, 13:40Z): FILL-IN carries it, the slides do not.
+    clockNote: v4.clock.demoNote ?? null,
+    // At the freeze, the coordinator's receipt for what slide 9 does not show (V4.json metrics.freezeNote), if given.
+    freezeNote: final ? v4.metrics.freezeNote ?? null : null,
+    fallback: fallbackShown,
     refresh: v4.refresh ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
   };
 }
 
-export const founderPdfName = (data) => `founder-v4/SentiLab-founder-${data.deck.slot}-${data.deck.cutoffIso.slice(0, 10)}-${data.deck.cutoffIso.slice(11, 13)}${data.deck.cutoffIso.slice(14, 16)}-${!data.deck.draft ? "final" : data.deck.measuring ? "draft" : "review"}.pdf`;
+// The review sheet's line about numbers not on their slides: a draft shows them as "measuring…"; the final shows none.
+export const sheetFillLine = (data) => (!data.placeholders.length ? ""
+  : `${data.deck.draft ? "Still measuring (shown as \"measuring…\")" : `Not shown: dropped at the freeze (${data.freezeNote ? "receipt in FILL-IN" : "no receipt"})`}: ${data.placeholders.map((p) => p.label).join(" · ")}`);
+// What a build is: the freeze's final, a draft with numbers still measuring, or a review export with none missing.
+export const buildKind = (data) => (!data.deck.draft ? "final" : data.deck.measuring ? "draft" : "review");
+export const founderPdfName = (data) => `founder-v4/SentiLab-founder-${data.deck.slot}-${data.deck.cutoffIso.slice(0, 10)}-${data.deck.cutoffIso.slice(11, 13)}${data.deck.cutoffIso.slice(14, 16)}-${buildKind(data)}.pdf`;
 
 export function serialize(data) {
   const { facts, ...pub } = data;
@@ -312,7 +363,7 @@ const mss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 6
 export function speakerScript(data, v4) {
   const u = data.budget;
   const out = [
-    `# SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${data.deck.talk}, ${data.deck.measuring ? "draft" : "review"} ${data.deck.cutoff}`,
+    `# SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${data.deck.talk}, ${buildKind(data)} ${data.deck.cutoff}`,
     "",
     `The spoken words, exactly as the deck's notes hold them (V4.json sha256 ${data.source.sourceSha256.slice(0, 8)}…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.`,
     "",
@@ -328,7 +379,9 @@ export function speakerScript(data, v4) {
     out.push(`## Option, Carter's call: not spoken unless he asks (slide ${o.slide})`, "", o.line, "", `Numbers: ${o.numbers} Qualifiers that travel with it: ${o.qualifiers} Source: ${o.source}`, "");
   }
   if (data.placeholders.length) {
-    out.push("## Still measuring", "", "Each shows \"measuring…\" on its slide and is read out only once it is filled:", "");
+    // A draft shows each as "measuring…"; the final shows none of them (root's copy P2, relayed 13:49Z).
+    if (data.deck.draft) out.push("## Still measuring", "", "Each shows \"measuring…\" on its slide and is read out only once it is filled:", "");
+    else out.push("## Not shown: dropped at the freeze", "", `Each had no number on its slide at the freeze, so the slide does not show it and the words do not read it${data.freezeNote ? "; FILL-IN gives the receipt" : " (no receipt)"}:`, "");
     for (const p of data.placeholders) out.push(`- ${p.label} (${p.where}; metric \`${p.id}\`)`);
     out.push("");
   }
@@ -336,12 +389,23 @@ export function speakerScript(data, v4) {
 }
 
 export function fillInTable(data) {
-  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label} | \`${p.id}\` | ${p.need} |`);
-  return ["# FILL-IN: the founder deck's placeholders", "", `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`, "",
+  const dropped = data.freezeNote ? " (not shown at the freeze: see \"At the freeze\")" : " (dropped at the freeze: no receipt)";
+  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? dropped : ""} | \`${p.id}\` | ${p.need} |`);
+  const head = data.deck.draft
+    ? `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`
+    : data.freezeNote
+      ? `The freeze, ${data.deck.cutoff}. Its slide shows none of these and its words do not read them; the receipt is under "At the freeze".`
+      : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
+  return ["# FILL-IN: the founder deck's placeholders", "", head, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
-    ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
+    // A draft's to-do for the freeze; the final is the freeze, so it lists none.
+    ...(data.deck.draft && data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
-      ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : [])].join("\n");
+      ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : []),
+    ...(data.freezeNote || data.fallback ? ["## At the freeze", "",
+      ...(data.fallback ? [`Slide ${data.fallback.n} (${data.fallback.slide}) shows its no-numbers fallback: ${data.fallback.figure}, with the QR code to ${data.fallback.qr} and the door's address.`, ""] : []),
+      ...(data.freezeNote ? [data.freezeNote, ""] : [])] : []),
+    ...(data.clockNote ? ["## Clock", "", data.clockNote, ""] : [])].join("\n");
 }
 
 export function sourcesList(data) {
@@ -385,39 +449,166 @@ function pictureFiles(v4) {
 // The short cut's speaker script sits beside the full one.
 export const scriptPath = (slot) => (slot === "3min" ? FOUNDER_OUTPUTS.script : join(FOUNDER_DIR, `SCRIPT-${slot}.md`));
 
-export function outputsMatch(data, v4, loaded) {
+// Everything the build writes, by path: the deck data, both speaker scripts, FILL-IN, SOURCES and each picture as served.
+export function publicOutputs(data, v4, loaded) {
   const { json, js } = serialize(data);
-  const pics = pictureFiles(v4);
-  const same = (p, s) => existsSync(p) && readFileSync(p, "utf8") === s;
-  const scripts = FOUNDER_SLOTS.every((slot) => same(scriptPath(slot), speakerScript(slot === data.deck.slot ? data : buildFounderData(loaded, { slot }), v4)));
-  return same(join(FOUNDER_DECK_DIR, "deck-data.json"), json) && same(join(FOUNDER_DECK_DIR, "deck-data.js"), js)
-    && scripts && same(FOUNDER_OUTPUTS.fillIn, fillInTable(data)) && same(FOUNDER_OUTPUTS.sources, sourcesList(data))
-    && JSON.stringify(readdirSync(FOUNDER_FIGURE_DIR).sort()) === JSON.stringify([...pics.keys()].sort())
-    && [...pics].every(([f, b]) => readFileSync(join(FOUNDER_FIGURE_DIR, f)).equals(b));
+  const out = new Map([[join(FOUNDER_DECK_DIR, "deck-data.json"), json], [join(FOUNDER_DECK_DIR, "deck-data.js"), js]]);
+  for (const slot of FOUNDER_SLOTS) out.set(scriptPath(slot), speakerScript(slot === data.deck.slot ? data : buildFounderData(loaded, { slot, final: !data.deck.draft }), v4));
+  out.set(FOUNDER_OUTPUTS.fillIn, fillInTable(data));
+  out.set(FOUNDER_OUTPUTS.sources, sourcesList(data));
+  if (v4.cuts) out.set(FOUNDER_OUTPUTS.cuts, cutsDoc(cutsPlan(loaded)));
+  for (const [f, b] of pictureFiles(v4)) out.set(join(FOUNDER_FIGURE_DIR, f), b);
+  return out;
+}
+
+// A proposed cut of the full talk's spoken words, for review and Carter's timed run (the coordinator, 13:05Z): never
+// applied by the build. Each change replaces one exact passage of a main slide's words, once; it may not touch a number
+// or a measured placeholder, and slides, figures and the short cut are not touched at all. The clock with the cut is the
+// build's own, on a copy of V4.json with the cut applied.
+export function cutsPlan(loaded) {
+  const { v4 } = loaded;
+  const main = v4.slots["3min"].main;
+  const check = (c, where) => {
+    const s = v4.slides.find((x) => x.id === c.slide);
+    if (!s || !main.includes(c.slide)) throw new FounderError(`${where}: ${c.slide} is not a main slide of the full talk`);
+    const n = String(s.say).split(c.from).length - 1;
+    if (n !== 1) throw new FounderError(`${where}: the passage must appear once in slide ${c.slide}'s words, found ${n}: ${JSON.stringify(c.from)}`);
+    if (/\{m:/.test(c.from + c.to)) throw new FounderError(`${where}: a cut may not touch a measured placeholder`);
+    if (JSON.stringify(numberTokens(c.from)) !== JSON.stringify(numberTokens(c.to))) throw new FounderError(`${where}: a cut may not touch a number: ${JSON.stringify(c.from)}`);
+    const saved = countWords(c.from) - countWords(c.to);
+    if (!(saved > 0)) throw new FounderError(`${where}: saves no words`);
+    const before = String(s.say);
+    return { ...c, n: main.indexOf(c.slide) + 1, saved, before, after: before.replace(c.from, c.to).replace(/\s+/g, " ").trim() };
+  };
+  const cut = v4.cuts.cut.map((c, i) => check(c, `cut ${i + 1}`));
+  const alternates = (v4.cuts.alternates ?? []).map((c, i) => check(c, `alternate ${i + 1}`));
+  const cutV4 = structuredClone(v4);
+  for (const c of cut) cutV4.slides.find((x) => x.id === c.slide).say = c.after;
+  const clock = (w, final) => buildFounderData({ ...loaded, v4: w }, { slot: "3min", final }).budget;
+  return {
+    note: v4.cuts.note, cut, alternates, saved: cut.reduce((a, c) => a + c.saved, 0),
+    clocks: [["Now, draft", clock(v4, false)], ["Now, at the freeze (slide 9's no-numbers line)", clock(v4, true)],
+      ["With the cut, draft", clock(cutV4, false)], ["With the cut, at the freeze (slide 9's no-numbers line)", clock(cutV4, true)]],
+  };
+}
+export function cutsDoc(plan) {
+  const q = (t) => (t ? `"${t.trim()}"` : "(nothing)");
+  return ["# CUTS: a proposed cut of the spoken words, not applied", "", plan.note, "",
+    "## The clock", "", "| | Words | Talk and transitions | With the 120 s demo, 150 wpm | With the demo, 135 wpm |", "|---|---|---|---|---|",
+    ...plan.clocks.map(([k, u]) => `| ${k} | ${u.talkWords} | ${u.totalSeconds} s | ${u.withDemoSeconds} s (${mss(u.withDemoSeconds)}) | ${u.slowWithDemoSeconds} s (${mss(u.slowWithDemoSeconds)}) |`), "",
+    `## The cut: ${plan.saved} words`, "",
+    ...plan.cut.flatMap((c, i) => [`### ${i + 1}. Slide ${c.n} (${c.slide}): ${c.saved} words`, "", `- Before: ${q(c.from)}`, `- After: ${q(c.to)}`, `- Why: ${c.why}`, ""]),
+    "## Each slide's words, before and after the cut", "",
+    ...plan.cut.flatMap((c) => [`### Slide ${c.n} (${c.slide})`, "", `Before: ${c.before}`, "", `After: ${c.after}`, ""]),
+    "## Alternates, not in the cut", "", "| Slide | Before | After | Words | Why |", "|---|---|---|---|---|",
+    ...plan.alternates.map((c) => `| ${c.n} (${c.slide}) | ${q(c.from)} | ${q(c.to)} | ${c.saved} | ${c.why} |`), ""].join("\n");
+}
+// Carter's handoff files (the coordinator, 12:31Z): aneta's answer sheet and demo run sheet, beside the scripts and not on
+// a slide, exactly as received; V4.json pins each by its sha256.
+export function handoffFiles(v4) {
+  const files = new Map();
+  for (const [file, h] of Object.entries(v4.handoff ?? {})) {
+    const path = join(FOUNDER_DIR, file);
+    const bytes = existsSync(path) ? readFileSync(path) : null;
+    if (!bytes || sha256(bytes) !== h.sha256) throw new FounderError(`handoff file ${file} is not the file V4.json pins (${h.sha256.slice(0, 8)}…)`);
+    files.set(path, bytes);
+  }
+  return files;
+}
+// The metrics files the deck publishes beside its outputs, as received: they face the same name scan.
+export function inputFiles() {
+  const paths = [FOUNDER_METRICS, join(FOUNDER_DIR, "METRICS.md"), FOUNDER_METRICS_FREEZE].filter((p) => existsSync(p));
+  return new Map(paths.map((p) => [p, readFileSync(p)]));
+}
+// XML's five predefined entities and numeric character references: all an SVG without a DTD can hold, and what a markdown
+// renderer decodes too. One pass, as a renderer makes ("&amp;#116;" shows as the text "&#116;"); nothing else is expanded.
+const XML_NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+export const decodeXml = (s) => String(s).replace(/&(?:#(\d+)|#x([0-9a-f]+)|(amp|lt|gt|quot|apos));/gi, (m, dec, hex, name) => {
+  if (name) return XML_NAMED[name.toLowerCase()];
+  const cp = dec !== undefined ? Number(dec) : parseInt(hex, 16);
+  return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+});
+// Character data as XML reads it: a CDATA section stays literal, everything else is decoded once; markup between the
+// pieces becomes `sep` ("" inside a text element, so tspans join as they render).
+const textContent = (s, sep = "") => String(s).split(/(<!\[CDATA\[[\s\S]*?\]\]>)/).map((p) => (p.startsWith("<![CDATA[") ? p.slice(9, -3) : decodeXml(p.replace(/<[^>]*>/g, sep)))).join("");
+// A comment is not rendered: inside an element the text on either side joins ("Vor<!-- -->tex" reads "Vortex").
+const dropComments = (s, sep = "") => String(s).replace(/<!--[\s\S]*?-->/g, sep);
+// An SVG's drawn words, decoded, one text element per line.
+export const svgText = (svg) => [...dropComments(svg).matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => textContent(m[1])).join(" \n ");
+// A start tag, quoted attribute values allowed to hold ">", and its attributes.
+const TAG = /<[A-Za-z][^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/g;
+const ATTR = /([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+// Data URIs in text already decoded: binary image data (base64 PNG, JPEG, GIF, WebP, AVIF, BMP) is not text and is
+// dropped; any other is decoded (base64 or percent-encoding) and read, an SVG as an SVG (root, 13:30:15Z: decode the
+// attribute value first, then recognize the URI, so an encoded "d&#97;ta:" or ";b&#97;se64" cannot hide it).
+const BINARY_IMAGE = /^image\/(?:png|jpe?g|gif|webp|avif|bmp)$/i;
+function expandData(text, where) {
+  const inner = [];
+  const rest = String(text).replace(/data:([^;,"')\s]*)((?:;[^;,"')\s]*)*),([^"')\s]*)/gi, (m, type, params, payload) => {
+    const base64 = /;base64$/i.test(params);
+    if (base64 && BINARY_IMAGE.test(type)) return " ";
+    let body;
+    try { body = base64 ? Buffer.from(payload, "base64").toString("utf8") : decodeURIComponent(payload); } catch { body = payload; }
+    inner.push(/svg/i.test(type) ? svgReadable(body, `${where} (an embedded image)`) : body);
+    return " ";
+  });
+  return [rest, ...inner].join(" \n ");
+}
+// Everything a reader can get from an SVG, decoded (root's P2, 12:55:54Z, and 13:30:15Z): the drawn words, titles and
+// descriptions, every attribute value decoded once (alt and aria labels among them), the other character data, the tag and
+// attribute names, and the comments as written; then every data: URI in those decoded strings, as above. An SVG that
+// declares a DTD or an entity is refused: what it would spell is not known without expanding it.
+export function svgReadable(svg, where) {
+  const src = String(svg);
+  if (/<!DOCTYPE|<!ENTITY/i.test(src)) throw new FounderError(`${where} declares a DTD or an entity; it is refused, not expanded`);
+  const comments = [...src.matchAll(/<!--([\s\S]*?)-->/g)].map((m) => m[1]);
+  const doc = dropComments(src);
+  const markup = doc.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, " ");
+  const tags = [...markup.matchAll(TAG)].map((t) => t[0]);
+  const inner = (tag) => [...doc.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi"))].map((m) => textContent(m[1]));
+  const parts = [svgText(src), ...inner("title"), ...inner("desc"), textContent(dropComments(src, " "), " \n "), ...comments,
+    ...tags.map((t) => t.replace(/"[^"]*"|'[^']*'/g, " ")), ...tags.flatMap((t) => [...t.matchAll(ATTR)].map((a) => decodeXml(a[2] ?? a[3])))];
+  return parts.map((p) => expandData(p, where)).join(" \n ");
+}
+// A team that has not consented to be named appears in nothing the deck publishes, in any letter case (the coordinator,
+// 12:31Z: Vortex stays "another team"): the slides and the sources page, a figure's text or alt text, the notes, both
+// scripts, FILL-IN, SOURCES and Carter's handoff files, each read as it renders (an SVG decoded as above; markdown and
+// the deck data with their character references decoded). The PDFs are exported separately; their own bytes get their own
+// scan at the freeze, which this does not replace.
+export function checkUnnamed(files, v4) {
+  for (const [path, body] of files) {
+    if (!/\.(json|js|md|svg)$/.test(path)) continue;
+    const where = relative(REPO_ROOT, path);
+    const text = path.endsWith(".svg") ? svgReadable(body, where) : expandData(`${body} \n ${decodeXml(body)}`, where);
+    for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(text)) throw new FounderError(`${where} names ${t}, who has not consented`);
+  }
+}
+
+export function outputsMatch(data, v4, loaded) {
+  const outputs = publicOutputs(data, v4, loaded);
+  const pics = [...outputs.keys()].filter((p) => p.startsWith(FOUNDER_FIGURE_DIR)).map((p) => basename(p)).sort();
+  return JSON.stringify(readdirSync(FOUNDER_FIGURE_DIR).sort()) === JSON.stringify(pics)
+    && [...outputs].every(([p, b]) => existsSync(p) && readFileSync(p).equals(Buffer.isBuffer(b) ? b : Buffer.from(b, "utf8")));
 }
 
 function main(args) {
   const loaded = loadFounder();
   const at = args.indexOf("--slot");
   const slot = at >= 0 ? args[at + 1] : "3min";
-  const final = args.includes("--final");
+  const final = args.includes("--final") || loaded.v4.build === "final";
   const data = buildFounderData(loaded, { slot, final });
+  const outputs = publicOutputs(data, loaded.v4, loaded);
+  checkUnnamed([...outputs, ...handoffFiles(loaded.v4), ...inputFiles()], loaded.v4);
   if (args.includes("--check")) {
     if (slot !== "3min") throw new FounderError("--check reads the committed build, which is the 3min slot");
     if (!outputsMatch(data, loaded.v4, loaded)) { console.error("deck/founder-v4 or its SCRIPT/FILL-IN/SOURCES differ from a fresh build of V4.json"); process.exit(1); }
     console.log("deck/founder-v4 matches a fresh build");
     return;
   }
-  const { json, js } = serialize(data);
   mkdirSync(FOUNDER_FIGURE_DIR, { recursive: true });
-  writeFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), json);
-  writeFileSync(join(FOUNDER_DECK_DIR, "deck-data.js"), js);
-  const pics = pictureFiles(loaded.v4);
+  const pics = new Set([...outputs.keys()].filter((p) => p.startsWith(FOUNDER_FIGURE_DIR)).map((p) => basename(p)));
   for (const f of readdirSync(FOUNDER_FIGURE_DIR)) if (!pics.has(f)) throw new FounderError(`deck/founder-v4/figures/${f} is not a picture V4.json names; remove it by hand`);
-  for (const [f, b] of pics) writeFileSync(join(FOUNDER_FIGURE_DIR, f), b);
-  for (const s of FOUNDER_SLOTS) writeFileSync(scriptPath(s), speakerScript(s === slot ? data : buildFounderData(loaded, { slot: s }), loaded.v4));
-  writeFileSync(FOUNDER_OUTPUTS.fillIn, fillInTable(data));
-  writeFileSync(FOUNDER_OUTPUTS.sources, sourcesList(data));
+  for (const [p, b] of outputs) writeFileSync(p, b);
   const u = data.budget;
   console.log(`deck/founder-v4: ${data.slides.length} slides (${data.slides.filter((s) => s.main).length} main), facts as of ${data.deck.cutoff}${data.deck.measuring ? `, ${data.placeholders.length} placeholders` : ""}`);
   console.log(`  talk ${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm + ${u.transitionSeconds} s transitions = ${u.totalSeconds} s of ${u.talkCapSeconds} s (${u.slowTotalSeconds} s at ${u.slowWordsPerMinute} wpm)`);
