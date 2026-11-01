@@ -86,18 +86,20 @@ def test_multiple_exact_markers_in_one_reply_are_all_kept_and_final_ends_agent(t
     assert json.loads((output / 'job-one/findings.json').read_text())['findings'][0]['evidence'] == 'finished'
 
 
-def test_c_nonwriter_final_is_last_for_that_agent_without_ending_the_arm(tmp_path):
+def test_c_nonwriter_final_keeps_taking_turns_until_writer_ends_arm(tmp_path):
     interim = final('working').replace('FINAL', 'FINDINGS', 1)
     emitted, job, model, _ = execute(tmp_path, 'C', [
         response(interim), response(final('two finished')), response(interim),
-        response(interim), response(final('three finished')), response(final('writer finished')),
+        response(interim), response(interim), response(final('three finished')), response(final('writer finished')),
     ])
-    assert [item['agent'] for item in emitted] == [1, 2, 3, 1, 3, 1]
+    assert [item['agent'] for item in emitted] == [1, 2, 3, 1, 2, 3, 1]
     for agent in (1, 2, 3):
         rows = [item for item in emitted if item['agent'] == agent]
-        assert rows[-1]['kind'] == 'FINAL'
+        assert rows[-1]['kind'] == ('FINDINGS' if agent == 2 else 'FINAL')
         assert [row['set_index'] for row in rows] == list(range(len(rows)))
-    assert len(model.calls) == 6
+    assert len(model.calls) == 7
+    assert job['agents']['2']['stop_reason'] == 'writer_final'
+    assert job['agents']['2']['charged_tokens'] == 240
     assert job['history_complete'] is True
 
 

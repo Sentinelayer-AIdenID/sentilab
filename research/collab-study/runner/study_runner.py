@@ -796,8 +796,6 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                     for participant in agents:
                         participant.prompt_bound += usage_counts(reply.usage)[2]
                     final = writer.final_set(agent.number)
-                    if final is not None and not agent.stop_reason:
-                        agent.stop_reason = "final"
                     if agent.number == 1 and final is not None:
                         findings, finalized = final, True
                         agent.stop_reason = "final"
