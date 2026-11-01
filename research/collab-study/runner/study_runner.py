@@ -472,10 +472,12 @@ class AgentState:
 
 
 class RequestEngine:
-    """One request lifecycle, shared by all arms; never guesses a prompt count.
+    """One request lifecycle, shared by all arms; charges use provider usage.
 
     The caller must supply the initial prompt bound. Its protocol source is
-    deliberately not defaulted here; subsequent bounds come from provider usage.
+    deliberately not defaulted here. Reservations also cover the complete
+    serialized message list, conservatively allowing one token per JSON byte.
+    This is a reservation floor, never a reported/measured token count.
     """
 
     def __init__(self, model, ledger: Ledger, *, max_tokens_per_reply: int,
@@ -491,19 +493,21 @@ class RequestEngine:
     def request(self, job_id: str, agent: AgentState, messages: list[dict], *,
                 deadline: float, scope: str, record) -> Reply | None:
         retry = False
-        message_hash = sha256(canonical(messages))
+        message_bytes = canonical(messages)
+        message_hash = sha256(message_bytes)
         while not agent.stop_reason:
             remaining_time = deadline - self.clock()
             if remaining_time <= 0:
                 agent.stop_reason = "wall_time"
                 return None
             remaining_tokens = agent.cap - agent.charged_tokens
+            prompt_bound = max(agent.prompt_bound, len(message_bytes))
             max_tokens = min(self.reply_limit, remaining_tokens)
-            if max_tokens <= 0 or agent.prompt_bound + max_tokens > remaining_tokens:
+            if max_tokens <= 0 or prompt_bound + max_tokens > remaining_tokens:
                 agent.stop_reason = "token_cap"
                 return None
             attempt = self.ledger.reserve(job_id, agent.number, "retry" if retry else scope,
-                                          prompt_bound=agent.prompt_bound, max_tokens=max_tokens,
+                                          prompt_bound=prompt_bound, max_tokens=max_tokens,
                                           agent_cap=agent.cap, tokens_before=agent.charged_tokens)
             if attempt is None:
                 agent.stop_reason = "dollar_cap"

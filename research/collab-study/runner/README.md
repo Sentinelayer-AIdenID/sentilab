@@ -100,9 +100,15 @@ turns. Only writer 1's `FINAL` ends the arm with findings. Each arm has one
 900-second deadline. Jobs start in order with at most `--parallel` arm workers
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
-Before each attempt, the agent's last reported prompt usage (or explicit initial
-bound), every reply appended since that prompt, and the bounded output must fit
-its remaining cap. Reply increments come from provider completion usage. A thread-safe ledger
+Before each attempt, the prompt reservation and bounded output must fit the
+agent's remaining cap. The reservation is the larger of the usage-based bound
+(last reported prompt or explicit initial bound, plus subsequently appended
+reply usage) and the byte length of the complete ASCII-escaped JSON message
+list. This conservative one-token-per-serialized-byte floor includes the system
+and packet, all earlier replies and continue/turn prompts, roles, peer labels,
+and separators. It is a reservation, not a measured token count; charged tokens
+still come exclusively from provider usage, except labelled unknown charges.
+A thread-safe ledger
 also reserves the maximum dollar cost, including other in-flight calls. If that
 would cross the dollar cap, all subsequent calls stop; remaining jobs receive
 empty findings and stop receipts. Provider prompt counts can grow beyond the

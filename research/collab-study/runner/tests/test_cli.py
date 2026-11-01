@@ -358,9 +358,9 @@ def test_interrupted_run_checkpoints_cost_and_rerun_continues_ledger(tmp_path, c
             runner.main(args)
     output = tmp_path / 'output'
     assert (output / 'ACCOUNTING.json').is_file()
-    assert checkpoints[0]['reserved_usd'] == '0.0003'
+    assert checkpoints[0]['reserved_usd'] == '0.000471'
     accounting = json.loads((output / 'ACCOUNTING.json').read_text())
-    assert accounting['grand_total_usd'] == '0.0003'
+    assert accounting['grand_total_usd'] == '0.000471'
     assert accounting['unknown_usage'] is True
     assert accounting['reserved_usd'] == '0'
     assert len(accounting['attempts']) == 1
@@ -372,13 +372,13 @@ def test_interrupted_run_checkpoints_cost_and_rerun_continues_ledger(tmp_path, c
     monkeypatch.setattr(runner.DryRunModel, 'complete', no_call)
     assert runner.main(args) == 0
     recovered = json.loads((output / 'ACCOUNTING.json').read_text())
-    assert recovered['grand_total_usd'] == '0.0003'
+    assert recovered['grand_total_usd'] == '0.000471'
     assert recovered['attempts'] == accounting['attempts']
     assert recovered['stop_reason'] == 'dollar_cap'
     job = json.loads((output / 'case-one-A/job.json').read_text())
     assert job['history_complete'] is False
     assert job['agents']['1']['stop_reason'] == 'interrupted_run'
-    assert job['agents']['1']['charged_tokens'] == 200
+    assert job['agents']['1']['charged_tokens'] == 371
     assert (output / 'RUN-MANIFEST.json').is_file()
 
 
@@ -400,7 +400,7 @@ def test_rerun_keeps_finished_jobs_and_previous_charges(tmp_path, capsys, monkey
     first = output / order[0]['job_id']
     original = {p.name: p.read_bytes() for p in first.iterdir()}
     before = json.loads((output / 'ACCOUNTING.json').read_text())
-    assert before['grand_total_usd'] == '0.00104'  # Finished A, then three interrupted B calls.
+    assert before['grand_total_usd'] == '0.001553'  # Finished A, then three interrupted B calls.
     resumed = []
 
     def final_model(*a, **kw):
@@ -412,7 +412,7 @@ def test_rerun_keeps_finished_jobs_and_previous_charges(tmp_path, capsys, monkey
     after = json.loads((output / 'ACCOUNTING.json').read_text())
     assert after['attempts'][:4] == before['attempts']
     assert len(resumed) == 6  # Remaining C, A, B, C jobs.
-    assert after['grand_total_usd'] == '0.00188'
+    assert after['grand_total_usd'] == '0.002393'
     assert {p.name: p.read_bytes() for p in first.iterdir()} == original
     assert json.loads((output / order[1]['job_id'] / 'job.json').read_text())['history_complete'] is False
 
