@@ -1,0 +1,63 @@
+{
+  "schema": "sentilab-g1-private-publication/1",
+  "at": "2026-11-01T12:15:33.582Z",
+  "private": true,
+  "scope": "Exact independently reviewed additive engineer supplement; no PR/deployment/execution",
+  "independentReviewSha256": "7684eba23689387357d9a93e99b0b038a9e599d05812257668ff716fbf05b949",
+  "files": [
+    {
+      "name": ".gitattributes",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/.gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "name": "sentilab-g1-engineer-supplement-2026-11-01.zip",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/sentilab-g1-engineer-supplement-2026-11-01.zip",
+      "bytes": 1020139,
+      "sha256": "90c526ccd0548f7f75e92b167d3758a51f6a5be0be118d482bf37120326c963d"
+    },
+    {
+      "name": "MANIFEST.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/MANIFEST.json",
+      "bytes": 37620,
+      "sha256": "1048af4f61271174a5f77ead55757350af4f6f4dc8f2d0799e8f67428f1cead0"
+    },
+    {
+      "name": "PINS.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/PINS.json",
+      "bytes": 3700,
+      "sha256": "bff08ddcdebd7cc6dd99b7e48f4f8188e1540ea62e7163995525bc2b80e6fa8e"
+    },
+    {
+      "name": "CORRECTION-2026-11-01.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/CORRECTION-2026-11-01.json",
+      "bytes": 1689,
+      "sha256": "e41c6816f729358913dc418f56462bd429be49c8afcbcde4ea652098c05898a0"
+    },
+    {
+      "name": "SECRET-SCAN.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/SECRET-SCAN.json",
+      "bytes": 9198,
+      "sha256": "08b82a93dcfbbabe47eb5c253880b8d56d5c2e49659b4c707f02924fe1e474d2"
+    },
+    {
+      "name": "VALIDATION.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/VALIDATION.json",
+      "bytes": 2520,
+      "sha256": "f18a41d02437f0c761286d47b61e4db6988312f2a2f31fcf9c6b397bde43c556"
+    },
+    {
+      "name": "INDEPENDENT-REVIEW.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/INDEPENDENT-REVIEW.md",
+      "bytes": 6830,
+      "sha256": "7684eba23689387357d9a93e99b0b038a9e599d05812257668ff716fbf05b949"
+    },
+    {
+      "name": "README.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/README.md",
+      "bytes": 1835,
+      "sha256": "323c5d22b93882f1986c57cd81284b170ee6a65af1ad22c3da9454f24ac4d15d"
+    }
+  ]
+}

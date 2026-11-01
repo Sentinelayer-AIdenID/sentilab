@@ -1,0 +1,41 @@
+{
+  "schema": "sentilab-g1-additive-accounting-correction/1",
+  "datedUtc": "2026-11-01T12:03:55.376191+00:00",
+  "appliesTo": {
+    "zipMember": "slab049-run-g1/RUN-RECEIPT.json",
+    "bytes": 36997,
+    "sha256": "6a2a4ac9e60a1d5b98a48c701d1c82333c0e31bd5f06a4d2b89fe5ac533dbb5b"
+  },
+  "originalText": "the supervisor container's whole cgroup CPU",
+  "correctedText": "the persisted baseline-adjusted cgroup interval after the final child reap; later run completion logged 15.107 CPU-s rounded",
+  "originalBytesPreserved": true,
+  "chargedCpuSRaw": "14.3216309999999996",
+  "chargedCpuSSixPlaces": "14.321631",
+  "solverCpuSRaw": "13.2527599999999999",
+  "solverCpuSSixPlaces": "13.252760",
+  "childrenCpuSRaw": "13.4115809999999996",
+  "selfCpuSRaw": "0.910050",
+  "persistedCarryCpuS": "15.093926",
+  "persistedCarryAt": "2026-11-01T11:38:36Z",
+  "laterRunCompleteCpuS": "15.107",
+  "laterRunCompletePrecisionDecimalPlaces": 3,
+  "laterRunCompleteAt": "2026-11-01T11:38:37Z",
+  "wholeLifetimeContainerOrJobCpuS": null,
+  "totalDollars": null,
+  "separateUnquantifiedScopes": [
+    "build/native smoke/test",
+    "grant/report/verifier/launcher",
+    "startup and later tails"
+  ],
+  "consumedAdmissionCpuS": "234",
+  "refundCpuS": "0",
+  "oldGateZeroCarryCpuS": "22.970797",
+  "originalFailuresRetained": [
+    "pre-sign report exit 1",
+    "earlier build exit 1 and cached probe exit 0",
+    "reviewer input-layout and optional raw-Git reconstruction refusals"
+  ],
+  "priorBuildNativeProbes": 8,
+  "priorBuildRetroactivelyChargedToG1": false,
+  "accountingReviewSha256": "db50dfd11c2316ea6697ffda857856e03284e9ae32745997cff32013a0bcde0a"
+}

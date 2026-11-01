@@ -1,0 +1,85 @@
+{
+  "schema": "sentilab-g1-engineer-pins/1",
+  "repository": "Sentinelayer-AIdenID/sentilab",
+  "sourceCommit": "3f998f7cfea3f55eec9267b03ff6e2ad207af72b",
+  "sourceTree": "8dfa9e889b316da745c71a453daf5d42e388d120",
+  "image": "sentilab-gate0@sha256:da4700ffdb56a55aa60ee7a4c845a4dbe08f90a1d15cb48d26299abcda597c18",
+  "materialOnlyBinarySha256": "6ea3b7813412c13d20c92adc6449fbc0bc87c46b521d4d5eaf80b8abc7900609",
+  "provenanceSha256": "1fc0aa69d3b218abe1d2dd53a1b54321ea9527e599b5ee35196fc9d8c44b1422",
+  "manifest": {
+    "path": "evidence/presign/accepted-manifest.json",
+    "bytes": 20834,
+    "sha256": "9f9febcb43d0c1b967bf6e45ff883121e49d593453a009bab38675c9ccf5afdd"
+  },
+  "grantId": "slab049-coupling-g1-20261101",
+  "grantOpenedUtc": "2026-11-01T11:37:13Z",
+  "grantDeadlineUtc": "2026-11-02T06:00:00Z",
+  "publicEd25519Key": "aedce64bbc007b3538c02d302da9cedbce1465c409efac8589477284bdbd2132",
+  "grantEntryRawSha256": "504069a1a6673bd4d0edd51ad3209ae5dc7908e536e7deaabfdb64308e70423d",
+  "grantCanonicalSignedSha256": "7a9ec45cf96c991de39b7d16816b0b20afaeda9cdb62818c63943aaf24704969",
+  "terminalCanonicalLedgerSha256": "30b96f2baf4c13048c655611be23072531a5177507ee0ab01e568c0c673fdd2b",
+  "runtimeOrder": [
+    "p-hs7material-ascend910-tap25d-fig6a-raw-g64",
+    "r-hs7material-ascend910-tap25d-fig6a-raw-g64",
+    "p-hs7material-micro150-tap25d-fig5a-raw-g64",
+    "r-hs7material-micro150-tap25d-fig5a-raw-g64"
+  ],
+  "authorizationOrder": "sorted call set; distinct from runtimeOrder",
+  "perCallEnvelopeCpuS": "58.5",
+  "perCallNativeLimitCpuS": "50",
+  "perCallReserveCpuS": "8.5",
+  "consumedAdmissionCpuS": "234",
+  "refundCpuS": "0",
+  "concurrency": 1,
+  "retries": 0,
+  "originalZip": {
+    "path": "original/slab049-run-g1.zip",
+    "bytes": 706172,
+    "sha256": "5d87a5fe795d6c45aa1d93f304892d729d083a932f1c3fc6660618282b93c3a2",
+    "files": 130,
+    "checksumListedFiles": 129,
+    "expandedBytes": 2059577
+  },
+  "report": {
+    "zipMember": "slab049-run-g1/coupling/report-g1.json",
+    "bytes": 85555,
+    "sha256": "5b0f81ff4a7f057ebee11225f047945b08fa553523423255110b495954e2f0ba"
+  },
+  "runReceipt": {
+    "zipMember": "slab049-run-g1/RUN-RECEIPT.json",
+    "bytes": 36997,
+    "sha256": "6a2a4ac9e60a1d5b98a48c701d1c82333c0e31bd5f06a4d2b89fe5ac533dbb5b"
+  },
+  "outcome": "MEETS",
+  "mechanicalStatus": "PASS",
+  "scope": "Prospective four-call configured-model material-only diagnostic; not physical calibration, authors intent or a general optimum.",
+  "predicateExact": "(HS7 - variant) / (HS7 - HS6) >= 17/20",
+  "statistic": "maximum of all native block rows, including package nodes",
+  "results": [
+    {
+      "reference": "Ascend 910",
+      "historicalId": "ascend910-tap25d-fig6a-raw",
+      "HS7_C": "123.42",
+      "HS6_C": "75.48",
+      "variantNativeMax_C": "78.76",
+      "fractionExact": "2233/2397",
+      "floorPercent": 93,
+      "threshold_C": "82.6710",
+      "activeGridPeak_C": "78.77"
+    },
+    {
+      "reference": "CPU-DRAM",
+      "historicalId": "micro150-tap25d-fig5a-raw",
+      "HS7_C": "232.67",
+      "HS6_C": "115.93",
+      "variantNativeMax_C": "125.52",
+      "fractionExact": "10715/11674",
+      "floorPercent": 91,
+      "threshold_C": "133.4410",
+      "activeGridPeak_C": "128.50"
+    }
+  ],
+  "newExecutionAuthorizedBySupplement": false,
+  "producerCodeExecutedForSupplement": false,
+  "imageSourceDomainNote": "Baked BUILD_SHA is unknown; runtime BUILD_SHA is injected. Source/image binding rests on manifest and retained evidence, not the label alone. Image inspect Id and RepoDigest equality is this daemon observation only."
+}

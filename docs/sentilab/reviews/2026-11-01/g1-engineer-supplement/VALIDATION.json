@@ -1,0 +1,67 @@
+{
+  "schema": "sentilab-g1-supplement-final-validation/1",
+  "atUtc": "2026-11-01T12:08:30.840004+00:00",
+  "outerZipFiles": 179,
+  "outerZipExpandedBytes": 2094118,
+  "allOuterZipBytesEqualPayload": true,
+  "allOuterZipCrcsPass": true,
+  "payloadUnchangedAcrossFinalScanAndZip": true,
+  "byteVerification": {
+    "schema": "sentilab-g1-supplement-byte-verification/1",
+    "result": "PASS",
+    "supplementFilesVerified": 178,
+    "exactSourceCopiesVerified": 161,
+    "originalZipMembersVerified": 130,
+    "originalPayloadChecksumsVerified": 129,
+    "originalExpandedBytes": 2059577,
+    "retainedReviewChecks": {
+      "identity": 421,
+      "numerics": 151,
+      "anchors": 157
+    },
+    "signaturesReexecutedByThisByteVerifier": false,
+    "producerCodeExecuted": false,
+    "networkRequests": 0
+  },
+  "numericalRecheck": {
+    "executionEvidence": "Tool exec_command completion chunk ed6b1f, exit 0; output transcribed into this sealing receipt. Reviewer parser executed once for the packaged wrapper before this final seal.",
+    "result": "PASS",
+    "reviewerChecksReproduced": 151,
+    "retainedResultFieldsExactlyEqual": [
+      "results",
+      "checks",
+      "passed",
+      "report_sha256",
+      "receipt_sha256",
+      "source_sha256",
+      "scope",
+      "schema"
+    ],
+    "onlyExcludedField": "packet absolute temporary path",
+    "producerCodeExecuted": false,
+    "newSolves": 0,
+    "networkRequests": 0,
+    "wrapperSha256": "26ebadbd135056f5a055427751e2e7f5074de3770836052ab7a8df9191012571",
+    "parserSha256": "9d16175d836da34a9cb45ca557a02719d7b8b96e7444f4769030347e6d70710e"
+  },
+  "secretScan": {
+    "finalPayloadExitCode": 1,
+    "finalPayloadFindings": 9,
+    "allFinalFindingsExactlyMatchTriagedInitialFindings": true,
+    "nestedRawFindings": 4,
+    "nestedRawMemberFiles": 130,
+    "nestedRawMembersStillBoundByOriginalZipHash": true,
+    "reviewedPublicIdentifierFalsePositivesAcrossPayloadAndNested": 13,
+    "unresolvedFindings": 0,
+    "positiveControlDetections": 1,
+    "suppressionOrIgnoreEntriesAdded": false,
+    "report": "validation/gitleaks-final-redacted.json",
+    "log": "validation/gitleaks-final.log"
+  },
+  "finalPayloadTextFilesCheckedForUrlQueriesOrUserInfo": 178,
+  "urlQueryOrUserInfoFindings": [],
+  "originalRawZipSha256": "5d87a5fe795d6c45aa1d93f304892d729d083a932f1c3fc6660618282b93c3a2",
+  "producerExecution": false,
+  "newSolvesModelsBuildsGrants": false,
+  "networkRequests": 0
+}
