@@ -109,6 +109,17 @@ export function tempWord(t, verification = null) {
 export const STEP_WORD = Object.freeze({ queued: "Waiting in line", held: "Held", evaluating: "Simulating", evaluated: "Re-checking (replay)",
   replaying: "Re-checking (replay)", reproduced: "Accepted \u00b7 replay matched", cross_checked: "Accepted \u00b7 cross-checked",
   not_reproduced: "Scored \u00b7 replay did not match" });
+// The proposals timeline (Carter, 19:59Z): one row per run, newest at top.
+export const PROPOSALS = Object.freeze({
+  head: "PROPOSALS \u00b7 NEWEST FIRST",
+  from: (short) => (short ? `Proposal from visit ${short}` : "Proposal"),
+  named: (short) => ` \u00b7 self-declared, not verified${short ? ` \u00b7 visit ${short}` : ""}`,
+  received: "Proposal received",
+  receivedTitle: "The door’s intake accepted this proposal (it has a queued record)",
+  refused: "Refused at intake",
+  fresh: "New proposal",
+  none: "No proposals yet. The first one appears here as it arrives.",
+});
 export const YOUR_PICK = "your pick";
 
 // A design's steps in plain words, for the newest-event line and the model's caption.

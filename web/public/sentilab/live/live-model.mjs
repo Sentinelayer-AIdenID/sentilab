@@ -314,6 +314,16 @@ export function feedStatus(feed, { nowMs = Date.now(), hostname = "" } = {}) {
 // ── runs: the experiments rail and the selected run ──────────────────────────────────────────────────────────────
 // Newest arrival first. The page's own key is the run id; it is never shown (the label is the run's only name).
 export const runsNewestFirst = (layouts) => [...(layouts ?? [])].reverse();
+// When a run was proposed: the time of its first creation record (queued, held or rejected) among the records held,
+// or null when that record is not in view.
+export function proposedAt(runId, records) {
+  let first = null;
+  for (const e of records ?? []) if (e.kind === "run" && e.run_id === runId && ["queued", "held", "rejected"].includes(e.state) && (!first || e.seq < first.seq)) first = e;
+  return first?.at ?? null;
+}
+// The proposal's mark (root, 20:01Z): "received" once the door's intake accepted it (it has a queued record, so any
+// status but rejected); "refused" when intake refused it (rejected). The evaluation's outcome is a separate line.
+export const proposalMark = (L) => (L.status === "rejected" ? "refused" : "received");
 // The run shown: the one selected while it is still in the feed, else the newest run with a score, else the newest.
 export function pickRun(layouts, selectedId) {
   const list = layouts ?? [];

@@ -158,6 +158,7 @@ function planWalks() {
   if (walkHistory === null) {
     if (!feed.state.lastOkAt) return;
     walkHistory = new Set([...layouts().map((L) => L.id), ...ev.filter((e) => e.kind === "run").map((e) => e.run_id)]);
+    for (const id of walkHistory) seenAt.set(id, null);
     walkBase = walkCursor = feed.state.eventsCursor ?? 0;
     return;
   }
@@ -185,10 +186,58 @@ function stepWalks(mine) {
 }
 const walkAt = () => (walks.size ? new Map([...walks].map(([id, w]) => [id, w.steps[w.i]])) : null);
 
+// ── proposals: one row per run, newest at top (Carter, 19:59Z) ────────────────────────────────────────────────────
+// The visitor's figure, "Proposal from visit 9f8c" (or, only through the run record's exact visit_arrival, the
+// declared name with its note), "✓ Proposal received" once the door's intake accepted it (root, 20:01Z; a run
+// refused at intake shows the refusal mark and reason instead), the evaluation's real step or outcome on its own line,
+// when it was submitted (its first record's own time, never a poll time), and "New proposal" for PROPOSAL_NEW_MS after
+// it first arrived live. Runs held at the first read are never new. Relative times and the badge's end follow the
+// page's 1 s clock. A click selects the run by its full run id.
+const PROPOSAL_NEW_MS = 15 * 60 * 1000;
+const seenAt = new Map();          // run id -> when it was first seen live (null: held at the first read)
+function markSvg(kind) {
+  const el = s("svg", { class: `proposal-mark ${kind}`, viewBox: "0 0 24 24", "aria-hidden": "true" });
+  const path = s("path", { d: kind === "received" ? "M5 12.5l4.5 4.5L19 7.5" : "M7 7l10 10M17 7L7 17" });
+  el.append(path);
+  return el;
+}
+function renderProposals() {
+  const box = $("proposalList");
+  if (!box) return;
+  const now = Date.now();
+  if (walkHistory !== null) for (const L of layouts()) if (!seenAt.has(L.id)) seenAt.set(L.id, now);
+  const list = M.runsNewestFirst(layouts());
+  const shown = shownRun().L;
+  const names = namesNow();
+  const records = [...S.records.values(), ...feed.state.events];
+  box.replaceChildren(...list.map((L) => {
+    const name = M.runName(L, feed.state.events, names);
+    const at = M.proposedAt(L.id, records);
+    const o = M.runOutcome(L), mark = M.proposalMark(L);
+    const since = seenAt.get(L.id);
+    const fresh = since !== null && since !== undefined && now - since < PROPOSAL_NEW_MS;
+    const row = h("button", { type: "button", class: `proposal${shown && shown.id === L.id ? " selected" : ""}`, dataset: { run: L.id } },
+      avatar({ cls: L.cls, short: L.short, seq: 0 }),
+      h("span", { class: "proposal-main" },
+        h("span", { class: "proposal-who" }, ...(name === null ? [W.PROPOSALS.from(L.short)] : [h("bdi", null, name), W.PROPOSALS.named(L.short)]),
+          fresh ? h("span", { class: "new-proposal small" }, W.PROPOSALS.fresh) : null),
+        mark === "received"
+          ? [h("small", { class: "proposal-received", title: W.PROPOSALS.receivedTitle }, markSvg("received"), W.PROPOSALS.received),
+            h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]
+          : h("small", { class: "proposal-refused", title: o.title }, markSvg("refused"), o.text),
+        h("small", { class: "proposal-when" }, at ? W.when(at, now) : W.TEXT.submittedEarlier)));
+    row.addEventListener("click", () => selectRun(L.id));
+    return row;
+  }));
+  if (!list.length) box.append(h("p", { class: "rail-empty" }, W.PROPOSALS.none));
+  $("proposalsHead").textContent = W.PROPOSALS.head;
+}
+
 function render() {
   planWalks();
   renderStatus();
   renderRuns();
+  renderProposals();
   renderModel();
   renderWork();
   renderTrace();
@@ -1022,7 +1071,7 @@ feed.start();
 pollBoard();
 pollVisitors();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); if (namesChanged()) render(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); if (namesChanged()) render(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.
