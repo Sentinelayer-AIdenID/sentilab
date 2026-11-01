@@ -96,7 +96,7 @@ def test_c_round_robin_shares_every_labelled_reply_and_only_writer_final_ends(tm
         expected = [{'role': 'system', 'content': 'sealed system'}]
         if turn < 3:
             shared = [f'Agent {i + 1}:\n{text}' for i, text in enumerate(replies[:turn])]
-            expected.append({'role': 'user', 'content': '\n\n'.join(['five packet files', *shared, instruction])})
+            expected.append({'role': 'user', 'content': '\n\n'.join(['five packet files', instruction, *shared])})
         else:
             expected.extend([
                 {'role': 'user', 'content': 'five packet files\n\nsealed instruction for agent 1'},
@@ -105,13 +105,14 @@ def test_c_round_robin_shares_every_labelled_reply_and_only_writer_final_ends(tm
         assert call['messages'] == expected
 
 
-def test_c_skips_exhausted_agents_and_returns_empty_without_writer_final(tmp_path):
+def test_c_skips_exhausted_agents_and_falls_back_without_writer_final(tmp_path):
     model = ScriptedModel(response('one', prompt=39800, completion=100),
                           response('two'), response('three', prompt=39800, completion=100),
                           response(final('nonwriter'), prompt=39800, completion=100))
     job, findings, accounting = run_arm(tmp_path, 'C', model)
     assert [row['agent'] for row in accounting['attempts']] == [1, 2, 3, 2]
-    assert findings == {'findings': [], 'malformed': [], 'discarded': 0}
+    assert findings == runner.parse_final(final('nonwriter'))
+    assert job['selection'] == {'rule': 'last_emitted_set', 'agent': 2, 'set_index': 0, 'kind': 'FINAL'}
     assert {agent['stop_reason'] for agent in job['agents'].values()} == {'token_cap'}
 
 
