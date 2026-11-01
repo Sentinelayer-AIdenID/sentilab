@@ -37,8 +37,13 @@ class CouplingManifestTests(unittest.TestCase):
         self.assertEqual(evaluation["percentage_rounding"],
                          "floor to whole percent from the exact rational; no clipping")
         self.assertEqual(set(evaluation["mixed_outcome_wordings"]), {"MEETS", "MISSES"})
+        self.assertEqual(evaluation["mixed_outcome_wordings"], {
+            "MEETS": "On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed.",
+            "MISSES": ("On [reference], it accounts for [x]%, below the 85% we fixed, so something else also "
+                       "contributes there. It doesn't tell us what the authors intended, or which version matches hardware."),
+        })
         self.assertEqual(evaluation["reference_labels"],
-                         {"ascend910-tap25d-fig6a-raw": "Ascend Layout A", "micro150-tap25d-fig5a-raw": "CPU-DRAM"})
+                         {"ascend910-tap25d-fig6a-raw": "Ascend 910", "micro150-tap25d-fig5a-raw": "CPU-DRAM"})
         self.assertEqual(evaluation["percentage_references"],
                          {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"})
         self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "DOESN'T COMPLETE"})
@@ -170,6 +175,7 @@ class CouplingEntryTests(fixtures.EntryCase):
             evaluation = entry["coupling"]
             self.assertEqual(evaluation["fraction"], "0.85")
             self.assertEqual(evaluation["fraction_exact"], "17/20")
+            self.assertEqual(evaluation["fraction_percent"], 85)
             self.assertTrue(evaluation["threshold_met"])
             self.assertEqual(evaluation["maximizing_node"], "layer_4_Chiplet_0")
             self.assertIn("chiplet_block_values_C", evaluation["diagnostics"])
@@ -186,8 +192,9 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
         self.assertEqual(report["coupling"]["outcome"], "MISSES")
         self.assertEqual(report["coupling"]["wording"],
-            "With only that one link changed in 7.0, 90% of the difference to 6.0 goes away on Ascend Layout A. "
-            "CPU-DRAM: That one change accounts for 84% of the difference, below the 85% we fixed.")
+            "On Ascend 910, that one change accounts for 90% of the difference, meeting the 85% we fixed. "
+            "On CPU-DRAM, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "It doesn't tell us what the authors intended, or which version matches hardware.")
         self.assertEqual(report["coupling"]["percentage_rounding"],
                          "floor to whole percent from the exact rational; no clipping")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MEETS", "MISSES"])
@@ -198,10 +205,29 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.run_pair(0, 83.1504)  # exactly 84% on Ascend
         report = self.run_pair(2, 127.604)  # exactly 90% on CPU-DRAM
         self.assertEqual(report["coupling"]["wording"],
-            "Ascend Layout A: That one change accounts for 84% of the difference, below the 85% we fixed. "
-            "With only that one link changed in 7.0, 90% of the difference to 6.0 goes away on CPU-DRAM.")
+            "On CPU-DRAM, that one change accounts for 90% of the difference, meeting the 85% we fixed. "
+            "On Ascend 910, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "It doesn't tell us what the authors intended, or which version matches hardware.")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MEETS"])
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
+
+    def test_mixed_boundary_displays_84_point_9_as_84_and_exact_85_as_85(self):
+        self.run_pair(0, 82.71894)  # exactly 84.9% on Ascend 910
+        report = self.run_pair(2, 133.441)  # exactly 85% on CPU-DRAM
+        self.assertEqual(report["coupling"]["verdict"], "FAIL")
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MEETS"])
+        for entry, exact, percent, meets in zip(report["calls"],
+                ("849/1000", "849/1000", "17/20", "17/20"), (84, 84, 85, 85), (False, False, True, True)):
+            evaluation = entry["coupling"]
+            self.assertEqual(evaluation["fraction_exact"], exact)
+            self.assertEqual(evaluation["fraction_percent"], percent)
+            self.assertIs(evaluation["threshold_met"], meets)
+            receipt = json.loads((self.scenario.run_dir(entry["call"]) / "receipt.json").read_text())
+            self.assertEqual(receipt["coupling"], evaluation)
+        self.assertEqual(report["coupling"]["wording"],
+            "On CPU-DRAM, that one change accounts for 85% of the difference, meeting the 85% we fixed. "
+            "On Ascend 910, it accounts for 84%, below the 85% we fixed, so something else also contributes there. "
+            "It doesn't tell us what the authors intended, or which version matches hardware.")
 
     def test_all_miss_keeps_the_frozen_sentence_and_floors_percentages(self):
         self.run_pair(0, 82.9107)  # exactly 84.5% on Ascend

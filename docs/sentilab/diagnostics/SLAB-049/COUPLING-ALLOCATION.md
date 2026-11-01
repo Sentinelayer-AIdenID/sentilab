@@ -1,7 +1,8 @@
 # SLAB-049 coupling allocation
 
 Implementation status: allocation, exact numeric evaluation, the three pre-registered outcome wordings relayed
-by Warden from #57614/root, and the four-file replay policy are implemented. Signing and executing the experiment
+by Warden from #57614/root, the confirmed deadline and mixed wording from aneta #57718/root under #57686,
+and the four-file replay policy are implemented. Signing and executing the experiment
 remain pending independent review and Warden's new allocation; this implementation makes no experimental claim.
 
 Ticket 01ac77ac adds the four calls from `coupling-call-list.json` as an explicitly selected allocation. The
@@ -23,10 +24,10 @@ CPU carry and operator log, inside the wrapper's mounted `/srv/gate0/runs`. The 
 directory on the host before starting the container; coupling commands refuse if it does not already exist.
 Gate zero keeps `/srv/gate0/runs`.
 
-Coupling has its own `grant_window.not_after_utc`: **2026-11-02T06:00:00Z**, a placeholder that the contract
-owner (**root/aneta**) must confirm before Warden signs the allocation. It does not inherit gate zero's expiry.
+Coupling has its own `grant_window.not_after_utc`: **2026-11-02T06:00:00Z**, confirmed by the contract
+owners (**root/aneta**, aneta #57718 and root under #57686). It does not inherit gate zero's expiry.
 The generated manifest and signed grant both bind this deadline; calls after it are refused before admission
-or launch. Changing the placeholder requires regenerating and signing the coupling manifest.
+or launch. Changing the deadline requires regenerating and signing the coupling manifest.
 
 ## Binary identity and provenance
 
@@ -80,11 +81,11 @@ replay mismatch takes precedence for the overall **DOESN'T COMPLETE** wording, e
 misses the threshold. Otherwise both references meeting `17/20` selects **MEETS**, and any miss selects
 **MISSES**. There are no retries or automatic extra calls.
 
-The manifest freezes these wordings and the percentage mapping: `[x]` is Ascend Layout A and `[y]` is CPU-DRAM.
+The manifest freezes these wordings and the percentage mapping: `[x]` is Ascend 910 and `[y]` is CPU-DRAM.
 Each signed evaluation retains `fraction_percent`, rounded down (floor, toward negative infinity) directly
 from the exact rational, with no clipping to 0–100%. The report repeats that rounding rule. Display rounding
-does not affect the predicate: an exact 84.5% displays as 84% and misses `17/20`; a pass always displays at least
-85%, and a miss at most 84%.
+does not affect the predicate: an exact 84.9% displays as 84% and misses `17/20`; exactly 85.0% displays as 85%
+and meets it. A pass always displays at least 85%, and a miss at most 84%.
 
 - **MEETS:** "With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the two
   references. That localizes it to this term in this configured model. It doesn't tell us what the authors
@@ -93,13 +94,17 @@ does not affect the predicate: an exact 84.5% displays as 84% and misses `17/20`
   else also contributes."
 - **DOESN'T COMPLETE:** "The run didn't complete, so we make no claim from it."
 
-When one reference meets and the other misses, the report uses one sentence per reference in call-list order,
-with the same frozen phrases. The manifest freezes these templates and the labels Ascend Layout A and CPU-DRAM:
+When one reference meets and the other misses, the report puts the meeting reference first and uses this exact
+wording, confirmed by aneta #57718 and root under #57686. The manifest freezes both sentences and the labels
+**Ascend 910** and **CPU-DRAM**:
 
-- **MEETS:** "With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on [reference]."
-- **MISSES:** "[reference]: That one change accounts for [x]% of the difference, below the 85% we fixed."
+"On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed. On [reference],
+it accounts for [y]%, below the 85% we fixed, so something else also contributes there. It doesn't tell us what
+the authors intended, or which version matches hardware."
 
-Here `[x]` is that reference's percentage. The combined all-meet and all-miss wordings above remain unchanged.
+Here `[x]` is the meeting reference's percentage and `[y]` the other reference's percentage; the manifest's
+per-reference templates each use `[x]` for their own percentage. The three original wordings above remain
+unchanged. Only the all-meet wording says "localizes"; no-claim still takes precedence over mixed results.
 
 ## Operator review and execution
 
@@ -133,8 +138,8 @@ placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing
 These commands exited zero:
 
 - `.venv/bin/python -m unittest -q sundai_hotspot.test_gate_zero sundai_hotspot.test_gate0_operator
-  sundai_hotspot.test_coupling_allocation` (from the repository root): 132 tests, no skips.
-- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 243 tests, no skips, including 29
+  sundai_hotspot.test_coupling_allocation` (from the repository root): 133 tests, no skips.
+- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 244 tests, no skips, including 30
   coupling tests.
 - `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)`: 55 tests.
 - `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: 2 tests.
@@ -167,10 +172,17 @@ The new CLI-default and grant-cap coverage tests exercise existing behavior and 
 deliberately changing the default to coupling or removing the cap check makes each fail. Removing the binary
 pin check also makes the strengthened wrong-hash test fail with `CallRefused not raised`: its wrong binary now
 has valid provenance, so missing provenance cannot mask the absent pin check. These three mutants were tested
-separately against `8a0b54c` in the disposable worktree. All 29 coupling tests pass in the final suite.
+separately against `8a0b54c` in the disposable worktree. All 29 coupling tests passed at `724e6e0`.
+
+For the confirmed PR #83 amendment, four presentation regressions fail against `724e6e0` in a disposable
+worktree, covering the manifest, both mixed orientations and the combined 84.9%/85.0% boundary. The signed-call
+boundary test checks exact receipt fractions `849/1000` and `17/20`, displayed percentages 84 and 85, and the
+respective miss/pass predicates. Changing floor to nearest makes it fail with `85 != 84`; changing `>= 17/20`
+to `> 17/20` loses the exact-85 pass. All 30 coupling tests pass with the amendment, including the existing
+late-call refusal and no-claim precedence tests. The three original wording constants are unchanged.
 
 This tree generates coupling manifest SHA-256
-`01e6793c859fd7871443535c725447c738d731a5d35e3a7b1b74203ca6a15b80`.
+`e8670971967905f902ba45ba0ecbb946661a2254035eabf9a0846e3ea0c2232e`.
 The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
 its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.
 Docker is unavailable in this box, so the pinned-image suites/build check remain Warden's independent proof.

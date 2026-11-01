@@ -20,11 +20,11 @@ CALL_LIST_SHA256 = "db32a692b749e08324c295e56250f96a9548796aae232ca63f24d2ad4ab3
 BINARY_SHA256 = "6ea3b7813412c13d20c92adc6449fbc0bc87c46b521d4d5eaf80b8abc7900609"
 KIND = "material_only"
 SCHEMA = "sentilab-slab049-coupling-manifest-v1"
-NOT_AFTER_UTC = "2026-11-02T06:00:00Z"  # provisional until confirmed by root/aneta before signing
+NOT_AFTER_UTC = "2026-11-02T06:00:00Z"  # confirmed by root/aneta (#57718, #57686)
 REPLAY_OUTPUTS = ("sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt")
 PERCENTAGE_ROUNDING = "floor to whole percent from the exact rational; no clipping"
 PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
-REFERENCE_LABELS = {"ascend910-tap25d-fig6a-raw": "Ascend Layout A", "micro150-tap25d-fig5a-raw": "CPU-DRAM"}
+REFERENCE_LABELS = {"ascend910-tap25d-fig6a-raw": "Ascend 910", "micro150-tap25d-fig5a-raw": "CPU-DRAM"}
 OUTCOME_WORDINGS = {
     "MEETS": ("With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the "
               "two references. That localizes it to this term in this configured model. It doesn't tell us "
@@ -34,8 +34,9 @@ OUTCOME_WORDINGS = {
     "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
 }
 MIXED_OUTCOME_WORDINGS = {
-    "MEETS": ("With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on [reference]."),
-    "MISSES": ("[reference]: That one change accounts for [x]% of the difference, below the 85% we fixed."),
+    "MEETS": "On [reference], that one change accounts for [x]% of the difference, meeting the 85% we fixed.",
+    "MISSES": ("On [reference], it accounts for [x]%, below the 85% we fixed, so something else also contributes "
+               "there. It doesn't tell us what the authors intended, or which version matches hardware."),
 }
 
 
@@ -225,9 +226,11 @@ def report(manifest: dict, digest: str, ledger: dict, tags) -> dict:
                else "MEETS" if predicate is True else "MISSES")
     wording = OUTCOME_WORDINGS[outcome]
     if {row["outcome"] for row in rows} == {"MEETS", "MISSES"}:
+        by_outcome = {row["outcome"]: row for row in rows}
         wording = " ".join(MIXED_OUTCOME_WORDINGS[row["outcome"]]
                            .replace("[reference]", REFERENCE_LABELS[row["reference"]])
-                           .replace("[x]", str(row["primary"]["fraction_percent"])) for row in rows)
+                           .replace("[x]", str(row["primary"]["fraction_percent"]))
+                           for row in (by_outcome["MEETS"], by_outcome["MISSES"]))
     elif outcome != "DOESN'T COMPLETE":
         by_reference = {row["reference"]: row for row in rows}
         for placeholder, reference in PERCENTAGE_REFERENCES.items():
