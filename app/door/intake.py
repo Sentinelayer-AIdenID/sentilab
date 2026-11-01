@@ -20,6 +20,7 @@ a request_key is kept only as a keyed digest. Arrival declarations are a separat
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from open_proposals.contract import canonical as hashes
@@ -43,6 +44,10 @@ VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected pur
                       "credential is not added as a generated feed field. All text you enter in name or reason "
                       "is public. Do not include private information.")
 DISPLAY_TEXT = r"^[^\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]*$"
+# Match the Worker's nameKey rule; Python's \s includes extra C0/C1 characters.
+_NAME_SPACE = re.compile(r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
+_RESERVED_NAMES = frozenset(("human", "you", "senti", "participant", "unidentified participant",
+                             "system", "owner", "admin", "moderator"))
 COMMON = SCHEMAS["common"]["$id"]
 SUBMIT_SCHEMA = {
     "type": "object",
@@ -132,7 +137,17 @@ def read_submit(raw: bytes, size: int | None = None) -> tuple:
 
 
 def read_arrival(raw: bytes, size: int | None = None) -> tuple:
-    return read_object(raw, _ARRIVAL, size)
+    value, found = read_object(raw, _ARRIVAL, size)
+    if found:
+        return None, found
+    name = value.get("declaration", {}).get("name", "")
+    # Compare a key only. Accepted declaration text remains exactly as submitted.
+    key = unicodedata.normalize("NFKC", name)
+    key = "".join(char for char in key if unicodedata.category(char) != "Cf")
+    key = _NAME_SPACE.sub(" ", key).strip(" ").lower()
+    if key in _RESERVED_NAMES:
+        return None, [violation("schema_invalid", path="/declaration/name", keyword="not")]
+    return value, []
 
 
 def token_refusal(claims: dict, now: float):

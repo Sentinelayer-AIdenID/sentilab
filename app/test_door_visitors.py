@@ -111,6 +111,37 @@ class VisitorTests(unittest.TestCase):
         self.assertEqual(page['counts']['recorded_arrivals'], 1)
         self.assertEqual(page['items'][0]['declaration'], declaration)
 
+    def test_reserved_interface_names_are_refused_before_storage(self):
+        labels = ('human', 'you', 'senti', 'participant', 'unidentified participant',
+                  'system', 'owner', 'admin', 'moderator')
+        for label in labels:
+            wide = ''.join('\u3000' if char == ' ' else chr(ord(char) + 0xfee0) for char in label)
+            variants = (label, label.upper(), '  ' + label.title() + '\u00a0', wide,
+                        '\u200b'.join(label), label.replace(' ', '\u2003\u00a0  '))
+            for name in variants:
+                with self.subTest(name=name):
+                    declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                                   'reason': 'reserved-name-storage-canary', 'source': 'senti'}
+                    status, body, _ = self.arrival(nonce='a' * 16, declaration=declaration)
+                    self.assertEqual(status, 400)
+                    self.assertEqual(body['codes'], [
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': 'not'}])
+                    self.assertNotIn('reserved-name-storage-canary', json.dumps(body))
+        self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
+        self.assertNotIn(b'reserved-name-storage-canary', Path(self.store.path).read_bytes())
+
+    def test_nonreserved_names_and_reasons_are_preserved_as_written(self):
+        names = ('', 'Humane', 'Human bot', 'The System', 'admin2', 'You2', 'Participants',
+                 'Sentinel', 'Mod', 'Ownerless', '  Zoë 李\u00a0', 'Ｓｙｓｔｅｍ bot', 'A\u200bda')
+        for name in names:
+            declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                           'reason': 'System', 'source': 'senti'}
+            self.assertEqual(self.arrival(declaration=declaration)[0], 204)
+        page = self.door.visitors(None, None)[1]
+        self.assertEqual([row['declaration']['name'] for row in page['items']], list(names))
+        self.assertTrue(all(row['declaration']['reason'] == 'System' for row in page['items']))
+        self.assertEqual(page['counts']['recorded_arrivals'], len(names))
+
     def test_new_read_projection_drops_legacy_private_fields(self):
         self.store.note_arrival({'class': 'unknown', 'operator': 'hidden-operator-canary', 'nonce': 'secret',
                                  'referrer': 'https://example.com/?token=secret'}, now=1, per_min=600)

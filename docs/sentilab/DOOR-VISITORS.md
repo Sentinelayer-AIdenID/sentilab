@@ -30,6 +30,13 @@ of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
 text are not accepted as source-category values. The overall 4,096-byte request
 cap is unchanged.
 
+Names that normalize to the interface labels `human`, `you`, `senti`, `participant`,
+`unidentified participant`, `system`, `owner`, `admin` or `moderator` are refused.
+The comparison matches the Worker: NFKC, remove Unicode format characters (Cf),
+collapse ECMAScript whitespace runs, trim and lowercase. A refused name returns
+`schema_invalid` at `/declaration/name` with keyword `not`, before storage.
+This comparison does not rewrite accepted text or apply to the reason field.
+
 The declaration is public self-reported display data, including in `/events`.
 All accepted name and reason text is public, including any URL, query string or
 credential text a visitor voluntarily enters. No content scanner removes such text;
