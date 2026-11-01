@@ -122,8 +122,8 @@ matches decides it:
    contradicts it, `unknown` when in doubt;
 9. anything else: `unknown`.
 
-So a known crawler's published token reads `declared_agent`, and a self-chosen name such as
-"my-agent (SentiLab team; ...)" matches none of these and reads `unknown`.
+So a known AI agent's published token reads `declared_agent` (a known search crawler's reads `crawler_claimed`), and
+a self-chosen name such as "my-agent (SentiLab team; ...)" matches none of these and reads `unknown`.
 
 A class is a reading of the request, not an identity: any client can send any user agent, and a verified signature
 shows who holds the signing key, not who is behind the visit. The feeds count arrivals, one class each:
