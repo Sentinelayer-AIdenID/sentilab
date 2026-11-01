@@ -771,18 +771,24 @@ async function submit(request, env, ctx, url) {
 const MAX_DECLARE_BYTES = 2048;
 const DECLARE_FIELDS = Object.freeze(["t", "notice_version", "declare_key", "name", "reason", "source"]);
 
-// The body's fields: a form's own, or a JSON object's string fields after the contract's strict reader.
+// The body's fields: a form's own, or a JSON object's string fields after the contract's strict reader. A JSON string
+// can carry a lone surrogate (an escape such as \ud800), which URLSearchParams would turn into U+FFFD, text the visitor
+// never sent and the character rule would accept. So a name, reason or source that is not well-formed is noted here,
+// before the params are built, and readOptIn refuses it as the control character it is (the API refuses Cs). A form's
+// values are always well-formed: URLSearchParams decodes them as UTF-8.
+const DECLARED_TEXT = Object.freeze(["name", "reason", "source"]);
 function declareFields(text, form) {
   if (form) {
     const params = new URLSearchParams(text);
-    return [...params.keys()].every((k) => DECLARE_FIELDS.includes(k)) ? { params } : { error: "unknown_field" };
+    return [...params.keys()].every((k) => DECLARE_FIELDS.includes(k)) ? { params, illFormed: [] } : { error: "unknown_field" };
   }
   const read = strictJson(text);
   if (read.codes) return { error: "malformed_body" };
   const entries = Object.entries(read.value);
   if (entries.some(([k]) => !DECLARE_FIELDS.includes(k))) return { error: "unknown_field" };
   if (entries.some(([, v]) => typeof v !== "string")) return { error: "malformed_body" };
-  return { params: new URLSearchParams(entries) };
+  const illFormed = entries.filter(([k, v]) => DECLARED_TEXT.includes(k) && !v.isWellFormed()).map(([k]) => k);
+  return { params: new URLSearchParams(entries), illFormed };
 }
 
 // A person's declaration form comes from this site's own confirm page: the submit form's check (sameSiteForm), except
@@ -817,7 +823,7 @@ async function declare(request, env, ctx, url) {
     const expected = await declareKey(key, { site: url.host, nonce: claims.nonce, version: versions[0] });
     if (versions.length !== 1 || keys.length !== 1 || !sameHex(keys[0], expected)) return refuse(request, format, 403, { error: "declare_key_invalid" });
   }
-  const optIn = readOptIn(params);
+  const optIn = readOptIn(params, fields.illFormed);
   let delivery = null;
   if (optIn.status === "opted_in") {
     delivery = await deliverArrival(request, env, ctx, url, { purpose: claims.purpose, nonce: claims.nonce, expiresAt: claims.expires_at,

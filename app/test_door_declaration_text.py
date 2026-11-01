@@ -80,7 +80,7 @@ class DeclarationTextTests(unittest.TestCase):
 
     def test_normal_multilingual_and_unicode16_assigned_text_stays_original(self):
         outlined_helper = ''.join(chr(0x1ccd6 + ord(char) - ord('A')) for char in 'HELPER')
-        names = ('  Zoë 李\u00a0', 'नमस्ते', 'مرحبا', 'ภาษาไทย', '🌡️', '한글', '한', '⠁⠃',
+        names = ('  Zoë 李\u00a0', 'नमस्ते', 'مرحبا', 'ภาษาไทย', '🌡', '한글', '한', '⠁⠃',
                  '\U000105c0', '\U00016d40', '\U0001fae9', outlined_helper)
         for name in names:
             self.assertEqual(self.arrival(name=name, reason='e\u0301 résumé')[0], 204)

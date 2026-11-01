@@ -1,11 +1,17 @@
 # Public Door visitor records
 
-This additive API draft reuses the existing arrival event store. It does not deploy
-an endpoint, automatically collect referrer URLs or query strings, establish current
-presence, or change solver admission.
+This additive API reuses the existing arrival event store. It does not automatically
+collect referrer URLs or query strings, establish current presence, or change solver
+admission. Its reads are public as soon as an API carrying it is deployed: the Worker's
+`/api` proxy forwards every `GET` and `HEAD` under `/api` (`web/src/worker.js`, on main as
+on #90), so `GET /api/open/v1/door/visitors` needs no new Worker route. Its writes are
+not public: the proxy answers any other method `405`, and only the door's own routes
+post an arrival.
 Passive arrival intake and visitor reads do not require scientific admission to be
 open. The existing origin-token middleware still guards these routes; submit and
-dispatch keep their existing grant checks.
+dispatch keep their existing grant checks. The Worker adds that token to every request
+it proxies, so the middleware keeps callers off the Container App itself but does not
+make a read private.
 
 ## Existing contract
 
@@ -27,26 +33,70 @@ returned by `GET /api/open/v1/door/visitors`. Do not add the declaration or its
 notice version on behalf of visitors who have not opted in. Name is at most 64
 code points, reason 160. In both fields, Unicode 16 categories Cc, Cf, Co, Cs,
 Cn, Zl and Zp are refused, including format controls, private-use and unassigned
-characters. U+3164, U+115F, U+1160 and U+FFA0 (Hangul fillers) and U+2800
-(Braille blank) are also refused in both fields, before name comparison or storage.
-Visible Hangul letters and Braille patterns remain allowed. At most eight
-consecutive combining marks (Mn, Mc or Me) are allowed;
-a non-mark resets the run, and there is no separate total-mark cap. Source is one
-of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
-text are not accepted as source-category values. The overall 4,096-byte request
-cap is unchanged.
+characters. A lone surrogate (in a JSON string, an escape from `D800` to `DFFF` with
+no partner) is Cs, so it is refused too. U+3164, U+115F, U+1160 and U+FFA0 (Hangul
+fillers) and U+2800 (Braille blank) are also refused in both fields, before name
+comparison or storage. Visible Hangul letters and Braille patterns remain allowed.
+
+So is every Unicode 16.0 `Default_Ignorable_Code_Point` (`DerivedCoreProperties-16.0.0.txt`):
+4,174 code points that render as nothing, namely U+00AD, U+034F, U+061C, U+115F-1160,
+U+17B4-17B5, U+180B-180F, U+200B-200F, U+202A-202E, U+2060-206F, U+3164, U+FE00-FE0F,
+U+FEFF, U+FFA0, U+FFF0-FFF8, U+1BCA0-1BCA3, U+1D173-1D17A and U+E0000-E0FFF. Most are
+already Cf or Cn. 263 are marks that the category rule passed (U+034F, U+17B4-17B5,
+U+180B-180D, U+180F, U+FE00-FE0F, U+E0100-E01EF), so "admin" followed by one read as
+"admin", and a name of them alone showed nothing. The emoji presentation selector
+U+FE0F is one of them: send emoji without it. ZWJ emoji sequences were already refused
+(U+200D is Cf).
+
+At most eight consecutive combining marks (Mn, Mc or Me) are allowed;
+a non-mark resets the run, and there is no separate total-mark cap. A non-empty name
+or reason with nothing left once the name comparison's cleanup (below) is done, such
+as only spaces, is refused too; an empty string is still accepted as written. Source
+is one of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary
+referrer text are not accepted as source-category values. The overall 4,096-byte
+request cap is unchanged.
 
 Names that normalize to the interface labels `human`, `you`, `senti`, `participant`,
 `unidentified participant`, `system`, `owner`, `admin` or `moderator` are refused.
-After the character checks, the name comparison follows the Worker: NFKC,
-collapse ECMAScript whitespace runs, trim and lowercase. A refused name returns
-`schema_invalid` at `/declaration/name` with keyword `not`, before storage.
-This comparison does not rewrite accepted text or apply to the reason field.
+After the character checks, the name comparison follows the Worker: NFKC, remove
+format characters (Unicode 16 Cf), collapse ECMAScript whitespace runs, trim and
+lowercase. A refused name returns `schema_invalid` at `/declaration/name` with
+keyword `not`, before storage. This comparison does not rewrite accepted text, and
+apart from the blank check above it does not apply to the reason field.
 Declaration validation pins `unicodedata2==16.0.0` for categories and NFKC.
 Unicode 16 assigned text, including outlined Latin letters, is not refused merely
 because Python 3.12's built-in Unicode 15 database does not recognize it. Original
-accepted text is preserved; a character-policy refusal uses `schema_invalid` at
-the affected name/reason path with keyword `pattern`, before storage.
+accepted text is preserved; a character-policy refusal (a refused character, a run
+of more than eight marks, or a blank field) uses `schema_invalid` at the affected
+name/reason path with keyword `pattern`, before storage.
+
+Lower-casing is Python 3.12's own `str.lower()`, from its built-in Unicode 15.0
+database, not `unicodedata2`. The 27 capital letters that Unicode 16 added with a
+lower-case pair (U+1C89, U+A7CB, U+A7CC, U+A7DA, U+A7DC and the Garay capitals
+U+10D50-10D65) keep their case in the API's key, while the Worker's `toLowerCase()`
+lowers them. Over every code point both sides accept, those 27 are the only key
+differences, and no reserved verdict changes: no reserved label contains one of them.
+
+The Worker (`web/src/door/declare.js`) applies the same rule before it forwards a
+declaration, with the same verdict for every code point U+0000-U+10FFFF. Its category
+and mark tables are generated from this API's `unicodedata2` 16.0.0 and rule constants
+(`web/src/door/unicode16.js`, by `web/test/make_declare_unicode.py`), not taken from the
+JavaScript engine, whose tables are Unicode 17.0 in Node 22 and workerd and disagree
+with 16.0 on 4,803 code points (U+20C1, for one, is unassigned in 16.0). Each side
+hard-codes the default-ignorable ranges once (`intake._DEFAULT_IGNORABLE`, `declare.js`
+`DEFAULT_IGNORABLE`). The fixture `web/test/fixtures/door-a4/declaration-text-u16.json`
+records this API's verdict for every code point; `app/test_door_declaration_u16.py`
+holds it and the generated tables to the API, and `web/test/door-declaration-u16.test.mjs`
+holds the Worker to it. The Worker also refuses a JSON name, reason or source that is
+not well-formed (a lone surrogate) before it builds its form parameters, which would
+otherwise turn the surrogate into U+FFFD and pass it.
+
+The notice text is pinned to its version: each version names exactly one text, by the
+SHA-256 of its UTF-8 bytes. `sentilab-public-visitor/1` is 506 bytes,
+`89a0a0672697cebba94fe2918f7fa2a09cbf1181617ff8cf8acaa759b899047b`. A test on each side
+(`app/test_door_declaration_u16.py` for `VISITOR_NOTICE` and `VISITOR_DISCLOSURE`,
+`web/test/door-declaration-u16.test.mjs` for the Worker's `NOTICE`) fails when the text
+changes without a new version and a pin of its own.
 
 The declaration is public self-reported display data, including in `/events`.
 All accepted name and reason text is public, including any URL, query string or
@@ -208,8 +258,18 @@ human-classified arrivals as arrivals, without calling them currently online. Re
 unavailable, not_measured and measured distinctly.
 
 Worker ownership remains with Forge/Warden, renderer ownership with the existing
-live-view author. They must add the public proxy route and prospective notice
-before using the opt-in fields. No full HTTP-traffic coverage is claimed.
-Until that proxy is deployed, a 404/403 or a failed fetch means the visitor source
-is unavailable, never zero visits or an empty live room. The renderer must retain
-that distinction and the API's explicit unmeasured-presence state.
+live-view author. No new proxy route is needed (see the top): the Worker already
+forwards `GET /api/open/v1/door/visitors`, and #90 passes it through its open-feed
+filter (no `operator` field, `nosniff`). The Worker's opt-in (`POST /agents/declare`,
+and the notice and form on a pass's page) ships off: `DOOR_DECLARATIONS` is `"off"` in
+`web/wrangler.jsonc` for production and staging, and anything but exactly `"on"` is off
+(`DOOR-PRESENCE-STATS.md` section 4). It stays off until warden explicitly authorizes
+turning it on. That needs two things first, and comes after the production freeze for
+the talk: the operator's hide is confirmed on both public feeds on every serving
+revision, and one pass or one network prefix can be stopped from declaring. No full
+HTTP-traffic coverage is claimed. Until an API carrying this contract is deployed
+behind the proxy, the visitors GET gets that API's answer for a path it does not serve
+(404), or the proxy's 503 where no API origin is configured (staging). A 404, 403 or
+503, or a failed fetch, means the visitor source is unavailable, never zero visits or
+an empty live room. The renderer must retain that distinction and the API's explicit
+unmeasured-presence state.
