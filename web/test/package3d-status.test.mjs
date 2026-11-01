@@ -45,6 +45,35 @@ test("queued runs carry their place in the queue, as the API counts it", () => {
   assert.equal(status.stateLine(door.normalizeItem({ ...raw, status: "held" }).layout), "Held · position 3");
 });
 
+test("a waiting run's place stays current as the runs ahead of it leave the queue (#81's own rule)", async () => {
+  // Every full page (read from the start): the rule gives exactly the positions the API itself reported.
+  for (const name of ["results_queued_scorer_unknown", "results_scorer_down", "results_scorer_up_evaluating", "results_scorer_up_done"]) {
+    const api = layouts(name);
+    assert.deepEqual(door.withPositions(api).map((l) => l.position), api.map((l) => l.position), name);
+  }
+  // The feed returns a run again only when the run itself changes. #81's own records: three queued (places 1, 2, 3),
+  // then the first claimed. The page after that cursor holds only the claimed run's newer record (the other two did not
+  // change), so their reported places (2, 3) are stale; the rule moves them up to 1 and 2, the API's own later count.
+  const queued = layouts("results_queued_scorer_unknown");
+  const later = body("results_scorer_up_evaluating");
+  const claimedRaw = later.items.find((x) => x.status === "evaluating");
+  const merged = door.withPositions(door.mergeArrivals(queued, [door.normalizeItem(claimedRaw).layout]));
+  assert.deepEqual(merged.map((l) => [l.status, l.position]), [["evaluating", null], ["queued", 1], ["queued", 2]]);
+  assert.deepEqual(merged.slice(1).map((l) => l.position), later.items.filter((x) => x.status === "queued").map((x) => x.position), "as the API counts them");
+  // The poller applies the rule after every page.
+  const { fetchImpl } = scripted([body("results_queued_scorer_unknown"), body("events_refused_attempts"), { ...later, items: [claimedRaw] }, body("events_all")]);
+  const feed = door.createDoorFeed({ fetchImpl });
+  await feed.pollOnce();
+  assert.deepEqual(feed.state.layouts.map((l) => l.position), [1, 2, 3]);
+  await feed.pollOnce();
+  assert.deepEqual(feed.state.layouts.map((l) => [l.status, l.position]), [["evaluating", null], ["queued", 1], ["queued", 2]]);
+  assert.deepEqual(feed.state.layouts.slice(1).map(status.stateLine), ["Queued · position 1", "Queued · position 2"]);
+  // A held run keeps its place in the count (#81 counts queued and held); bundled records have no place.
+  const held = queued.map((l, i) => (i === 1 ? { ...l, status: "held" } : l));
+  assert.deepEqual(door.withPositions(held).map((l) => l.position), [1, 2, 3]);
+  assert.ok(door.withPositions([{ status: "reference", arrival: null, position: null }]).every((l) => l.position === null));
+});
+
 test("codes and reasons in plain words: refused attempts, failed, not reproduced, cancelled and expired runs", () => {
   const events = door.normalizeEvents(body("events_refused_attempts")).events;
   const attempts = events.filter((e) => e.kind === "attempt");
@@ -143,6 +172,7 @@ test("the door shows these lines and the chip from the API only, never from its 
   assert.match(d, /return stateLine\(L\) \?\? NOT_SCORED\[L\.status\]/, "a run's own state line before the generic words");
   assert.match(d, /\$\("dState"\)\.textContent = L \? \[stateLine\(L\), summaryLine\(L\)\]\.filter\(Boolean\)\.join\(" · "\) : "";/);
   assert.match(d, /const c = scorerChip\(\{ feed: D\.feed\?\.state \?\? null, nowMs: Date\.now\(\) \}\);/);
+  assert.match(d, /const sig = `\$\{L\.label\}\|\$\{L\.status\}\|\$\{L\.position \?\? ""\}\|\$\{L\.reason \?\? ""\}\|\$\{L\.codes\.join\(","\)\}\|/, "a tile redraws when its place or reason changes");
   const s = readFileSync(join(PKG, "status.mjs"), "utf8").replace(/^\s*\/\/.*$/gm, "");
   assert.doesNotMatch(s, /anim|glide|frame\(|performance|requestAnimationFrame|explode/i, "status.mjs reads no animation state");
   // Full run ids stay internal: no line is made from one.

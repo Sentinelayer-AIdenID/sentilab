@@ -492,7 +492,7 @@ export async function startDoor({ params, REDUCED }) {
       t.btn.style.setProperty("--cls", CLASS_COLOR[L.cls] ?? "");
       const sc = STATUS_CHIP[L.status] ?? ["open", L.status.toUpperCase()];
       const r = resultShown(L) ? L.result : null;
-      const sig = `${L.label}|${L.status}|${r ? `${r.metric.value}|${r.field_state}|${r.field_key}|${r.label.state}` : "-"}|${L.dies.map((d) => `${d.x_um},${d.y_um},${d.rot_deg}`).join(";")}`;
+      const sig = `${L.label}|${L.status}|${L.position ?? ""}|${L.reason ?? ""}|${L.codes.join(",")}|${r ? `${r.metric.value}|${r.field_state}|${r.field_key}|${r.label.state}` : "-"}|${L.dies.map((d) => `${d.x_um},${d.y_um},${d.rot_deg}`).join(";")}`;
       const tt = r ? formatTemp(r.metric.value, r.label, { digits: 2 }) : null;
       t.btn.setAttribute("aria-label", `${L.label}, ${sc[1].toLowerCase()}${tt ? `, ${BOARD_METRIC.name} ${tt.text} ${tt.qualifier}` : ""}`);
       if (t.sig !== sig) {

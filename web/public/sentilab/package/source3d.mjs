@@ -17,7 +17,8 @@
 //            label: the only name the page shows, never free text
 //   status   a state of the open-proposal contract (STATUSES); `arrival` (the door's admission order) and `seq` (the
 //            record's version: an older version never replaces a newer one)
-//   position the run's place in the queue (1 is next), while queued or held; `codes` and `reason`, why it is where it is
+//   position the run's place in the queue (1 is next), while queued or held, as the API reported it; the poller then
+//            keeps it current by #81's own rule (withPositions); `codes` and `reason`, why it is where it is
 //            (contract reason codes, #81's own reasons: [a-z0-9_] identifiers only); `summary`, the contract's own
 //            four-state summary of the state (SUMMARIES). status.mjs words them; nothing is derived from animation.
 //   dies     exactly 8 contract dies { die: 0..7, x_um, y_um, rot_deg }: die i is TAP die i (C0..C3, then D0..D3), its
@@ -407,6 +408,17 @@ export function normalizeReplay(doc) {
 // as new, else it is a stale or replayed answer and is dropped. Order: the door's admission order (arrival) when every
 // record has one, else the order each id was first seen (the replay).
 export const isOlder = (incoming, held) => Number.isSafeInteger(held.seq) && !(Number.isSafeInteger(incoming.seq) && incoming.seq >= held.seq);
+// A waiting run's place, by #81's own rule (app/door/store.py _position): the number of queued or held runs whose arrival
+// is at or before its own, over the API's own states. The results feed returns a run again only when the run itself
+// changes, so the place it reported goes stale as the runs ahead of it leave the queue; the poller reapplies the rule
+// after every page. Only the API's states and arrival numbers count: nothing on the page's own clock or animation.
+export function withPositions(layouts) {
+  const waiting = layouts.filter((l) => (l.status === "queued" || l.status === "held") && count(l.arrival));
+  return layouts.map((l) => {
+    const position = waiting.includes(l) ? waiting.filter((w) => w.arrival <= l.arrival).length : null;
+    return position === l.position ? l : { ...l, position };
+  });
+}
 export function mergeArrivals(current, incoming) {
   const byId = new Map(current.map((l) => [l.id, l]));
   const order = current.map((l) => l.id);
@@ -497,7 +509,7 @@ export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetc
   }
   async function pollOnce() {
     const mine = epoch;
-    const results = await drain(mine, fetchResults, "cursor", (got) => { state.layouts = mergeArrivals(state.layouts, got.layouts); });
+    const results = await drain(mine, fetchResults, "cursor", (got) => { state.layouts = withPositions(mergeArrivals(state.layouts, got.layouts)); });
     if (results === null) return null;
     const events = results ? await drain(mine, fetchEvents, "eventsCursor", (got) => { state.events = mergeEvents(state.events, got.events); }) : false;
     if (events === null || mine !== epoch) return null;
