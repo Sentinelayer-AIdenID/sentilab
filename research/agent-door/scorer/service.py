@@ -25,7 +25,7 @@ from sentilab_core.envelope import canonical
 from sundai_hotspot.reference_validation import SOLVER_ENVIRONMENT
 from ledger import Ledger, Refused
 from sandbox import CLEANUP_TIMEOUT_S, CPU_LIMIT_S, WALL_TIMEOUT_S
-from thermal import GRANT_ID, PINNED_SHA256, Thermal, check_config, sha256, stage
+from thermal import GRANT_ID, PINNED_SHA256, Thermal, check_config, sha256
 
 HEX = re.compile(r'[0-9a-f]{64}\Z')
 RUN = re.compile(r'open-[0-9a-f]{8}-[0-9a-f]{32}\Z')
@@ -240,7 +240,7 @@ class Scorer:
         spec = self.thermal.spec(proposal)
         with tempfile.TemporaryDirectory(prefix='solve-', dir=self.work_root) as folder:
             directory = Path(folder)
-            stage(spec, directory)
+            (directory / 'new_hotspot.config').write_bytes(self.thermal.config_bytes)
             reservation, cached, original = self.ledger.reserve(binding, operation, lambda: self.validate(proposal, directory))
             if cached is not None:
                 return cached, 0.0

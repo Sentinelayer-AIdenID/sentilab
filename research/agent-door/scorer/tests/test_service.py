@@ -257,14 +257,13 @@ def test_signed_wrong_config_digest_refuses_before_reservation(harness, field):
 
 
 def test_staged_config_is_checked_before_reservation(harness, monkeypatch):
-    import service
     h = harness()
-    def corrupt(spec, directory):
-        hashes = stage(spec, directory)
-        with (directory / 'new_hotspot.config').open('ab') as stream:
-            stream.write(b'\n# changed after hashing\n')
-        return hashes
-    monkeypatch.setattr(service, 'stage', corrupt, raising=False)
+    write_bytes = Path.write_bytes
+    def corrupt(path, data):
+        if path.name == 'new_hotspot.config' and path.parent.parent == h.scorer.work_root:
+            data += b'\n# changed while staging\n'
+        return write_bytes(path, data)
+    monkeypatch.setattr(Path, 'write_bytes', corrupt)
     status, result = h.call('/v1/score', h.request())
     assert status == 422 and result['codes'] == [{'code': 'not_open_yet'}]
     assert h.rows() == []
@@ -569,6 +568,76 @@ def _fault_iterdir(self):
     return _original_iterdir(self)
 Path.iterdir = _fault_iterdir
 ''')
+
+
+@pytest.mark.parametrize('outcome', ['cached', 'budget', 'busy'])
+def test_undispatched_requests_launch_no_generator(harness, monkeypatch, outcome):
+    import service
+    h = harness()
+    request = h.request()
+    if outcome == 'cached':
+        status, original = h.call('/v1/score', request)
+        assert status == 200 and original['state'] == 'evaluated'
+    else:
+        for i in range(3 if outcome == 'budget' else 4):
+            ref = request['token_ref'] if outcome == 'budget' else hashlib.sha256(str(i).encode()).hexdigest()
+            h.scorer.ledger.reserve(
+                {'run_id': f'held-{i}', 'principal': 'anon-token/1:' + ref, 'token_ref': ref,
+                 'manifest_id': 'held', 'request_key': str(i), 'payload_sha256': str(i)},
+                'score', lambda: None)
+    before = h.rows()
+    launches = []
+    popen = service.subprocess.Popen
+    def observe(args, **kwargs):
+        launches.append(args)
+        return popen(args, **kwargs)
+    monkeypatch.setattr(service.subprocess, 'Popen', observe)
+    status, result = h.call('/v1/score', request)
+    if outcome == 'cached':
+        assert status == 200 and result == original
+    else:
+        assert status == (403 if outcome == 'budget' else 429)
+        assert result['error'] == ('budget_exhausted' if outcome == 'budget' else 'busy')
+    assert h.rows() == before
+    assert launches == [], 'undispatched request launched a child process'
+
+
+def test_admitted_generation_is_owned_and_charged_once(harness, monkeypatch):
+    from sundai_hotspot import slab049
+    h = harness()
+    # Instrument the real generator in both possible callers. The ledger phase
+    # and parent PID prove placement; actual child rusage proves the CPU charge.
+    prefix = f'''
+import json, os, resource, time
+from pathlib import Path
+_ledger = Path({str(h.ledger)!r})
+_phases = [json.loads(line)['phase'] for line in _ledger.read_text().splitlines()] if _ledger.exists() else []
+_start = time.process_time()
+while time.process_time() - _start < 0.2:
+    pass
+'''
+    suffix = f'''
+_usage = resource.getrusage(resource.RUSAGE_SELF)
+Path({str(h.path)!r}, 'generator-' + str(os.getpid()) + '.json').write_text(json.dumps(
+    {{'pid': os.getpid(), 'ppid': os.getppid(), 'phases': _phases,
+      'cpu_s': _usage.ru_utime + _usage.ru_stime}}))
+'''
+    instrumented = prefix + slab049._GENERATOR + suffix
+    monkeypatch.setattr(slab049, '_GENERATOR', instrumented)
+    inject_sandbox(h, monkeypatch, 'from sundai_hotspot import slab049\n'
+                   + f'slab049._GENERATOR = {instrumented!r}\n')
+    status, result = h.call('/v1/score', h.request())
+    assert status == 200 and result['state'] == 'evaluated'
+    generated = [json.loads(path.read_text()) for path in h.path.glob('generator-*.json')]
+    assert len(generated) == 1, 'generation ran outside the owned solve as well'
+    child = generated[0]
+    assert child['phases'] == ['reserved']
+    assert child['ppid'] == result['receipt']['engine_pid']
+    assert not Path(f'/proc/{child["pid"]}').exists()
+    assert result['receipt']['usage_complete'] is True
+    assert result['receipt']['cleanup_complete'] is True
+    assert [row['phase'] for row in h.rows()] == ['reserved', 'settled']
+    assert 0.2 <= child['cpu_s'] <= result['receipt']['cpu_s'] == h.rows()[-1]['cpu_s'] < 10
 
 
 @pytest.mark.parametrize('observer', ['worker', 'guardian', 'cleanup', 'cleanup-stuck'])

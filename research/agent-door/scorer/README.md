@@ -102,8 +102,11 @@ manifest must pass `validate_record('manifest', ...)`, match micro150's catalogu
 netlist, geometry and selector, pin this binary, name this grant in `refs.grant`,
 and carry the same enforcement evidence in `checks.cpu_enforcement_evidence_sha256`.
 The fixture config digest and `fixture.package.hotspot_config_sha256` are checked
-separately. The generated `new_hotspot.config` is hashed under the reservation
-lock and checked again in the worker immediately before engine execution.
+separately. The frozen gate-zero `new_hotspot.config` bytes are loaded once,
+copied into the solve directory, hashed under the reservation lock, and checked
+again in the worker immediately before engine execution. Only an admitted solve
+launches the input generator, inside the same owned and CPU-metered tree as the
+engine. Cached, busy, and budget-refused requests launch no generator process.
 The effective window is the intersection of manifest and wrapper windows. Only
 `admission: open` permits work; update the file by atomic replacement to close it.
 An invalid signature or missing evidence fails closed. Health remains readable

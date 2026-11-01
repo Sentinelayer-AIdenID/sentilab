@@ -40,7 +40,11 @@ class Thermal:
     def __init__(self):
         self.geometry = TapGeometry.load('micro150-45mm')
         self.raw_spec = slab049.reference_spec(REFERENCE_ID)
-        self.config_sha256 = gate_zero.frozen_inputs(gate_zero.reference(REFERENCE_ID))['new_hotspot.config']
+        reference = gate_zero.reference(REFERENCE_ID)
+        self.config_sha256 = gate_zero.frozen_inputs(reference)['new_hotspot.config']
+        # Package config is independent of die placement. Use the gate-zero
+        # bytes for admission; generation belongs to the reserved worker tree.
+        self.config_bytes = (gate_zero.REPO_ROOT / reference.inputs / 'new_hotspot.config').read_bytes()
 
     def check_manifest(self, manifest):
         """A signed manifest cannot change the problem or relax the pinned geometry."""
