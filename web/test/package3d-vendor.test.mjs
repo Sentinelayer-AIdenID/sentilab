@@ -61,7 +61,7 @@ test("the Package view's code stays inside the CSP: no inline code, no eval, no 
   assert.deepEqual(html.match(/<script\b[^>]*>/g), ['<script type="module" src="package.js">'], "one script, external");
   assert.doesNotMatch(html, /<script\b[^>]*>[^<\s]/, "no inline script body");
   assert.doesNotMatch(html, /<style\b|\sstyle\s*=|\son[a-z]+\s*=/i, "no style element, style attribute or inline handler");
-  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "source3d.mjs", "case-cpu-dram.mjs"]) {
+  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "source3d.mjs", "case-cpu-dram.mjs", "temps.mjs"]) {
     const src = readFileSync(join(PKG, f), "utf8");
     assert.doesNotMatch(src, /\beval\s*\(|new Function\b|\bFunction\s*\(|innerHTML|outerHTML|insertAdjacentHTML|document\.write|setAttribute\(\s*["']style|\.cssText\b|toDataURL|toBlob/, f);
   }

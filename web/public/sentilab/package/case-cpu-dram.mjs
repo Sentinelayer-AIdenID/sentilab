@@ -104,3 +104,24 @@ export const REFERENCES = Object.freeze({
 });
 // The active-layer guard: a layout's active-layer peak must be strictly below this (the raw layout's own peak).
 export const ACTIVE_LAYER_GUARD_C = 119.07;
+
+// The evaluator identity of the gate-zero HotSpot 6.0 build at grid 64 (the door API's own string for it). Temperatures
+// are labelled by temperature-label.mjs labelFor() of a VERIFIED identity; this one is not on the accepted list, so its
+// values are "unvalidated" and carry the shared notice.
+export const GATE_ZERO_EVALUATOR = "hotspot6:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:grid:64x64";
+
+// The admitted field associations: the only fields this page draws. Each binds a bundled layout's exact geometry to the
+// exact bytes of its field and to the evaluator that produced it, reviewed here in page code (never in the data).
+// The page recomputes both digests with WebCrypto before drawing; without WebCrypto it draws no field (D14).
+//   geometry_sha256  sha256 of canonical({ dies: [{ die, x_um, y_um, rot_deg } in the order C0..D3] }) (canonical.mjs)
+//   field_sha256     sha256 of the UTF-8 text JSON.stringify(result.grid64), exactly as the fixture holds it (row0 top)
+// The raw reference's field is layer 4 of the gate-zero output sample.grid.steady (sha256 499690b8...) for that layout,
+// kelvin minus 273.15 at the file's 0.01 K; every cell was matched independently in review.
+export const FIELD_PINS = Object.freeze([
+  Object.freeze({
+    layout_id: "ref-raw",
+    geometry_sha256: "3d0f10d20d6876bff1dc46522261b544f893b75c19af2e6e90017eced6270399",
+    field_sha256: "554ba34a2a2dce2de0c8f16d6d41c82cc297a26664d812ab5a617195649fee3e",
+    evaluator_identity: GATE_ZERO_EVALUATOR,
+  }),
+]);

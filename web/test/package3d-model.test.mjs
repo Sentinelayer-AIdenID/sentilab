@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildRenderModel, geometryKey, displayBoxes, dieFootprint, dieRects, umToMm, formatTemp, formatThickness, fieldTexels, scaleIndex,
+import { buildRenderModel, geometryKey, displayBoxes, dieFootprint, dieRects, umToMm, formatThickness, fieldTexels, scaleIndex,
   scaleColor, scaleFraction, heatLut, SCALE, LUT_SIZE, VIEW, MODEL_VERSION, cellCentre, viewNotes } from "../public/sentilab/package/model.mjs";
 import { DIES, DIE_IDS, STACK_LAYERS, LEVELS, RULES, INTERPOSER_MM, trueZ, REFERENCES, ACTIVE_LAYER_GUARD_C } from "../public/sentilab/package/case-cpu-dram.mjs";
 import { heatColor, HEAT_STOPS } from "../public/sentilab/package/scene.mjs";
@@ -207,13 +207,8 @@ test("fieldTexels keeps the grid's order: texel k is cell k (row 0 = y 0, column
   assert.deepEqual(cellCentre(63, 63), { x: 44.648438, y: 44.648438 });
 });
 
-test("formatTemp: one way to text, rounded half up to 0.01 °C for display only", () => {
-  assert.equal(formatTemp(115.935), "115.94 °C");
-  assert.equal(formatTemp(119.065), "119.07 °C");
-  assert.equal(formatTemp(94.885), "94.89 °C");
-  assert.equal(formatTemp(45), "45.00 °C");
-  assert.equal(formatTemp(NaN), "-");
-  assert.equal(formatTemp(undefined), "-");
+// Temperatures become text only through temps.mjs formatTemp(valueC, label) (package3d-review.test.mjs C2).
+test("formatThickness: micrometres below 1 mm, else millimetres", () => {
   assert.equal(formatThickness(0.01), "10 µm");
   assert.equal(formatThickness(6.9), "6.9 mm");
 });

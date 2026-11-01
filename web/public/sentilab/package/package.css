@@ -243,6 +243,17 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 .dbanner span { font-weight: 400; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; margin: -1px; }
 
+/* a door temperature and its shared qualifier, in one element (temps.mjs tempNode; temperature-label.mjs LABELS) */
+.t { white-space: nowrap; }
+.t em.q { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 3px; border: 1px solid var(--line); font: 600 12px/1.45 var(--mono);
+  font-style: normal; letter-spacing: 0; vertical-align: middle; color: var(--muted); }
+.t.s-unvalidated em.q { color: #c9d6e2; background: #233040; border-color: #4a5d73; }
+.t.s-withdrawn em.q { color: #f3d9a4; background: #463a20; border-color: #7a6334; }
+.t.s-illustrative em.q { color: var(--amber); background: var(--amber-bg); border-color: #7a6334; }
+.dcaption .t { font: 700 19px var(--mono); color: #fff6e0; }
+.score .distinct .t, .refs .t { color: #d6e2e5; font-weight: 600; }
+.dtile .tf .t { color: var(--text); font-size: 15px; font-weight: 600; }
+
 /* the 3D canvas and its DOM labels (placed with the CSSOM; never drawn into the canvas) */
 .c3d { cursor: grab; touch-action: none; }
 .c3d:active { cursor: grabbing; }

@@ -3,11 +3,15 @@
 // RenderModel), drawing through render3d.mjs (three.js) or, without WebGL, with reduced motion or on request, the
 // Package view's own Canvas 2D renderer (render.mjs). Every string from data reaches the page through textContent and
 // is either a fixed word chosen here or a label rebuilt by source3d.mjs (class · short id): never visitor text.
-import { loadFixture, createDoorFeed, statusLine, BOARD_METRIC, SCORED } from "./source3d.mjs";
-import { buildRenderModel, displayBoxes, fieldTexels, viewNotes, SCALE, scaleFraction, formatTemp, formatThickness, dieRects, GRID } from "./model.mjs";
-import { STACK_LAYERS, REFERENCES, ACTIVE_LAYER_GUARD_C, INTERPOSER_MM, CASE_TITLE } from "./case-cpu-dram.mjs";
+import { loadFixture, verifyPinnedFields, createDoorFeed, statusLine, BOARD_METRIC, SCORED } from "./source3d.mjs";
+import { buildRenderModel, displayBoxes, fieldTexels, viewNotes, SCALE, scaleFraction, formatThickness, dieRects, GRID } from "./model.mjs";
+import { STACK_LAYERS, REFERENCES, ACTIVE_LAYER_GUARD_C, INTERPOSER_MM, CASE_TITLE, GATE_ZERO_EVALUATOR } from "./case-cpu-dram.mjs";
 import { drawPackage, TrackAnimation } from "./render.mjs";
-import { webgl2Available } from "./render3d.mjs";
+import { webgl2Available, live3d } from "./render3d.mjs";
+// Every door temperature becomes text through temps.mjs with a shared label (PL-2), and the page shows the shared
+// notice whenever a withdrawn or unvalidated temperature is on screen (temperature-label.mjs, the one rule).
+import { formatTemp, tempNode } from "./temps.mjs";
+import { labelFor, NOTICE } from "../../temperature-label.mjs";
 
 const DWELL_MS = 7000;
 const EXPLODE_MS = 800;
@@ -47,6 +51,16 @@ const REFUSED_RESULT = Object.freeze({
   grid_size: "grid is not 64 x 64", grid_value: "grid value out of range", distinct_value: "a statistic out of range", result_malformed: "malformed",
 });
 const ENGINE = "HotSpot 6.0, grid 64";
+// The labels of the reference panel's temperatures: the gate-zero statistics by their (pinned) evaluator, the paper's
+// published points by none (labelFor of a missing identity is "unvalidated").
+const LABEL_GATE_ZERO = labelFor(GATE_ZERO_EVALUATOR);
+const LABEL_PUBLISHED = labelFor(undefined);
+const FIELD_NOTE = Object.freeze({
+  verified: `Map: active-layer temperature field · ${ENGINE}, block-centre map mode · pinned field, checked in this page`,
+  unassociated: "Field unassociated: no admitted association to this layout (the door feed is unsigned), so no map is drawn",
+  file_check_unavailable: "File check unavailable here (needs a secure connection): no map is drawn",
+  mismatch: "The field does not match its pinned identity: not drawn",
+});
 const fmtMm = (v) => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v));
 
 export async function startDoor({ params, REDUCED }) {
@@ -67,7 +81,8 @@ export async function startDoor({ params, REDUCED }) {
     fixture: null, fixtureError: "",
     feed: null, liveDown: false,
     list: [], idx: -1, following: true, playing: null,
-    r: "3d", why2d: "", v3: null, v3Failed: false,
+    r: "3d", want: "3d", why2d: "", v3: null, v3Failed: false, lost: false,
+    noCrypto: !globalThis.crypto?.subtle,     // D14: without WebCrypto nothing can be checked, so no result is drawn
     overlay: params.get("overlay") === "1",
     orbit: !REDUCED && params.get("orbit") !== "0",
     explode: 0, explodeAnim: null,
@@ -97,13 +112,23 @@ export async function startDoor({ params, REDUCED }) {
   new ResizeObserver(() => { if (D.r === "2d") { size2d(); draw2dSoon(); } else D.v3?.resize(); }).observe($("mainWrap"));
 
   // ── 3D ──
+  // A lost graphics context: the old view is disposed at once (its frames, listeners and GL objects), the 2D view takes
+  // over, and when the browser restores the context a new 3D view is built from the layout the page kept.
+  function onContextLost() {
+    const old = D.v3;
+    D.v3 = null;
+    D.lost = true;
+    old?.dispose();
+    $("main3d").addEventListener("webglcontextrestored", () => { D.lost = false; if (D.want === "3d") setRenderer("3d", "", { user: false }); }, { once: true });
+    setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view until it is restored", { user: false });
+  }
   async function ensure3d() {
-    if (D.v3 || D.v3Failed) return D.v3;
+    if (D.v3) return D.v3;
+    if (D.v3Failed || D.lost) return null;
     try {
       const { createView3D } = await import("./render3d.mjs");
       D.v3 = await createView3D({
-        canvas: $("main3d"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED,
-        onContextLost: () => { D.v3Failed = true; D.v3 = null; setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view"); },
+        canvas: $("main3d"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED, onContextLost,
       });
       D.v3.setLayerWords(new Map(STACK_LAYERS.map((l) => [l.level, [["b", null, l.name], ["span", null, formatThickness(l.t_mm)]]])));
       D.v3.setOverlay(D.overlay);
@@ -116,13 +141,14 @@ export async function startDoor({ params, REDUCED }) {
       return null;
     }
   }
-  async function setRenderer(r, why = "") {
+  async function setRenderer(r, why = "", { user = true } = {}) {
     if (r === "3d" && !can3d) return;
+    if (user) D.want = r;
     D.r = r;
     D.why2d = why;
     if (r === "3d") {
       const v = await ensure3d();
-      if (!v) { D.r = "2d"; }
+      if (!v) { D.r = "2d"; if (D.lost) D.why2d = "The 3D view's graphics context is lost: showing the 2D view until it is restored"; }
     }
     const is3d = D.r === "3d";
     $("main3d").hidden = !is3d; $("labels3d").hidden = !is3d; $("leaders3d").toggleAttribute("hidden", !is3d);   // an <svg> has no .hidden
@@ -144,7 +170,7 @@ export async function startDoor({ params, REDUCED }) {
     if (!L) { D.current = null; renderDom(); if (D.r === "2d") draw2dSoon(); return; }
     const { model, error } = buildRenderModel({ kind: "model", layout: L });
     if (error) { D.current = null; renderDom(); return; }
-    const field = L.result?.grid ? fieldTexels(L.result.grid, `${L.id}:${L.result.metric.value}`) : null;
+    const field = drawableField(L);
     D.current = { L, model, field };
     if (D.r === "3d" && D.v3) D.v3.setDoor(model, displayFor(model), { field, animate, notScored: field ? null : notScoredText(L) });
     else {
@@ -160,9 +186,17 @@ export async function startDoor({ params, REDUCED }) {
     D.idx = Math.max(0, Math.min(D.list.length - 1, idx));
     render({ animate });
   }
+  // A field is drawn only when its association is admitted and verified (source3d.mjs verifyPinnedFields), and its
+  // texture, canvas and tile caches are keyed by the field's verified content identity (sha256), never by its score.
+  function drawableField(L) {
+    const r = L?.result;
+    return r && r.field_state === "verified" && r.grid && r.field_key && !D.noCrypto ? fieldTexels(r.grid, r.field_key) : null;
+  }
+  const resultShown = (L) => Boolean(L?.result) && !D.noCrypto;
   function notScoredText(L) {
     if (L.result_refused) return `Score not shown · ${REFUSED_RESULT[L.result_refused] ?? L.result_refused}`;
-    if (L.result && !L.result.grid) return "No temperature map in this result";
+    if (L.result && D.noCrypto) return "Result not shown · file check unavailable here (needs a secure connection)";
+    if (L.result && L.result.field_state !== "verified") return L.result.field_state === "unassociated" ? "Field unassociated · not drawn" : FIELD_NOTE[L.result.field_state];
     return NOT_SCORED[L.status] ?? (SCORED.includes(L.status) ? "No score in this record" : "Not scored yet");
   }
 
@@ -175,7 +209,7 @@ export async function startDoor({ params, REDUCED }) {
     const L = shown();
     const fr = D.anim2d.frame(now);
     const footprint = { substrate: { x0: -1.5, y0: -1.5, x1: INTERPOSER_MM + 1.5, y1: INTERPOSER_MM + 1.5 }, interposer: { x0: 0, y0: 0, x1: INTERPOSER_MM, y1: INTERPOSER_MM } };
-    const field = L && D.current?.field ? { canvas: fieldCanvasOf(L, D.current.field), x0: 0, y0: 0, x1: INTERPOSER_MM, y1: INTERPOSER_MM } : null;
+    const field = L && D.current?.field && !fr.active ? { canvas: fieldCanvasOf(L, D.current.field), x0: 0, y0: 0, x1: INTERPOSER_MM, y1: INTERPOSER_MM } : null;
     const compact = s2.w < 700;
     drawPackage(ctx2, L ? { ...fr, footprint, unit: "°C", field } : null, {
       width: s2.w, height: s2.h, azimuthDeg: -45, labels: true, callouts: false, lid: false,
@@ -185,7 +219,7 @@ export async function startDoor({ params, REDUCED }) {
   }
   // A 64 x 64 canvas of the field (image row 0 = the top, y = 45 mm), for the 2D view and the strip.
   function fieldCanvasOf(L, f) {
-    const key = f.key;
+    const key = `${f.key}:${f.sum}`;              // the field's content identity, never its score
     let c = D.fieldCanvas.get(key);
     if (c) return c;
     c = document.createElement("canvas");
@@ -229,6 +263,11 @@ export async function startDoor({ params, REDUCED }) {
     renderInfo(L);
     renderStrip();
     renderStatus(line);
+    // The shared notice: shown whenever a withdrawn or unvalidated temperature is on screen (the reference panel's
+    // always are, until an evaluator is accepted), worded only in temperature-label.mjs.
+    const labels = [LABEL_GATE_ZERO, LABEL_PUBLISHED, ...(resultShown(L) ? [L.result.label] : [])];
+    $("wnotice").hidden = !labels.some((x) => x.notice);
+    $("wnotice").textContent = $("wnotice").hidden ? "" : NOTICE;
     const empty = !L;
     $("mainEmpty").hidden = !empty;
     if (empty) {
@@ -240,8 +279,9 @@ export async function startDoor({ params, REDUCED }) {
     c2.setAttribute("aria-label", canvasLabel);
   }
   function captionText(L) {
-    if (L.result) return `${BOARD_METRIC.name} (${ENGINE}): ${formatTemp(L.result.metric.value)} · simulated, not silicon`;
-    return notScoredText(L);
+    if (!resultShown(L)) return notScoredText(L);
+    const t = formatTemp(L.result.metric.value, L.result.label, { digits: 2 });
+    return `${BOARD_METRIC.name} (${ENGINE}): ${t.text} ${t.qualifier}${L.result.diagnostic ? ", diagnostic" : ""} · simulated, not silicon`;
   }
   function renderBanner() {
     const el = $("dBanner");
@@ -250,6 +290,7 @@ export async function startDoor({ params, REDUCED }) {
     if (D.source === "api" && D.liveDown) parts.push(["Live feed unreachable", ` · ${D.feed?.state.error || "no answer"} · showing the labelled replay; retrying every 5 s`]);
     const refused = Object.entries(D.source === "api" && !D.liveDown ? D.feed?.state.refused ?? {} : D.fixture?.refused ?? {});
     if (refused.length) parts.push([`${refused.reduce((s, [, n]) => s + n, 0)} record(s) refused, not drawn`, ` · ${refused.map(([k, n]) => `${k.replace(/_/g, " ")} ×${n}`).join(", ")}`]);
+    if (D.noCrypto) parts.push(["File check unavailable here", " · this page needs a secure (https) connection to check its pinned files, so no result or map is drawn"]);
     el.hidden = parts.length === 0;
     for (const [b, s] of parts) el.append(h("b", null, b), h("span", null, s), " ");
   }
@@ -258,7 +299,7 @@ export async function startDoor({ params, REDUCED }) {
     box.replaceChildren();
     if (D.list.length < 2) return;
     D.list.forEach((L, i) => {
-      const t = h("i", { class: L.result ? "accept" : "" });
+      const t = h("i", { class: resultShown(L) ? "accept" : "" });
       t.style.left = `${(i / (D.list.length - 1)) * 100}%`;
       t.style.background = CLASS_COLOR[L.cls] ?? "";
       box.append(t);
@@ -278,9 +319,10 @@ export async function startDoor({ params, REDUCED }) {
     cap.replaceChildren();
     cap.className = "dcaption";
     if (!L) return;
-    if (L.result) {
-      cap.append(`${BOARD_METRIC.name} (${ENGINE}): `, h("b", null, formatTemp(L.result.metric.value)), " · simulated, not silicon",
-        h("span", { class: "meta" }, L.result.grid ? `Map: active-layer temperature field · ${ENGINE}, block-centre map mode` : "No temperature map in this result"));
+    if (resultShown(L)) {
+      cap.append(`${BOARD_METRIC.name} (${ENGINE}): `, tempNode(h, L.result.metric.value, L.result.label, { digits: 2 }),
+        L.result.diagnostic ? " · diagnostic" : "", " · simulated, not silicon",
+        h("span", { class: "meta" }, FIELD_NOTE[L.result.field_state] ?? FIELD_NOTE.unassociated));
     } else {
       cap.classList.add("none");
       cap.append(h("b", null, notScoredText(L)), h("span", { class: "meta" }, `${ENGINE} · simulated, not silicon · a map appears when a score exists`));
@@ -300,14 +342,14 @@ export async function startDoor({ params, REDUCED }) {
     $("dMetricName").textContent = `${BOARD_METRIC.name} · board metric`;
     const big = $("dValue"), dl = $("dDistinct");
     dl.replaceChildren();
-    if (L?.result) {
+    if (resultShown(L)) {
       big.className = "big";
-      big.textContent = formatTemp(L.result.metric.value);
-      big.title = `${BOARD_METRIC.definition} Value as reported: ${L.result.metric.value} °C, grid precision ${L.result.metric.precision_K} K. Rounded to 0.01 °C for display.`;
-      $("dClaim").textContent = `${ENGINE} · block-centre map mode · simulated, not silicon`;
+      big.replaceChildren(tempNode(h, L.result.metric.value, L.result.label, { digits: 2 }));
+      big.title = `${BOARD_METRIC.definition} ${L.result.label.title} Rounded to 0.01 °C for display.`;
+      $("dClaim").textContent = `${ENGINE} · block-centre map mode · simulated, not silicon${L.result.diagnostic ? " · diagnostic: no admitted association" : ""}`;
       for (const d of L.result.distinct) {
-        const guard = d.key === "active_layer_peak_C" ? ` (guard: strictly below ${formatTemp(ACTIVE_LAYER_GUARD_C)})` : "";
-        dl.append(h("li", null, `${d.name}: `, h("b", null, formatTemp(d.value)), guard));
+        dl.append(h("li", null, `${d.name}: `, tempNode(h, d.value, L.result.label, { digits: 2 }),
+          d.key === "active_layer_peak_C" ? h("span", null, " (guard: strictly below ", tempNode(h, ACTIVE_LAYER_GUARD_C, LABEL_GATE_ZERO, { digits: 2 }), ")") : null));
       }
       dl.append(h("li", null, "Not the board metric: shown apart, by name."));
       if (!L.result.distinct.length) dl.lastChild.remove();
@@ -321,12 +363,14 @@ export async function startDoor({ params, REDUCED }) {
     $("dScaleName").textContent = SCALE.stat;
     const guard = $("dGuard");
     guard.style.left = `calc(${scaleFraction(ACTIVE_LAYER_GUARD_C) * 100}% - 1px)`;
-    guard.title = `Active-layer guard: a layout's active-layer peak must be strictly below ${formatTemp(ACTIVE_LAYER_GUARD_C)}`;
+    const g = formatTemp(ACTIVE_LAYER_GUARD_C, LABEL_GATE_ZERO, { digits: 2 });
+    guard.title = `Active-layer guard: a layout's active-layer peak must be strictly below ${g.text} (${g.qualifier})`;
     const ticks = $("dTicks2");
     ticks.replaceChildren(...SCALE.ticks.map((v) => { const s = h("span", null, String(v)); s.style.left = `${scaleFraction(v) * 100}%`; return s; }));
     const f = D.current?.field;
     const basis = $("dBasis");
-    basis.replaceChildren(`Fixed ${SCALE.min} to ${SCALE.max} °C for every layout · white line: active-layer guard ${ACTIVE_LAYER_GUARD_C} °C`,
+    basis.replaceChildren(`One fixed scale for every layout, ${SCALE.min} to ${SCALE.max} · white line: the active-layer guard, `,
+      tempNode(h, ACTIVE_LAYER_GUARD_C, LABEL_GATE_ZERO, { digits: 2 }),
       h("small", null, f ? `${ENGINE} · one colour per ${(INTERPOSER_MM / GRID).toFixed(2)} mm cell, nothing interpolated${f.above || f.below ? ` · ${f.above + f.below} cell(s) beyond the scale, clamped` : ""}` : "No map on screen for this layout"));
     renderRefs();
     renderStack();
@@ -338,7 +382,9 @@ export async function startDoor({ params, REDUCED }) {
     const box = $("dRefList");
     box.replaceChildren();
     for (const g of [REFERENCES.raw, REFERENCES.snapped, REFERENCES.published]) {
-      const rows = g.stats.map((s) => h("tr", null, h("td", null, s.stat), h("td", null, s.value === null ? s.text : s.unit === "°C" ? `${s.value} °C` : `${fmtMm(s.value)} ${s.unit}`)));
+      const label = g === REFERENCES.published ? LABEL_PUBLISHED : LABEL_GATE_ZERO;
+      const rows = g.stats.map((s) => h("tr", null, h("td", null, s.stat), h("td", null, s.value === null ? s.text
+        : s.unit === "°C" ? tempNode(h, s.value, label, { digits: String(s.value).split(".")[1]?.length ?? 0 }) : `${fmtMm(s.value)} ${s.unit}`)));
       box.append(h("div", { class: "rgroup" }, h("b", null, g.title), h("p", null, g.note), h("table", null, h("tbody", null, rows))));
     }
   }
@@ -373,8 +419,10 @@ export async function startDoor({ params, REDUCED }) {
       t.btn.setAttribute("aria-pressed", String(sel));
       t.btn.style.setProperty("--cls", CLASS_COLOR[L.cls] ?? "");
       const sc = STATUS_CHIP[L.status] ?? ["open", L.status.toUpperCase()];
-      const sig = `${L.label}|${L.status}|${L.result?.metric.value ?? ""}|${L.dies.map((d) => `${d.x_um},${d.y_um},${d.rot_deg}`).join(";")}`;
-      t.btn.setAttribute("aria-label", `${L.label}, ${sc[1].toLowerCase()}${L.result ? `, ${BOARD_METRIC.name} ${formatTemp(L.result.metric.value)}` : ""}`);
+      const r = resultShown(L) ? L.result : null;
+      const sig = `${L.label}|${L.status}|${r ? `${r.metric.value}|${r.field_state}|${r.field_key}|${r.label.state}` : "-"}|${L.dies.map((d) => `${d.x_um},${d.y_um},${d.rot_deg}`).join(";")}`;
+      const tt = r ? formatTemp(r.metric.value, r.label, { digits: 2 }) : null;
+      t.btn.setAttribute("aria-label", `${L.label}, ${sc[1].toLowerCase()}${tt ? `, ${BOARD_METRIC.name} ${tt.text} ${tt.qualifier}` : ""}`);
       if (t.sig !== sig) {
         t.sig = sig;
         const [b, chip] = t.btn.querySelector(".th").children;
@@ -383,7 +431,7 @@ export async function startDoor({ params, REDUCED }) {
         chip.className = `chip ${sc[0]}`;
         chip.textContent = sc[1];
         const tf = t.btn.querySelector(".tf");
-        tf.replaceChildren(...(L.result ? [h("b", null, formatTemp(L.result.metric.value)), "max chiplet-centre mean"] : [notScoredText(L)]));
+        tf.replaceChildren(...(r ? [tempNode(h, r.metric.value, r.label, { digits: 2 }), r.diagnostic ? "diagnostic" : "max chiplet-centre mean"] : [notScoredText(L)]));
         drawPlan(t.canvas, L);
       }
     });
@@ -404,7 +452,7 @@ export async function startDoor({ params, REDUCED }) {
     const side = Math.min(w, hgt) - 4, ox = (w - side) / 2, oy = (hgt - side) / 2, k = side / INTERPOSER_MM;
     g.fillStyle = "#2b3944";
     g.fillRect(ox, oy, side, side);
-    const f = L.result?.grid ? fieldTexels(L.result.grid, `${L.id}:${L.result.metric.value}`) : null;
+    const f = drawableField(L);
     if (f) { g.imageSmoothingEnabled = false; g.drawImage(fieldCanvasOf(L, f), ox, oy, side, side); }
     for (const d of dieRects(L.dies) ?? []) {
       const x = ox + d.x0 * k, y = oy + (INTERPOSER_MM - d.y1) * k, dw = d.w * k, dh = d.h * k;
@@ -450,6 +498,7 @@ export async function startDoor({ params, REDUCED }) {
     }
   }
   function onFeed(state) {
+    if (D.source !== "api") return;               // replay was selected: a late live answer changes nothing
     const down = state.connected === false;
     if (down !== D.liveDown) {
       D.liveDown = down;
@@ -504,7 +553,7 @@ export async function startDoor({ params, REDUCED }) {
   $("dExplode").onclick = () => setExplode(D.explode < 0.5);
   $("dOrbit").onclick = () => setOrbit(!D.orbit);
   $("dFit").onclick = () => D.v3?.home();
-  for (const b of document.querySelectorAll(".controls.door .rseg button")) b.onclick = () => setRenderer(b.dataset.r);
+  for (const b of document.querySelectorAll(".controls.door .rseg button")) b.onclick = () => setRenderer(b.dataset.r);   // user: the wanted renderer
   $("limitsLink").onclick = (e) => { e.preventDefault(); $("limits").showModal(); };
   $("limitsClose").onclick = () => $("limits").close();
   document.addEventListener("keydown", (e) => {
@@ -531,6 +580,8 @@ export async function startDoor({ params, REDUCED }) {
     return { feed: "door", renderer: D.r, source: D.source, liveDown: D.liveDown, count: D.list.length, idx: D.idx,
       label: L?.label ?? null, status: L?.status ?? null, scored: Boolean(L?.result), map: Boolean(D.current?.field),
       line: $("modeText").textContent, overlay: D.overlay, explode: D.explode, geometryKey: D.current?.model.geometry_key ?? null,
+      fieldState: L?.result?.field_state ?? null, fieldKey: D.current?.field?.key ?? null, tempLabel: L?.result?.label?.state ?? null,
+      notice: !$("wnotice").hidden, noCrypto: D.noCrypto, lost: D.lost, live3d: live3d.count,
       figure: { x: Math.round(fig.x), y: Math.round(fig.y), w: Math.round(fig.width), h: Math.round(fig.height) }, ...(st ?? {}) };
   } }) });
 
@@ -538,7 +589,8 @@ export async function startDoor({ params, REDUCED }) {
   $("feedDoor").classList.add("on");
   $("labLink").href = "../";
   try {
-    D.fixture = await loadFixture();
+    const fixture = await loadFixture();
+    D.fixture = { ...fixture, layouts: await verifyPinnedFields(fixture.layouts, { subtle: globalThis.crypto?.subtle ?? null }) };
   } catch (e) {
     D.fixtureError = `The bundled fixture could not be read (${String(e?.message ?? e).slice(0, 80)}).`;
     D.fixture = { layouts: [], refused: {} };

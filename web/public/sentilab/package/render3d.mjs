@@ -11,9 +11,12 @@
 export const THREE_VERSION = "0.187.0";
 const THREE_URL = new URL(`../../../vendor/three/${THREE_VERSION}/three.module.js`, import.meta.url).href;
 
+import { dieGliding, fieldVisible } from "./model.mjs";
+
 export const GLIDE_MS = 900;
-export const FADE_MS = 700;
 export const FIT_MS = 650;
+// Views alive now: created and not yet disposed (the page's facts hook reports it; a lost context must leave none).
+export const live3d = { count: 0 };
 export const ORBIT_DEG_PER_S = 4;          // one turn in 90 s
 const ELEV_MIN = 6, ELEV_MAX = 88;
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -103,23 +106,22 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
   shadow.renderOrder = -1;
   root.add(shadow);
 
-  // ── the field: two NEAREST textures cross-faded in one shader, sampled by WORLD x and y so the chip-layer sheet and
-  //    every die top show the same grid cell at the same place. Unlit: the colours are the scale's, exactly. ──
+  // ── the field: ONE NEAREST texture, sampled by WORLD x and y so the chip-layer sheet and every die top show the same
+  //    grid cell at the same place. Unlit: the colours are the scale's, exactly. A field change is a hard cut, and the
+  //    field is hidden while dies move (model.mjs fieldVisible): no frame ever shows colours of no solve. ──
   const makeTex = () => {
     const t = own(new THREE.DataTexture(new Uint8Array(64 * 64 * 4), 64, 64, THREE.RGBAFormat));
     t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
     t.needsUpdate = true;
     return t;
   };
-  const texA = makeTex(), texB = makeTex();
-  const U = { mapA: { value: texA }, mapB: { value: texB }, t: { value: 0 }, hasA: { value: 0 }, hasB: { value: 0 },
-    origin: { value: new THREE.Vector2(0, 0) }, size: { value: 45 } };
+  const tex = makeTex();
+  const U = { map: { value: tex }, has: { value: 0 }, origin: { value: new THREE.Vector2(0, 0) }, size: { value: 45 } };
   const FIELD_VS = "varying vec2 vXY;\nvoid main() { vec4 w = modelMatrix * vec4(position, 1.0); vXY = w.xy; gl_Position = projectionMatrix * viewMatrix * w; }";
-  const FIELD_FS = "uniform sampler2D mapA; uniform sampler2D mapB; uniform float t; uniform float hasA; uniform float hasB;\n" +
+  const FIELD_FS = "uniform sampler2D map; uniform float has;\n" +
     "uniform vec2 origin; uniform float size; uniform vec3 base; uniform float useBase;\nvarying vec2 vXY;\n" +
-    "void main() {\n  vec2 uv = (vXY - origin) / size;\n  float wa = (1.0 - t) * hasA; float wb = t * hasB; float a = clamp(wa + wb, 0.0, 1.0);\n" +
-    "  vec3 f = (texture2D(mapA, uv).rgb * wa + texture2D(mapB, uv).rgb * wb) / max(a, 0.0001);\n" +
-    "  if (useBase < 0.5) { if (a < 0.003) discard; gl_FragColor = vec4(f, a); }\n  else gl_FragColor = vec4(mix(base, f, a), 1.0);\n}";
+    "void main() {\n  vec3 f = texture2D(map, (vXY - origin) / size).rgb;\n" +
+    "  if (useBase < 0.5) { if (has < 0.5) discard; gl_FragColor = vec4(f, 1.0); }\n  else gl_FragColor = vec4(has > 0.5 ? f : base, 1.0);\n}";
   const fieldMaterial = (base = null) => own(new THREE.ShaderMaterial({
     transparent: base === null, depthWrite: base !== null,
     uniforms: { ...U, base: { value: new THREE.Color(base ?? 0x000000) }, useBase: { value: base === null ? 0 : 1 } },
@@ -128,8 +130,8 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
   const sheet = new THREE.Mesh(unitPlane, fieldMaterial());
   sheet.renderOrder = 2;
   root.add(sheet);
-  // "front" is the texture now showing (A or B); a new field goes to the other one and fades in.
-  const F = { front: "A", has: { A: 0, B: 0 }, fadeStart: null, from: 0, to: 0, key: null };
+  // key: the content identity (verified sha256) of the field in the texture, or null for none; sum: its texel checksum.
+  const F = { key: null, sum: null };
 
   // ── pools ──
   const boxes = new Map();      // id -> { mesh, edges, mat, emat }
@@ -336,7 +338,7 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     buildOverlay(model);
     U.origin.value.set(0, 0);
     U.size.value = model.frame.interposer_mm;
-    setField(field, { animate: tween });
+    setField(field);
     S.bounds = boundsOf(display, model);
     if (!S.fitted) { fit({ animate: false }); S.fitted = true; }
     kick();
@@ -356,21 +358,15 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     return { x0, y0, z0, x1, y1, z1 };
   }
 
-  // Field: { texels (row 0 = y 0), key } or null for "not scored". A new field fades in over the old one (or over
-  // nothing); null fades it out. Reduced motion cuts.
-  function setField(f, { animate = true } = {}) {
-    const key = f ? f.key ?? "field" : null;
-    if (key === F.key) return;
-    F.key = key;
-    const back = F.front === "A" ? "B" : "A";
-    if (f) { const tex = back === "A" ? texA : texB; tex.image.data.set(f.texels); tex.needsUpdate = true; }
-    F.has[back] = f ? 1 : 0;
-    U.hasA.value = F.has.A; U.hasB.value = F.has.B;
-    F.from = F.front === "A" ? 0 : 1;
-    F.to = back === "A" ? 0 : 1;
-    F.front = back;
-    if (animate) F.fadeStart = performance.now();
-    else { F.fadeStart = null; U.t.value = F.to; }
+  // Field: { texels (row 0 = y 0), key } or null for none. key is the field's content identity (its verified sha256):
+  // a different field always has a different key, so a new field always replaces the old texture. A hard cut: the
+  // texture is replaced whole; frame() shows it only once no die is moving (fieldVisible).
+  function setField(f) {
+    const key = f ? f.key : null, sum = f ? f.sum : null;
+    if (f && (typeof key !== "string" || key === "" || !Number.isInteger(sum))) throw new TypeError("setField: a field needs its content identity (key and sum)");
+    if (key === F.key && sum === F.sum) return;
+    F.key = key; F.sum = sum;
+    if (f) { tex.image.data.set(f.texels); tex.needsUpdate = true; }
     kick();
   }
 
@@ -415,7 +411,7 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     for (const d of dies3.values()) root.remove(d.mesh);
     dies3.clear(); S.dies.clear();
     overlay.visible = false;
-    setField(null, { animate: false });
+    setField(null);
     S.bounds = { ...model.bounds };
     // The lab view's azimuth (its rotate and orbit steps) wins whenever it moves; a drag holds until then.
     if (azimuthDeg !== null && azimuthDeg !== S.labAz) { cam.az = azimuthDeg + LAB_AZ_OFFSET; S.labAz = azimuthDeg; }
@@ -484,8 +480,10 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     if (S.kind === "model") {
       const pos = marks.geometry.attributes.position;
       let k = 0;
+      let gliding = false;
       for (const [id, d] of S.dies) {
         if (clamp01((now - d.start) / GLIDE_MS) < 1) busy = true;
+        if (dieGliding(d, now, GLIDE_MS)) gliding = true;
         const at = currentDie(d, now);
         const hw = d.base.w / 2, hh = d.base.h / 2, rot = (at.rot * Math.PI) / 180;
         placeBox(dies3.get(id), { x0: at.cx - hw, x1: at.cx + hw, y0: at.cy - hh, y1: at.cy + hh, z0: S.display.get(d.box).z0, z1: S.chipTop }, rot);
@@ -500,13 +498,9 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
         }
       }
       pos.needsUpdate = true;
-      if (F.fadeStart !== null) {
-        const t = clamp01((now - F.fadeStart) / FADE_MS);
-        U.t.value = lerp(F.from, F.to, easeInOut(t));
-        if (t >= 1) F.fadeStart = null; else busy = true;
-      }
+      U.has.value = fieldVisible({ hasField: F.key !== null, gliding }) ? 1 : 0;
       const S0 = S.model.frame.interposer_mm;
-      sheet.visible = F.has.A + F.has.B > 0;
+      sheet.visible = U.has.value > 0;
       sheet.position.set(S0 / 2, S0 / 2, S.fillTop + 0.02);
       sheet.scale.set(S0, S0, 1);
       overlay.position.z = S.fillTop;
@@ -524,7 +518,7 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     placeLabels(now);
     if (busy || drag.pts.size > 0) kick();
   }
-  const kick = () => { if (!S.raf && !S.disposed) S.raf = requestAnimationFrame(frame); };
+  const kick = () => { if (!S.raf && !S.disposed && !S.lost) S.raf = requestAnimationFrame(frame); };
 
   // ── labels: dies, layer callouts, the "not scored" note ──
   function put(el, p) {
@@ -586,6 +580,9 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
 
   // ── input: drag to orbit, wheel or pinch to zoom, keys when the canvas has focus ──
   const drag = { pts: new Map(), pinch: null };
+  // Every listener this view adds goes through on(): dispose() removes them all at once (abort).
+  const ac = new AbortController();
+  const on = (type, fn, opts = {}) => canvas.addEventListener(type, fn, { ...opts, signal: ac.signal });
   const onUser = [];
   const userMoved = () => { for (const f of onUser) f(); };
   function orbitBy(daz, del) { cam.az += daz; cam.el = Math.max(ELEV_MIN, Math.min(ELEV_MAX, cam.el + del)); kick(); }
@@ -594,14 +591,14 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     cam.dist = Math.max(fitD * 0.3, Math.min(fitD * 3, cam.dist * f));
     kick();
   }
-  canvas.addEventListener("pointerdown", (e) => {
+  on("pointerdown", (e) => {
     canvas.setPointerCapture(e.pointerId);
     drag.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     camTween.start = null;
     userMoved();
     kick();
   });
-  canvas.addEventListener("pointermove", (e) => {
+  on("pointermove", (e) => {
     if (!drag.pts.has(e.pointerId)) return;
     const prev = drag.pts.get(e.pointerId);
     drag.pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -614,17 +611,19 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
     }
   });
   const end = (e) => { drag.pts.delete(e.pointerId); if (drag.pts.size < 2) drag.pinch = null; kick(); };
-  canvas.addEventListener("pointerup", end);
-  canvas.addEventListener("pointercancel", end);
-  canvas.addEventListener("wheel", (e) => { e.preventDefault(); userMoved(); zoomBy(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
-  canvas.addEventListener("keydown", (e) => {
+  on("pointerup", end);
+  on("pointercancel", end);
+  on("wheel", (e) => { e.preventDefault(); userMoved(); zoomBy(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
+  on("keydown", (e) => {
     const k = e.key;
     if (k === "ArrowLeft" || k === "ArrowRight") { e.preventDefault(); userMoved(); orbitBy(k === "ArrowLeft" ? -10 : 10, 0); }
     else if (k === "ArrowUp" || k === "ArrowDown") { e.preventDefault(); userMoved(); orbitBy(0, k === "ArrowUp" ? 5 : -5); }
     else if (k === "+" || k === "=") { userMoved(); zoomBy(0.85); }
     else if (k === "-" || k === "_") { userMoved(); zoomBy(1 / 0.85); }
   });
-  canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); onContextLost(); });
+  // A lost context stops this view at once (no more frames); preventDefault lets the browser restore the context, and
+  // the owner disposes this view and builds a new one on "webglcontextrestored" from the model it kept.
+  on("webglcontextlost", (e) => { e.preventDefault(); S.lost = true; if (S.raf) cancelAnimationFrame(S.raf); S.raf = 0; onContextLost(); });
 
   function resize() {
     const r = canvas.getBoundingClientRect();
@@ -660,9 +659,15 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
         buffer: { w: renderer.domElement.width, h: renderer.domElement.height }, idle: !S.raf, three: THREE.REVISION };
     },
     requestRender: kick,
+    get disposed() { return S.disposed; },
     dispose() {
+      if (S.disposed) return null;
       S.disposed = true;
+      autoOrbit = false;
+      ac.abort();                                   // every listener this view added
       if (S.raf) cancelAnimationFrame(S.raf);
+      S.raf = 0;
+      live3d.count -= 1;
       for (const L of labelEls.values()) L.el.remove();
       for (const ln of leaderEls.values()) ln.remove();
       labelEls.clear(); leaderEls.clear();
@@ -675,5 +680,6 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
   };
   resize();
   applyCamera();
+  live3d.count += 1;
   return api;
 }

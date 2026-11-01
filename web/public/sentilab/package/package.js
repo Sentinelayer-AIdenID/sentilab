@@ -67,7 +67,7 @@ const S = {
   lid: params.has("lid") ? params.get("lid") !== "0" : !matchMedia("(max-width: 760px)").matches,   // phones: off unless asked
   orbit: false, orbitTimer: null,
   az: { from: HOME_AZIMUTH, to: HOME_AZIMUTH, start: 0 },
-  r: "2d", why2d: "", v3: null,   // the main view's renderer: 3D (render3d.mjs) or the 2D isometric canvas (render.mjs)
+  r: "2d", want: "3d", why2d: "", v3: null, lost: false,   // the main view's renderer: 3D (render3d.mjs) or the 2D isometric canvas (render.mjs)
 };
 const anims = Object.fromEntries(TRACK_ORDER.map((t) => [t, new TrackAnimation()]));
 const active = () => (S.source === "api" ? S.liveSrc : S.file);
@@ -297,14 +297,25 @@ function draw3d(frame, az) {
   }));
   S.v3.setLab(model, { labels, ghosts: frame.ghosts ?? [], accepted: frame.accepted, pulse: frame.pulse, lid: S.lid, azimuthDeg: az });
 }
-async function setRenderer(r, why = "") {
+// A lost graphics context: the old 3D view is disposed at once (frames, listeners, GL objects), the 2D view takes over,
+// and a new 3D view is built when the browser restores the context (the same lifecycle as the door feed).
+function onContextLost() {
+  const old = S.v3;
+  S.v3 = null;
+  S.lost = true;
+  old?.dispose();
+  $("main3d").addEventListener("webglcontextrestored", () => { S.lost = false; if (S.want === "3d") setRenderer("3d", "", { user: false }); }, { once: true });
+  setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view until it is restored", { user: false });
+}
+async function setRenderer(r, why = "", { user = true } = {}) {
   const can3d = webgl2Available();
+  if (user) S.want = r;
   if (r === "3d" && !can3d) { r = "2d"; why = "WebGL 2 is not available in this browser: showing the 2D view"; }
+  if (r === "3d" && !S.v3 && S.lost) { r = "2d"; why = "The 3D view's graphics context is lost: showing the 2D view until it is restored"; }
   if (r === "3d" && !S.v3) {
     try {
       const { createView3D } = await import("./render3d.mjs");
-      S.v3 = await createView3D({ canvas: $("main3d"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED,
-        onContextLost: () => { S.v3 = null; setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view"); } });
+      S.v3 = await createView3D({ canvas: $("main3d"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED, onContextLost });
       S.v3.onUserMove(() => { if (S.orbit) setOrbit(false); });
     } catch (e) {
       r = "2d"; why = `The 3D view could not start (${String(e?.message ?? e).slice(0, 80)}): showing the 2D view`;

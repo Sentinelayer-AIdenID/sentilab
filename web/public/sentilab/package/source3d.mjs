@@ -10,7 +10,8 @@
 //   dies     exactly C0, C1, C2, C3, D0, D1, D2, D3, each { die, x_um, y_um, rot_deg }: the die CENTRE in micrometres
 //            (origin at the interposer's lower-left corner), and a catalogue rotation (CPU 0 or 90, DRAM 0)
 //   status   a contract lifecycle state (STATUSES); "reference" and "example" only in a fixture
-//   seq      optional arrival sequence (a non-negative integer); otherwise arrival is the order first seen
+//   seq      optional record version (a non-negative integer that grows with every change to the record): an older
+//            version never replaces a newer one. Arrival order is the order each id is first seen.
 //   result   optional, from the scorer: { metric_id, value_C, precision_K, label, grid64?, row0?,
 //            native_all_block_max_C?, active_layer_peak_C? }
 //            metric_id    exactly "max_chiplet_centre_cell_mean_C" (BOARD_METRIC): the one frozen statistic of the
@@ -25,9 +26,18 @@
 // A layout that breaks a rule is refused whole (never drawn, counted with its reason code). A result that breaks a
 // rule is dropped and the layout drawn without a map or value, with the reason. Nothing visitor-written can reach
 // the page; any other field (a definition, a note, a name) is dropped unread.
-import { DIE_IDS, dieById, RULES } from "./case-cpu-dram.mjs";
+//
+// Payload shape is not provenance (CAD/3D freeze section 5.7, PL-2, PL-6, D14). A result's FIELD is drawn only when an
+// admitted association binds it: a pin in reviewed page code (case-cpu-dram.mjs FIELD_PINS) whose geometry and field
+// digests the page recomputes with WebCrypto (verifyPinnedFields). The door feed is unsigned, so an API result's field
+// is always "unassociated": never drawn, never kept; its scalar value stays as a qualified diagnostic. Every
+// temperature carries a shared label (temperature-label.mjs LABELS), resolved by labelFor() from a VERIFIED evaluator
+// identity, never from the payload's claim: with none, labelFor(undefined) is "unvalidated".
+import { DIE_IDS, dieById, RULES, FIELD_PINS } from "./case-cpu-dram.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson } from "../runs-list.mjs";
+import { canonical } from "../canonical.mjs";
+import { labelFor } from "../../temperature-label.mjs";
 
 export const FEED_SCHEMA = "sentilab-door-layouts/1";
 export const CLASSES = Object.freeze(["reference-only", "reference", "example", "ours", "verified_agent", "signed_agent",
@@ -100,16 +110,25 @@ export function normalizeLayout(raw, { source = "api" } = {}) {
     result: null, result_refused: null,
   };
   if (raw.result !== undefined && raw.result !== null) {
-    const r = normalizeResult(raw.result, layout.status);
+    const r = normalizeResult(raw.result, layout.status, { source });
     if (r.refused) layout.result_refused = r.refused;
     else layout.result = r.result;
   }
   return { layout };
 }
 
-// A result -> { result: { metric: { id, value, precision_K }, grid (Float32Array, row 0 at y = 0, or null), label,
-// distinct: [{ key, name, value }] } } or { refused: code }.
-export function normalizeResult(raw, status) {
+// A result -> { result } or { refused: code }. result:
+//   metric       { id, value, precision_K }: the scorer's value of the board metric
+//   label        a temperature-label.mjs LABELS object for every temperature of this result (PL-2): labelFor() of the
+//                verified evaluator identity; until verifyPinnedFields() admits an association, labelFor(undefined)
+//   claim        the scorer's claim label ("simulated, not silicon"), shown beside the shared label, never instead of it
+//   field_state  "unassociated" (API: unsigned feed; or no pin), "pending" (bundled, awaiting the pin check), and after
+//                verifyPinnedFields(): "verified", "mismatch" or "file_check_unavailable"
+//   grid         the field (Float32Array, row 0 at y = 0) ONLY while pending or verified; otherwise null, not kept
+//   field_key    the verified field's sha256 (its content identity), else null
+//   diagnostic   true while no association is admitted: the value is shown qualified, as a diagnostic
+//   distinct     [{ key, name, value }] statistics shown apart, by name
+export function normalizeResult(raw, status, { source = "api" } = {}) {
   if (!isObj(raw)) return { refused: "result_malformed" };
   if (!SCORED.includes(status)) return { refused: "result_not_scored_state" };
   if (raw.label !== RESULT_LABEL) return { refused: "result_label_unknown" };
@@ -118,7 +137,7 @@ export function normalizeResult(raw, status) {
   const inTemp = (v) => num(v) && v >= min && v <= max;
   if (!inTemp(raw.value_C)) return { refused: "metric_value" };
   if (!num(raw.precision_K) || raw.precision_K <= 0 || raw.precision_K > 1) return { refused: "precision_missing" };
-  let grid = null;
+  let grid = null, gridText = null;
   if (raw.grid64 !== undefined && raw.grid64 !== null) {
     if (raw.row0 !== "bottom" && raw.row0 !== "top") return { refused: "grid_orientation_missing" };
     const g = raw.grid64;
@@ -132,6 +151,7 @@ export function normalizeResult(raw, status) {
         grid[row * 64 + col] = v;
       }
     }
+    gridText = JSON.stringify(g);   // the exact text a pin's field_sha256 covers
   }
   const distinct = [];
   for (const [key, name] of Object.entries(DISTINCT_FIELDS)) {
@@ -139,7 +159,37 @@ export function normalizeResult(raw, status) {
     if (!inTemp(raw[key])) return { refused: "distinct_value" };
     distinct.push({ key, name, value: raw[key] });
   }
-  return { result: { metric: { id: BOARD_METRIC.id, value: raw.value_C, precision_K: raw.precision_K }, grid, label: RESULT_LABEL, distinct } };
+  // The door feed is unsigned: an API field is unassociated, never kept. A bundled field waits for its pin check.
+  const pending = source === "fixture" && grid !== null;
+  return { result: { metric: { id: BOARD_METRIC.id, value: raw.value_C, precision_K: raw.precision_K }, claim: RESULT_LABEL,
+    label: labelFor(undefined), field_state: pending ? "pending" : "unassociated", grid: pending ? grid : null,
+    grid_text: pending ? gridText : null, field_key: null, diagnostic: true, distinct } };
+}
+
+// ── the admitted associations: pinned fields, rechecked with WebCrypto before anything is drawn ─────────────────────
+// layouts: normalized layouts. subtle: globalThis.crypto.subtle, or null where WebCrypto is unavailable (D14: then no
+// result field is drawn). Returns new layouts; a result's field is drawable only when field_state is "verified".
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+export const geometryText = (layout) => canonical({ dies: layout.dies.map(({ die, x_um, y_um, rot_deg }) => ({ die, x_um, y_um, rot_deg })) });
+export async function verifyPinnedFields(layouts, { subtle = globalThis.crypto?.subtle ?? null, pins = FIELD_PINS } = {}) {
+  const sha256 = async (text) => hex(await subtle.digest("SHA-256", new TextEncoder().encode(text)));
+  const out = [];
+  for (const L of layouts) {
+    const r = L.result;
+    if (!r || r.field_state !== "pending") { out.push(L); continue; }
+    const pin = pins.find((p) => p.layout_id === L.id) ?? null;
+    let state = "unassociated", key = null, label = labelFor(undefined);
+    if (pin && !subtle) state = "file_check_unavailable";
+    else if (pin) {
+      const [geometry, field] = await Promise.all([sha256(geometryText(L)), sha256(r.grid_text)]);
+      if (geometry === pin.geometry_sha256 && field === pin.field_sha256) { state = "verified"; key = field; label = labelFor(pin.evaluator_identity); }
+      else state = "mismatch";
+    }
+    const verified = state === "verified";
+    out.push({ ...L, result: { ...r, field_state: state, grid: verified ? r.grid : null, grid_text: null, field_key: key, label,
+      diagnostic: !verified } });
+  }
+  return out;
 }
 
 // A document ({ layouts: [...], next?, env? }) -> { layouts, refused: { code: count }, next, env }.
@@ -163,18 +213,19 @@ export function normalizeFeed(doc, { source = "api" } = {}) {
 }
 
 // ── the arrival list: merge by id, keep the order of first arrival ───────────────────────────────────────────────
-// A later record for the same id updates its status and result (a layout arrives queued, then gets scored); its
-// place in the arrival order never changes. With seq on every layout, seq orders them.
+// A later record for the same id updates its status and result (a layout arrives queued, then gets scored); its place
+// in the arrival order never changes. A record never replaces a newer one: when the held record has a version (seq),
+// the incoming one must have a version at least as new, else it is a stale or replayed answer and is dropped.
+export const isOlder = (incoming, held) => Number.isSafeInteger(held.seq) && !(Number.isSafeInteger(incoming.seq) && incoming.seq >= held.seq);
 export function mergeArrivals(current, incoming) {
   const byId = new Map(current.map((l) => [l.id, l]));
   const order = current.map((l) => l.id);
   for (const l of incoming) {
-    if (!byId.has(l.id)) order.push(l.id);
-    byId.set(l.id, l);
+    const held = byId.get(l.id);
+    if (!held) { order.push(l.id); byId.set(l.id, l); continue; }
+    if (!isOlder(l, held)) byId.set(l.id, l);
   }
-  const out = order.map((id) => byId.get(id));
-  if (out.every((l) => l.seq !== null)) out.sort((a, b) => a.seq - b.seq);
-  return out;
+  return order.map((id) => byId.get(id));
 }
 
 // ── the fixture ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -195,11 +246,11 @@ export async function loadFixture({ fetchImpl = (...a) => fetch(...a), url = FIX
 // nothing but the cursor, follows no redirect, reads at most 4 MiB, and never throws: it returns
 // { ok: true, layouts, refused, next, env, more } or { ok: false, error }.
 export const DOOR_RESULTS_PATH = "/api/open/v1/door/results";
-export async function fetchDoorResults(after = null, { fetchImpl = (...a) => fetch(...a) } = {}) {
+export async function fetchDoorResults(after = null, { fetchImpl = (...a) => fetch(...a), signal = undefined } = {}) {
   const query = after === null || after === undefined || after === "" ? "" : `?${new URLSearchParams({ after: String(after) })}`;
   let r;
   try {
-    r = await fetchImpl(`${DOOR_RESULTS_PATH}${query}`, { method: "GET", cache: "no-store", redirect: "error", headers: { accept: "application/json" } });
+    r = await fetchImpl(`${DOOR_RESULTS_PATH}${query}`, { method: "GET", cache: "no-store", redirect: "error", headers: { accept: "application/json" }, signal });
   } catch {
     return { ok: false, error: "unreachable" };
   }
@@ -220,16 +271,21 @@ export async function fetchDoorResults(after = null, { fetchImpl = (...a) => fet
 // ── the poller ───────────────────────────────────────────────────────────────────────────────────────────────────
 // Every POLL_MS after a good answer (at once while `more` is true, up to 8 pages), BACKOFF_MS after a failure, and
 // paused while the tab is hidden. onChange(state) after every poll. The cursor only moves on a good answer.
+// stop() ends the epoch: it aborts the request in flight, and an answer that still arrives for an ended epoch is
+// discarded before it touches the state or calls onChange. start() begins a new epoch.
 export const POLL_MS = 3000;
 export const BACKOFF_MS = 5000;
 export const LIVE_FRESH_MS = 12000;
 export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetch(...a), now = () => Date.now(), fetchResults = fetchDoorResults } = {}) {
   const state = { layouts: [], cursor: null, connected: null, lastOkAt: null, error: "", env: null, refused: {}, polls: 0 };
-  let timer = null, stopped = true;
+  let timer = null, stopped = true, epoch = 0, controller = null;
   async function pollOnce() {
+    const mine = epoch;
     let delay = POLL_MS;
     for (let page = 0; page < 8; page += 1) {
-      const got = await fetchResults(state.cursor, { fetchImpl });
+      controller = typeof AbortController === "function" ? new AbortController() : null;
+      const got = await fetchResults(state.cursor, { fetchImpl, signal: controller?.signal });
+      if (mine !== epoch) return null;            // stopped (or restarted) while waiting: discard, change nothing
       state.polls += 1;
       if (!got.ok) { state.connected = false; state.error = got.error; delay = BACKOFF_MS; break; }
       state.connected = true;
@@ -241,19 +297,22 @@ export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetc
       if (got.next !== null) state.cursor = got.next;
       if (!got.more || got.next === null) break;
     }
+    if (mine !== epoch) return null;
     onChange(state);
     return delay;
   }
   async function tick() {
     if (stopped) return;
     if (typeof document !== "undefined" && document.hidden) { schedule(BACKOFF_MS); return; }
-    schedule(await pollOnce());
+    const mine = epoch, delay = await pollOnce();
+    if (mine === epoch && delay !== null) schedule(delay);
   }
   const schedule = (ms) => { clearTimeout(timer); if (!stopped) timer = setTimeout(tick, ms); };
   return {
     state, pollOnce,
-    start() { if (!stopped) return; stopped = false; tick(); },
-    stop() { stopped = true; clearTimeout(timer); },
+    get epoch() { return epoch; },
+    start() { if (!stopped) return; stopped = false; epoch += 1; tick(); },
+    stop() { stopped = true; epoch += 1; clearTimeout(timer); controller?.abort(); controller = null; },
   };
 }
 

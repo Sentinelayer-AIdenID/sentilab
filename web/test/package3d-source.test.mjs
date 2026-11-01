@@ -124,7 +124,7 @@ test("unknown fields are dropped unread; visitor text never reaches a layout", (
   const { layout } = door.normalizeLayout(raw);
   assert.deepEqual(Object.keys(layout).sort(), ["cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
   for (const d of layout.dies) assert.deepEqual(Object.keys(d).sort(), ["die", "rot_deg", "x_um", "y_um"]);
-  assert.deepEqual(Object.keys(layout.result).sort(), ["distinct", "grid", "label", "metric"]);
+  assert.deepEqual(Object.keys(layout.result).sort(), ["claim", "diagnostic", "distinct", "field_key", "field_state", "grid", "grid_text", "label", "metric"]);
   const text = JSON.stringify({ ...layout, result: { ...layout.result, grid: null } });
   for (const bad of ["IGNORE", "script", "evil", "deep", "hello-there", "crimson-x", "free text", "999"]) assert.ok(!text.includes(bad), bad);
   assert.equal(layout.label, "declared_agent · 3fa2", "rebuilt from class and short id");
@@ -170,11 +170,14 @@ test("statuses: the contract's lifecycle; 'reference' and 'example' only in a fi
 });
 
 test("results: the frozen board metric only, a declared grid orientation, a scored state; a bad result drops the map, not the layout", () => {
-  const scored = (result, status = "evaluated") => door.normalizeLayout({ ...GOOD(), status, result });
+  const scored = (result, status = "evaluated", source = "api") => door.normalizeLayout({ ...GOOD(), status, result }, { source });
   const ok = scored(RESULT()).layout;
   assert.deepEqual(ok.result.metric, { id: "max_chiplet_centre_cell_mean_C", value: 101.235, precision_K: 0.01 });
-  assert.equal(ok.result.grid[5], 55, "row0 bottom: kept as given");
-  const top = scored({ ...RESULT(), row0: "top" }).layout;
+  assert.deepEqual([ok.result.field_state, ok.result.grid], ["unassociated", null], "an API field is unassociated and not kept");
+  // Orientation, on a bundled result (kept until its pin check).
+  const bottom = scored(RESULT(), "reference", "fixture").layout;
+  assert.equal(bottom.result.grid[5], 55, "row0 bottom: kept as given");
+  const top = scored({ ...RESULT(), row0: "top" }, "reference", "fixture").layout;
   assert.equal(top.result.grid[0], RESULT().grid64[63 * 64], "row0 top: turned so row 0 is y = 0");
   const refusal = (r, status) => scored(r, status).layout.result_refused;
   assert.equal(refusal({ ...RESULT(), metric_id: "peak_c" }), "metric_unknown");
@@ -187,8 +190,8 @@ test("results: the frozen board metric only, a declared grid orientation, a scor
   assert.equal(refusal({ ...RESULT(), grid64: RESULT().grid64.map((v, k) => (k === 77 ? NaN : v)) }), "grid_value");
   assert.equal(refusal({ ...RESULT(), active_layer_peak_C: 1e9 }), "distinct_value");
   for (const status of ["queued", "evaluating", "failed", "rejected"]) assert.equal(refusal(RESULT(), status), "result_not_scored_state", status);
-  const noGrid = scored({ ...RESULT(), grid64: undefined, row0: undefined }).layout;
-  assert.equal(noGrid.result.grid, null, "a value without a map");
+  const noGrid = scored({ ...RESULT(), grid64: undefined, row0: undefined }, "reference", "fixture").layout;
+  assert.deepEqual([noGrid.result.grid, noGrid.result.field_state], [null, "unassociated"], "a value without a map");
   assert.ok(scored({ ...RESULT(), metric_id: "x" }).layout, "the layout itself still draws");
 });
 
@@ -210,7 +213,7 @@ test("mergeArrivals: first arrival keeps its place; a later record updates statu
   const merged = door.mergeArrivals(door.mergeArrivals([], [a, b]), [a2]);
   assert.deepEqual(merged.map((l) => [l.id, l.status]), [["a", "evaluated"], ["b", "queued"]]);
   const s1 = door.normalizeLayout({ ...GOOD(), id: "s1", seq: 9 }).layout, s2 = door.normalizeLayout({ ...GOOD(), id: "s2", seq: 3 }).layout;
-  assert.deepEqual(door.mergeArrivals([s1], [s2]).map((l) => l.id), ["s2", "s1"], "seq orders when every layout has one");
+  assert.deepEqual(door.mergeArrivals([s1], [s2]).map((l) => l.id), ["s1", "s2"], "seq is a record version: order is first arrival");
 });
 
 // ── the seam ──

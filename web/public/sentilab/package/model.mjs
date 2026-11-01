@@ -67,13 +67,7 @@ export function dieRects(dies) {
 // nearest-neighbour, one flat colour per grid cell, with nothing interpolated between cells.
 export const SCALE = Object.freeze({ min: 45, max: 125, unit: "°C", stat: "active-layer temperature field (°C)", ticks: Object.freeze([45, 65, 85, 105, 125]) });
 
-// The one way a temperature becomes text on the door view: rounded half up to 0.01 °C for display only (comparisons
-// use the value as given), always with its unit. 115.935 -> "115.94 °C".
-export function formatTemp(c, { digits = 2 } = {}) {
-  if (typeof c !== "number" || !Number.isFinite(c)) return "-";
-  const f = 10 ** digits;
-  return `${(Math.round(c * f + Math.sign(c) * 1e-7) / f).toFixed(digits)} °C`;
-}
+// A door temperature becomes text only through temps.mjs formatTemp(valueC, label), with its shared label (PL-2).
 export const LUT_SIZE = 1024;
 export const GRID = 64;
 const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
@@ -116,8 +110,23 @@ export function fieldTexels(grid, key = null) {
     const i = scaleIndex(c) * 3;
     out[k * 4] = t[i]; out[k * 4 + 1] = t[i + 1]; out[k * 4 + 2] = t[i + 2]; out[k * 4 + 3] = 255;
   }
-  return { texels: out, above, below, key };
+  return { texels: out, above, below, key, sum: texelSum(out) };
 }
+// FNV-1a over the texel bytes: with the key (the field's verified sha256), the identity the renderer compares, so a
+// different field can never keep the old texture even if a caller reused a key.
+export function texelSum(bytes) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i += 1) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h;
+}
+// Field changes are hard cuts (PL-20, D17), and a field shows only with the geometry it was computed for. While any die
+// is still gliding to its new place (view-only motion), no field shows; when the dies arrive, the layout's own field
+// shows at once. Nothing is ever blended between two fields.
+// die: { from: { cx, cy, rot }, to: { cx, cy, rot }, start } (render3d.mjs keeps one per die).
+export const dieGliding = (die, now, glideMs) => now - die.start < glideMs &&
+  (die.from.cx !== die.to.cx || die.from.cy !== die.to.cy || die.from.rot !== die.to.rot);
+export const fieldVisible = ({ hasField, gliding }) => Boolean(hasField) && !gliding;
+
 // The centre of grid cell (row, col) in mm (row 0 at y = 0): one cell is 45/64 mm.
 export const cellCentre = (row, col) => ({ x: r6((col + 0.5) * (INTERPOSER_MM / GRID)), y: r6((row + 0.5) * (INTERPOSER_MM / GRID)) });
 
