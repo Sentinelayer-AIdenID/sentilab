@@ -158,7 +158,7 @@ h1.hero { margin: 0; font-size: 82px; line-height: 1.05; }
 .eyebrow.sep { margin-top: 14px; padding-top: 16px; border-top: 2px solid var(--line-soft); }
 .lim { color: var(--muted) !important; }
 .chron { margin-top: 14px; width: 100%; border-collapse: collapse; font-size: 23px; line-height: 1.22; }
-.chron td { padding: 5px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--body); }
+.chron td { padding: 4px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--body); }
 .chron td.t { width: 104px; font: 700 23px var(--mono); color: var(--amber); }
 .rline { margin-top: 20px; padding: 18px 26px; border-left: 8px solid var(--cyan); background: var(--cy-bg); border-radius: 6px 14px 14px 6px; font: 600 30px/1.32 var(--display); color: var(--text); }
 .rattr { margin-top: 10px; font-size: 24px; color: var(--muted); }
@@ -271,3 +271,13 @@ body.print #notes { display: none; }
 .lt td { font: 600 26px var(--mono); color: var(--text); }
 .lchip { margin-top: 16px; font-size: 26px; color: var(--green); }
 .lnote { margin-top: 10px; font-size: 24px; color: var(--muted); }
+.still img { border: 2px solid var(--line); border-radius: 10px; }
+.dstill { margin-top: 18px; }
+.still-label { margin-top: 14px; align-self: flex-start; color: #1a1208; background: var(--amber); border-color: var(--amber); }
+.why-title { margin-top: auto; margin-bottom: auto; font-size: 76px; max-width: 1500px; }
+.why-numbers { flex: 0 0 auto; margin-top: 40px; }
+.qa { margin: 26px 0 0; display: grid; gap: 22px; }
+.qa-item { padding: 20px 28px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); }
+.qa dt { font: 700 34px/1.2 var(--display); color: var(--text); }
+.qa dd { margin: 10px 0 0; font-size: 30px; line-height: 1.35; color: var(--body); }
+.ntile .nval { font-size: 64px; }

@@ -6,27 +6,116 @@ byte for byte (the tests pin every file), together with its own `TIMELINE-VERIFY
 deck (PR #74 at 16b6c37a: the corrected review tally, the completed re-derivation, the outside finite-element result)
 are applied in this one; the three-minute artifact keeps them as published at 00:12 UTC.
 
-Checked between 2026-11-01 00:40 and 02:47 UTC. The reviewed cutoff in `FINAL.json` and the export's cutoff are both
-02:50, after a last sweep of both rooms at 02:47 found no new consent answer. This is a review export: the room's
-adversarial review (team room 57558) closes at 03:30. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
+Checked between 2026-11-01 00:40 and 03:40 UTC. The reviewed cutoff in `FINAL.json` and the export's cutoff are the
+same minute, after a last sweep of both rooms found no new consent answer. This is a review export of the plain talk;
+the room's adversarial review (team room 57558) closed at 03:30. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
 are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackathon help room.
 
-## Timing (root, team room 57481, 01:33:52)
+## The plain-language main talk (Carter, team room 57563, 02:51)
+
+The nine main slides follow the coordinator's plain-language script v2.3, committed byte for byte as `PLAIN-SCRIPT.md`
+(sha256 `79c648c5…`). It went v2, v2.1, v2.2 and v2.3, with astra's truth fixes, aneta's plain charts and truth check
+(team room 57605) and chatgpt's non-specialist pass (57558). Each slide's title is the script's title, and its speaker
+notes are the script's "Say" text, word for word; the tests read `PLAIN-SCRIPT.md` and compare. One picture per slide.
+No K, kelvin, formula, `rz`, grid, "statistic", convection, native block or chiplet-centre may appear on a main slide,
+in its notes or in its figure's text; the build refuses one. Every slide of the earlier five-minute deck follows as
+backup B1 to B21, with its text and notes unchanged: the tests compare each one with a build without the plain talk.
+The questions page is B22.
+Where the sections below say "slide 1" to "slide 8", they mean that deck's slides, now B1 to B8.
+
+| Slide | Title | Picture | Caption |
+|---|---|---|---|
+| 1 | AI agents arrange chips. Software predicts the heat. | our 3D package view, build 4e047187, `package-view-replay.png` (`8c059a6e…`), labelled "simulated, not silicon" | none |
+| 2 | Same design, same files: 119 °C or 241 °C? | plain1 v1.10 (`9d1e00ca…`) | CAPTIONS.md v1.9 plain1, without "on a 64 by 64 grid", and "point" for "cell" |
+| 3 | The answers split at one step: lid to cooler. | plain2 v1.9 (`7ddf7a93…`) | v1.9 plain2, with "position" for "grid position" and "from two finite-element solvers and the simulator" for "finite element nodal versus HotSpot grid readouts" |
+| 4 | The agents found it, and stopped our own run. | plain4 v1.8 (`672b220c…`), checked against the same records and durations as fig4 | v1.9 plain4 |
+| 5 | We set the bar first. It passed. | plain3 v1.10 (`30cc8680…`) | v1.9 plain3, with "the paper's own temperature reading" for "the frozen gate statistic" (the figure's own words since v1.10) |
+| 6 | A second agent catches what the first approved. | fig5, drawn at 1.4 times its backup size | fig5's caption in plain words |
+| 7 | Other teams build on it. | fig6 v1.9 (`f7da1bd6…`) | fig6's caption, to 02:44 (below) |
+| 8 | Why it matters. | none while the numbers line is off; three numbers when it is on | |
+| 9 | Send your agent. | REPLAY: the 3D still; LIVE: the six door steps | the door's status line |
+
+The caption edits only take out words a main slide may not show; the full technical captions stay on backup B1 to B6.
+aneta's own accessible labels are served byte for byte, except plain3's: its v1.10 label does not carry the
+figure's new first line, so the deck's label leads with it (root, reply to 57630, 03:31:15). The plain1, plain3 and
+plain4 sources are aneta's v1.8 (team room 57603, 02:59:28, 220,655 bytes, `e99d0098…`) and v1.10 (57630, 03:26:08,
+82,830 bytes, `8d42da5b…`, plain1 and plain3 only); plain2 and fig6 are her v1.9 (57605, 03:06:29, 149,568 bytes,
+`4f71b1a6…`), with CAPTIONS.md (`43b2d4c3…`) and QA.md (`bcfc01e3…`). QA.md is for the presenter and is not part of the
+deck. Every archive was unpacked into a fresh folder and never executed; every SVG passed the inert check, and the build
+refuses one that does not. aneta still owes root's two plain2 labels ("In the model: lid to cooler" and "Separate
+check: hottest point in each part"); this export carries v1.9's plain2.
+
+### Timing (root, team room 57481, 01:33:52)
 
 - The talk before the door is counted at 150 words a minute. With its transitions it must fit a 180 s cap.
 - The door slide's spoken lines count inside the 120 s live-demo clock, not against the talk.
 - The 300 s slot is the cap. `scripts/build-deck-final.mjs` refuses any build that breaks one of these, and prints the
-  slower 2.2 words a second beside it.
+  relaxed 135 words a minute (2.25 words a second) beside it. Backup notes are not spoken and are not timed.
 
-| | Words | At 150 wpm | At 2.2 w/s |
+| | Words | At 150 wpm | At 135 wpm |
 |---|---:|---:|---:|
-| Talk, slides 1 to 7 | 378 | 151.2 s | 171.8 s |
-| Transitions | | 15.0 s | |
-| Talk with transitions, cap 180 s | | 166.2 s | 186.8 s |
-| Door lines, slide 8, inside the demo clock | 47 | 18.8 s | 21.4 s |
-| Left for the live demo, of 120 s | | 101.2 s | 98.6 s |
+| Talk, slides 1 to 8, numbers line off | 359 | 143.6 s | 159.6 s |
+| Transitions | | 15.0 s | 15.0 s |
+| Talk with transitions, cap 180 s | | 158.6 s | 174.6 s |
+| The same with the numbers line on | 381 | 167.4 s | 184.3 s |
+| Door, REPLAY, inside the demo clock | 34 | 13.6 s | 15.1 s |
+| Door, LIVE, inside the demo clock | 61 | 24.4 s | 27.1 s |
+| Left for the live demo, of 120 s | | 106.4 s (REPLAY), 95.6 s (LIVE) | |
 
-At the slower pace the talk would run 6.8 s over the cap, so the presenter should rehearse at about 150 words a minute.
+Per slide, numbers line off: 48, 37, 43, 78, 63, 30, 37 and 23 words. With the numbers line on, the relaxed pace runs
+4.3 s over the cap, which is one more reason the line is off by default. A timed read-through by Carter is the real
+check; these are word counts.
+
+### Slide 8's numbers (off by default)
+
+`plainTalk.numbersOnStage` in `FINAL.json` is the one-line switch, and Carter's call. When it is on, slide 8 says the
+script's bracketed line and shows three numbers in the coordinator's words: "about 90 code changes merged, since 31 Oct
+00:00 UTC, collected 1 Nov 00:22-00:27 UTC"; "under 6 min median from ask to first result, 9 asks"; and "about $6,400
+posted to the shared cloud account when checked at 02:44 UTC; includes delayed postings; not the price of this
+experiment". Each rounds a measured value on backup B7: the quant pack's 90 (warden's recount at 00:25 found 91, which
+B7 says), 5 min 46.2 s, and warden's 02:44 re-read of $6,376.21 (reply eebd4c7c to 57558, 02:45:35). There is no
+savings or hours estimate anywhere in the deck. Money may appear only on B7, and on slide 8 while its numbers are on;
+the build refuses it anywhere else.
+
+### Slide 9, the door (LIVE or REPLAY)
+
+REPLAY is the export's default until the address is confirmed at the 12:00Z cutover and warden's 18:45Z production
+readback passes; `demo.urlIsPlaceholder` stays true. The replay fixture holds saved reference temperatures and
+synthetic arrivals that were never scored, so the slide calls it a preview and never a recorded run: "Status: replay
+preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission." astra
+opened the staging replay in a browser (team room, reply to 57558, 03:26:02): it says REPLAY, bundled fixture and
+synthetic examples never scored, which supports this wording; it is not a live participant run. A LIVE render before the
+address is confirmed is possible only with `--demo-review`, marked "REVIEW · door variant, not the export", and never
+as a PDF. Both are in `variants/`.
+
+### The 3D still
+
+Slide 1 and the REPLAY door show our package view at build 4e047187
+(`H:/tmp/review-evidence/package3d-4e047187/shots-worker/1920x1080-door-default.png`, 1920x1080), served byte for byte
+as `package-view-replay.png`, with its own backup slide (B13, "replay · simulated, not silicon"). Its pixels include the
+view's own side panel, where small type reads "grid 64" and chiplet-centre readouts; the text checks cannot read pixels.
+PR78's later still at 9b6baa1e carries a withdrawal notice and "unvalidated" chips, so it was not used.
+
+### The questions page (B22) and the "unvalidated" tag
+
+Root kept the 3D view's door temperatures "unvalidated", with the amber notice, for this event (team room, reply
+785deb6e to 57608, 03:40:48): the broad simulator alias is not on ACCEPTED, because it omits the configuration and source
+identity. This is an identity-scope decision, not a reversal of the gate-zero PASS. Carter will see the tag on stage, so
+the last backup page answers it in the coordinator's words: "That tag is about approving the simulator setup in
+general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's
+simulated, not silicon." It carries root's evidence statement and never explains the notice only as a reviewer not
+having signed off. The same page has the three answers the coordinator gave Carter to practise (reply 6144e324 to
+57558, 03:29:43), word for word. The build checks both records against the cutoff. "simulated, not silicon" is
+visible on every slide that shows the 3D view's temperatures: slide 1, slide 9's REPLAY, B8 and B13. The still on
+those slides is from build 4e047187, before the tag was added, so it shows no "unvalidated" tag.
+
+### Other fixes in this export
+
+- fig6 v1.9 draws ScienceClaw's model-against-model comparison (help seq 57566, 02:44:21), so its snapshot runs to
+  02:44 UTC. Slide 7 and backup B6 say so (B6 said 02:09; CAPTIONS.md v1.9 says 02:34).
+- fig6 v1.9's legend reads "2 checked our thermal case", "3 said other help was useful" and "3 haven't confirmed yet",
+  as slide 7's script does. B6's notes now use the same words; fig6's own accessible label still has v1.8's wording.
+- B7's notes still gave 5,112 dollars after the tile moved to the 02:44 re-read; they now say what the tiles say.
 
 ## Figures
 
@@ -35,7 +124,10 @@ sha256 `c956836e…`), v1.1 (57451, 01:07:30, 15,868 bytes, `1a092339…`), v1.2
 `f1217061…`, members under `deck-figures/`), v1.3 (57475, 01:31:02, 20,712 bytes, `3eac9728…`) and v1.4 (57516,
 01:58:54, 149,918 bytes, `1b351835…`, with root's 57501 and 57511 applied) and v1.5 (57538, 02:16:19, 22,400 bytes,
 `9281f7a2…`, ScienceClaw's requested wording) and v1.6 (57554, 02:29:07, 22,323 bytes, `f3888c29…`: fig6 drawn by aneta for
-ScienceClaw's consent alone, with root's 57540 wording and the card-overflow fix). The archives, the
+ScienceClaw's consent alone, with root's 57540 wording and the card-overflow fix), v1.7 (57563, 02:38:42, 22,473 bytes,
+`b3aa7cd7…`, fig6), v1.8 (57603, 02:59:28, 220,655 bytes, `e99d0098…`, the plain figures and fig6), v1.9 (57605,
+03:06:29, 149,568 bytes, `4f71b1a6…`, plain2 and fig6) and v1.10 (57630, 03:26:08, 82,830 bytes, `8d42da5b…`, plain1
+and plain3). The archives, the
 overlaid tree and its sha256 list are kept in the evidence folder for this head. `make_figures.py` and `render.mjs` were
 never run. Every SVG was scanned for script, foreignObject, event handlers, external references and active elements:
 none was found, so nothing was stripped, and the build refuses any figure that holds one. The embedded heat maps are
@@ -43,13 +135,13 @@ PNG data inside the SVG. Each figure is shown as an image, so nothing in it can 
 
 | Figure | Source sha256 | Slide | Edits the build makes (exact text runs) |
 |---|---|---|---|
-| fig1-same-chips | `7072cc76…` | 1 | "Ascend 910 reference" to "Layout A reference" (the shared public-render rules forbid that product name) |
-| fig2-stack | `a430ba49…` | 2 | none (v1.4 adds the separately labelled layer-maxima panel) |
-| fig4-timeline | `8c478904…` | 3 | team labels, by consent (below) |
-| fig3-agreement | `4179ee6d…` | 4, with the recorded result only | "Ascend 910" to "Layout A"; team labels, by consent |
-| fig5-waffle | `2edb9c37…` | 5 | none |
-| fig6-teams | `b283a065…` | 6 | none: aneta's v1.6 is served byte for byte, its own label included. It is drawn for the consent set {ScienceClaw}, and the build stops if the consent on record is any other set, until she redraws it |
-| fig2b-profile | `f052040c…` | backup B5 | "Ascend 910" to "Layout A" |
+| fig1-same-chips | `7072cc76…` | B1 | "Ascend 910 reference" to "Layout A reference" (the shared public-render rules forbid that product name) |
+| fig2-stack | `a430ba49…` | B2 | none (v1.4 adds the separately labelled layer-maxima panel) |
+| fig4-timeline | `8c478904…` | B3 | team labels, by consent (below) |
+| fig3-agreement | `4179ee6d…` | B4, with the recorded result only | "Ascend 910" to "Layout A"; team labels, by consent |
+| fig5-waffle | `2edb9c37…` | B5, and slide 6 at 1.4 times | none |
+| fig6-teams | `f7da1bd6…` | B6 and slide 7 | none: aneta's v1.9 is served byte for byte, its own label included. It is drawn for the consent set {ScienceClaw}, and the build stops if the consent on record is any other set, until she redraws it |
+| fig2b-profile | `f052040c…` | B14 | "Ascend 910" to "Layout A" |
 
 The root `aria-label` of every figure is replaced by this deck's own reviewed text, so no name or product rides in an
 attribute. The tests check that the served copy differs from the source only in those text runs and that label.
@@ -105,21 +197,21 @@ and "1 h 41" (22:22:08 to 00:03:07, 101.0 min).
   a second reviewer (team seq 57412, 00:18:39).
 - Our own finite-element solve: 78.0423354 and 122.2078371 C on the finest meshes (help seq 57329, 23:08:26).
 
-## fig6, what travelled between teams (help room, to 00:37 UTC)
+## fig6, what travelled between teams (help room, to 02:44 UTC)
 
 | Card | Record |
 |---|---|
 | Both versions on our case, 39 min after it went public | help seq 57312, 23:01:16 |
 | Separate solver on our case, in 1 h 41 | help reply 161c27f0, 00:03:07 |
-| ScienceClaw: "your matchmaking"; it used our review to fix its package | help seq 57328, 23:08:23 ("What did help was your matchmaking", when nothing technical had gone in yet); help seq 57532, 02:09:48: since then, chatgpt's review of its c11ac67a package helped it fix the convergence row and add input guards (also 57350, 23:22:54). The two statements keep their own times; the card's snapshot runs to 02:09 |
+| ScienceClaw: "your matchmaking"; it used our review to fix its package | help seq 57328, 23:08:23 ("What did help was your matchmaking", when nothing technical had gone in yet); help seq 57532, 02:09:48: since then, chatgpt's review of its c11ac67a package helped it fix the convergence row and add input guards (also 57350, 23:22:54). The two statements keep their own times |
 | "Thanks, very useful" | help reply aae908b2 to seq 57188, 21:13:28, quantumswarms-claude |
 | "Yes, yours helped." Then it corrected a claim of ours | help replies 028f09e8 (00:08:14) and 37eb0808 (00:04:12) to seq 57270, kiln-claude |
 | Built on request; it ran through the open-source ScienceClaw | help reply 8dd4609d to seq 57005 (23:53:05); team reply 289bcfef to seq 57444 (01:25:26), our own proof run. "ScienceClaw" here is the open-source lamm-mit/scienceclaw platform, which the participant team ScienceClaw had no part in (its own words, 57532; root, 57540). The requester has not confirmed adoption |
 | Asked for it. Use not confirmed yet | help reply 88926f8c to seq 57007, 21:54:20, human-pixlram |
 | Evaluation notes between two other teams | help reply 06911e25 to seq 57007, 20:23:05, axis-claude |
-| Blind panel test, running | help reply 9e9e733a to seq 57262, 00:37:12, feagent-codex |
+| Blind panel solve, compared (ScienceClaw to the finite-element team) | help reply 9e9e733a to seq 57262, 00:37:12, feagent-codex (run started); FEAgent's frozen outputs, published 02:34:42 (reply to 57262); ScienceClaw's model-against-model check at 3 % strain, help seq 57566, 02:44:21: "no measurement exists yet" |
 
-The FEAgent connector stays "running": ScienceClaw confirms the blind panel run has started, with no results (57532). Any print-bench results are separate from this deck's simulated evidence and are not shown.
+The connector says "compared", not "validated": both sides are models from the same design, and no measurement of that panel exists yet (57566). Any print-bench results are separate from this deck's simulated evidence and are not shown.
 
 Not re-read here: the "glad to have another agent on it" quote on one unconfirmed card, and the "physics anchors" link
 (aneta cites help seq 56949). Both are aneta's, from her source table. Root checked v1.3 in 57501.

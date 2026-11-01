@@ -95,10 +95,11 @@ export const FINAL_BANNED = [
   /\$\s?\d/, /\bUSD\b/i, /\bdollars?\b/i, /\bdeck due\b/i, /\bsource unknown\b/i, /\bbugs?\b/i,
   /(^|[\s(])\+1(?!\d|[.,]\d)/, /\bGB10\b/i,
 ];
-// Money may appear only on the "By the numbers" slide, where every value carries a MEASURED or ESTIMATE label and a
-// caveat (Carter asked for money to be quantified; everywhere else a dollar figure still stops the build).
+// Money may appear only on the "By the numbers" slide, where every value carries a MEASURED label and a caveat (Carter
+// asked for money to be quantified), and on the plain talk's "Why it matters" slide while its numbers are on stage;
+// everywhere else a dollar figure still stops the build.
 export const MONEY = new Set([FINAL_BANNED[0], FINAL_BANNED[1], FINAL_BANNED[2]]);
-export const MONEY_SLIDES = new Set(["numbers"]);
+export const moneyAllowed = (slide) => slide?.id === "numbers" || (slide?.content?.layout === "why" && Boolean(slide.content.numbers));
 export const DEMO_STATUSES = ["staging", "live", "replay"];
 // Internal jargon kept off the main slides (backup slides may name pull requests and verdict codes).
 export const PLAIN_WORDS = [
@@ -342,10 +343,12 @@ export function buildFigureFrom(bytes, id, fig, { teams, named, cutoffMs }) {
 
 // ── build ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 export function buildFinalData({ final, hashes }, options = {}) {
-  const { cutoff = null, preview = false, rederived = false } = options;
-  const demoStatus = options.demoStatus ?? "staging";
+  const { cutoff = null, preview = false, rederived = false, demoReview = false } = options;
+  // The plain talk's door is LIVE or REPLAY, REPLAY until warden's production readback shows LIVE is true.
+  const demoStatus = options.demoStatus ?? (final.plainTalk ? "replay" : "staging");
   if (!DEMO_STATUSES.includes(demoStatus)) throw new FinalError(`--demo-status must be one of ${DEMO_STATUSES.join(", ")} (got ${JSON.stringify(demoStatus)})`);
-  if (demoStatus === "live" && final.demo.urlIsPlaceholder) throw new FinalError("the demo cannot say live while the agent door's address is still a placeholder in FINAL.json");
+  // A demo review render (--demo-review) shows a door variant before it is true: marked on every slide, never a PDF.
+  if (demoStatus === "live" && final.demo.urlIsPlaceholder && !demoReview) throw new FinalError("the demo cannot say live while the agent door's address is still a placeholder in FINAL.json");
   if (!final.demo.instruction.includes(final.demo.url)) throw new FinalError("the demo instruction must name the door's address");
   const recorded = final.gate.result ?? null;
   // Without --gate, the reviewed result recorded in FINAL.json decides; without one, NOT RUN.
@@ -391,6 +394,17 @@ export function buildFinalData({ final, hashes }, options = {}) {
     figureFiles.set(fig.file, f.svg);
   }
   const figureView = (id) => ({ id, ...figures[id] });
+  // Stills: raster screenshots of our own views, served byte for byte (a PNG holds no script and no text to check).
+  const stills = {};
+  for (const [id, st] of Object.entries(final.stills ?? {})) {
+    const bytes = readFileSync(join(FIGURE_SOURCE_DIR, st.file));
+    if (sha256(bytes) !== st.sha256) throw new FinalError(`still ${id} (${st.file}) is not the reviewed file: its sha256 differs from FINAL.json`);
+    if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" || bytes.readUInt32BE(16) !== st.width || bytes.readUInt32BE(20) !== st.height) {
+      throw new FinalError(`still ${id} (${st.file}) must be a ${st.width}x${st.height} PNG`);
+    }
+    stills[id] = { id, src: `figures/${st.file}`, sha256: st.sha256, width: st.width, height: st.height, alt: st.alt };
+    figureFiles.set(st.file, bytes);
+  }
 
   // Records and times.
   final.how.steps.forEach((s, i) => checkRecords(s, `backup how-it-works step ${i + 1}`, cutoffMs));
@@ -411,6 +425,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
   checkRecords(final.demo, "the demo slide", cutoffMs);
   checkRecords(B.receipt, "the outside-team backup", cutoffMs);
   checkRecords(B.gb10, "the GB10 backup", cutoffMs);
+  if (B.qa) checkRecords(B.qa, "the questions backup", cutoffMs);
   // Layer maxima (root, team room 57511): the reviewed sentence's "about" values and the "within 0.44 K" line must be
   // what the table's own rows give.
   checkRecords(B.layers, "the layer-maxima backup", cutoffMs);
@@ -441,6 +456,8 @@ export function buildFinalData({ final, hashes }, options = {}) {
     // One entry per headline, "**N. <value> <label>…**"; a value must open a headline ("360–720 h" opens "360–720 engineer-hours").
     const entries = packBytes.toString("utf8").split(/\n(?=\*\*\d+\. )/).filter((e) => /^\*\*\d+\. /.test(e));
     for (const x of N.items) {
+      // A later re-read posted in the room (warden's recount and cost read) names its record instead of the pack.
+      if (x.record) { checkRecords({ records: [x.record] }, `the numbers slide value ${JSON.stringify(x.value)}`, cutoffMs); continue; }
       const entry = entries.find((e) => e.replace(/^\*\*\d+\. /, "").startsWith(`${x.value.replace(/ h$/, "")} `));
       if (!entry) throw new FinalError(`the numbers slide value ${JSON.stringify(x.value)} is not in the quant pack`);
       if (!entry.includes(`- ${x.class}.`)) throw new FinalError(`the numbers slide labels ${JSON.stringify(x.value)} ${x.class}, but the quant pack does not`);
@@ -509,7 +526,9 @@ export function buildFinalData({ final, hashes }, options = {}) {
       items: N.items.map((x, i) => ({ n: String(i + 1), value: x.value, label: x.label, class: x.class, tag: x.tag ?? x.class, caveat: x.caveat })) } },
     { id: "demo", main: true, kicker: final.demo.kicker, notes: `${final.demo.notes} ${final.demo.statuses[demoStatus].notes}`, content: {
       title: final.demo.title, instruction: final.demo.instruction, urlNote: final.demo.urlIsPlaceholder ? final.demo.urlNote : null,
-      diagram: final.demo.diagram, status: demoStatus, statusText: final.demo.statuses[demoStatus].text } },
+      diagram: final.demo.diagram, status: demoStatus, statusText: final.demo.statuses[demoStatus].text,
+      // REPLAY shows the 3D still in place of the instruction and the six steps (warden reads production back at 18:45).
+      still: demoStatus === "replay" && stills.view3d ? { ...stills.view3d, label: B.view3d?.label ?? null } : null } },
     { id: "how", main: false, kicker: "Backup · how the team works", notes: "Backup. If asked how the team works, walk the four steps; each has a dated example.", content: {
       title: final.how.title, footnote: final.how.footnote, evidence: null,
       steps: final.how.steps.map((s) => ({ title: s.title, text: s.text, today: s.today })) } },
@@ -518,6 +537,8 @@ export function buildFinalData({ final, hashes }, options = {}) {
     { id: "reviews", main: false, kicker: B.reviews.kicker, notes: "Backup. If asked whether the agents really check each other, read the line as written, with its qualifier.", content: {
       title: B.reviews.title, line: B.reviews.line, attribution: B.reviews.attribution, rows: B.reviews.rows, caveats: B.reviews.caveats } },
     { id: "metrics", main: false, kicker: B.metrics.kicker, notes: "Backup. If asked for the numbers, separate saved output from the simplified model; neither is a calibrated temperature.", content: B.metrics },
+    ...(B.view3d && stills.view3d ? [{ id: "view3d", main: false, kicker: B.view3d.kicker, notes: "Backup. A replay of our 3D package view: simulated, not silicon.", content: {
+      title: B.view3d.title, label: B.view3d.label, caption: B.view3d.caption, still: stills.view3d } }] : []),
     { id: "profile", main: false, kicker: B.profile.kicker, notes: "Backup. The same layer profile as a line chart, both layouts; modeled nodes, not a copper layer.", content: {
       title: B.profile.title, figure: figureView(B.profile.figure), caption: B.profile.caption } },
     { id: "layers", main: false, kicker: B.layers.kicker, notes: "Backup. Independently located layer maxima beside both versions; read the sentence as written, and the cause stays open.", content: {
@@ -543,7 +564,11 @@ export function buildFinalData({ final, hashes }, options = {}) {
     { id: "receipt", main: false, kicker: B.receipt.kicker, notes: "Backup. The outside-team receipts in full, and why our own leaderboard is not used as evidence.", content: {
       title: B.receipt.title, facts: B.receipt.facts, notYet: B.receipt.notYet, notEvidence: B.receipt.notEvidence,
       names: namesLine(final.teams, named) } },
+    // Last, so the End key reaches it during questions: plain answers, the "unvalidated" one in the coordinator's words.
+    ...(B.qa ? [{ id: "qa", main: false, kicker: B.qa.kicker, notes: B.qa.notes, content: { title: B.qa.title, items: B.qa.items } }] : []),
   ];
+  // With the plain talk, its slides lead and the whole earlier deck follows as backup.
+  if (final.plainTalk) raw.splice(0, raw.length, ...plainTalkSlides(final.plainTalk, { figureView, stills, demo: final.demo, demoStatus }), ...raw.map((s) => ({ ...s, main: false })));
   // Team names, resolved per slide (content and notes together), then the notes counted.
   const slides = raw.map((s) => {
     const resolve1 = resolver([...allStrings(s.content), s.notes]);
@@ -555,7 +580,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
 
   // Timing, root's rule: the talk before the door at 150 words a minute plus transitions within the talk cap; the door
   // lines inside the live-demo clock; talk cap and demo within the slot.
-  const door = slides.find((s) => s.id === "demo");
+  const door = slides.find((s) => s.main && (s.content.layout === "door" || s.id === "demo"));
   const talkSlides = slides.filter((s) => s.main && s !== door);
   const talkWords = talkSlides.reduce((n, s) => n + s.notes.words, 0);
   const talkSeconds = tenths(talkWords / (talk.checkWordsPerMinute / 60));
@@ -568,7 +593,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
 
   const data = {
     schema: DATA_SCHEMA,
-    deck: { ...final.deck, cutoff: utcStamp(cut), variant: gate, variantLabel: v.label, preview, reviewOnly, demoStatus },
+    deck: { ...final.deck, cutoff: utcStamp(cut), variant: gate, variantLabel: v.label, preview, reviewOnly, demoReview, demoStatus, plain: Boolean(final.plainTalk) },
     budget: {
       checkWordsPerMinute: talk.checkWordsPerMinute, slowWordsPerSecond: talk.slowWordsPerSecond,
       talkWords, talkSeconds, talkSlowSeconds, transitionSeconds: talk.transitionSeconds, talkCapSeconds: talk.talkCapSeconds,
@@ -577,12 +602,50 @@ export function buildFinalData({ final, hashes }, options = {}) {
     },
     teams: teamData,
     slides,
-    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview, rederived, demoStatus },
+    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview, rederived, demoStatus, demoReview },
     source: { ...hashes },
   };
   checkRendered(data, final.teams, named);
   Object.defineProperty(data, "figureFiles", { value: figureFiles, enumerable: false });
   return data;
+}
+// ── the plain-language talk ─────────────────────────────────────────────────────────────────────────────────────────
+// Carter presents and must be able to defend every sentence (team room 57563, 02:51). When FINAL.json carries a
+// "plainTalk" block, its slides are the main path: the script's titles on the slides and its "Say" text as the notes,
+// exactly, one picture each. Every slide of the earlier deck follows as backup with its technical text intact, so
+// nothing true is lost. No K, kelvin, formula, grid or "statistic" may appear on a main slide, in its notes or in its
+// figure.
+export const PLAIN_TALK_BANNED = [/\d\s?K\b/, /\bkelvin\b/i, /\brz\b/, /convection/i, /\bgrid\b/i, /\bstatistic\b/i, /native block/i, /chiplet-centre/i];
+export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus }) {
+  return PT.slides.map((t) => {
+    if (t.door) {
+      if (!["live", "replay"].includes(demoStatus)) throw new FinalError(`the plain door has LIVE and REPLAY only (got ${JSON.stringify(demoStatus)})`);
+      const live = demoStatus === "live";
+      return { id: t.id, main: true, kicker: t.kicker, notes: t.say[demoStatus], content: {
+        layout: "door", title: t.title, status: demoStatus, statusText: demo.statuses[demoStatus].text,
+        instruction: live ? demo.instruction : null, urlNote: live && demo.urlIsPlaceholder ? demo.urlNote : null,
+        // REPLAY shows the 3D still, labelled like slide 1's: "simulated, not silicon" stays visible wherever a 3D-view
+        // temperature appears (root, team room reply to 57608, 03:40:48).
+        diagram: live ? demo.diagram : null,
+        still: live ? null : stills[t.picture?.still ?? "view3d"] ? { ...stills[t.picture?.still ?? "view3d"], label: t.picture?.label ?? null } : null } };
+    }
+    if (t.numbers) {
+      return { id: t.id, main: true, kicker: t.kicker, notes: PT.numbersOnStage ? `${t.sayNumbers} ${t.say}` : t.say, content: {
+        layout: "why", title: t.title, numbers: PT.numbersOnStage ? t.numbers : null } };
+    }
+    const st = t.picture?.still ? { ...stills[t.picture.still], label: t.picture.label ?? null } : null;
+    if (t.picture?.still && !stills[t.picture.still]) throw new FinalError(`plain slide ${t.id} names a missing still ${t.picture.still}`);
+    // A figure alone on its slide may be drawn larger than its backup use; never smaller than the type floor allows.
+    let figure = t.picture?.figure ? figureView(t.picture.figure) : null;
+    if (figure && t.picture.scale !== undefined) {
+      if (figure.minFont * t.picture.scale < FIGURE_MIN_RENDERED_FONT - 1e-9) {
+        throw new FinalError(`plain slide ${t.id}: ${figure.id} at scale ${t.picture.scale} shows ${figure.minFont * t.picture.scale} px text, under ${FIGURE_MIN_RENDERED_FONT} px`);
+      }
+      figure = { ...figure, scale: t.picture.scale };
+    }
+    return { id: t.id, main: true, kicker: t.kicker, notes: t.say, content: {
+      layout: "talk", title: t.title, figure, still: st, caption: t.caption ?? null } };
+  });
 }
 // The backup line on names, from the consent flags alone.
 export function namesLine(teams, named) {
@@ -612,8 +675,13 @@ export function checkRendered(data, teams = {}, named = new Set()) {
     let shown;
     try { shown = publicText(text, where); } catch (e) { if (e instanceof PacketError) throw new FinalError(e.message); throw e; }
     if (shown !== text) throw new FinalError(`${where}: the public-render rules would rewrite ${JSON.stringify(text)}; write it plainly instead`);
-    const bad = FINAL_BANNED.find((re) => re.test(text) && !(MONEY.has(re) && MONEY_SLIDES.has(slide?.id)));
+    const bad = FINAL_BANNED.find((re) => re.test(text) && !(MONEY.has(re) && moneyAllowed(slide)));
     if (bad) throw new FinalError(`${where}: ${bad} is not allowed in this deck: ${JSON.stringify(text)}`);
+    // The plain-language talk carries no physics arithmetic or simulator internals on a main slide or in its notes.
+    if (data.deck.plain && slide?.main) {
+      const tech = PLAIN_TALK_BANNED.find((re) => re.test(text));
+      if (tech) throw new FinalError(`${where}: the plain talk keeps technical detail in backup, but ${tech} matches ${JSON.stringify(text)}`);
+    }
     if (slide?.main) {
       const jargon = PLAIN_WORDS.find((re) => re.test(text));
       if (jargon) throw new FinalError(`${where}: main slides use plain words, but ${jargon} matches ${JSON.stringify(text)}`);
@@ -635,16 +703,28 @@ export function speakerScript(data, final, { label = "review export" } = {}) {
   const out = [
     `# Speaker script, five-minute deck, ${label} ${data.deck.cutoff}`,
     "",
-    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…). ${names.length ? `Named with consent: ${names.join(", ")}.` : "No team has consented yet."} Every other team reads "an outside team". Slide 4 is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
+    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${final.plainTalk ? ", the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken" : ""}. ${names.length ? `Named with consent: ${names.join(", ")}.` : "No team has consented yet."} Every other team reads "an outside team". ${final.plainTalk ? "Slide 5's pass test" : "Slide 4"} is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
     "",
     `Clock (root, team room 57481): the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s live demo.`,
   ];
+  const slowWpm = Math.round(u.slowWordsPerSecond * 60);
   for (const s of data.slides.filter((x) => x.main)) {
     const n = s.label.split(" ")[0];
-    const fig = s.content.figure ? ` (${s.content.figure.id})` : "";
+    const fig = s.content.figure ? ` (${s.content.figure.id})` : s.content.still ? ` (${s.content.still.id})` : "";
     out.push("", `## ${n}. ${s.content.title}${fig}`, "");
+    if (s.content.layout === "door") {
+      // The plain door: one of two scripted lines, whichever warden's production readback shows is true.
+      const t = final.plainTalk.slides.find((x) => x.door);
+      for (const st of ["live", "replay"]) out.push(`Say (${st.toUpperCase()}): ${t.say[st]}`, "", `${countWords(t.say[st])} words, ${at(countWords(t.say[st]))} at ${u.checkWordsPerMinute} wpm.`, "");
+      out.push(`Inside the ${u.demoSeconds} s demo clock. This export shows ${data.deck.demoStatus.toUpperCase()}: ${u.doorWords} words, ${u.doorSeconds} s, leaving ${u.liveSeconds} s for the demo itself.`);
+      continue;
+    }
     if (s.id !== "demo") {
       out.push(s.notes.text, "", `${s.notes.words} words, ${at(s.notes.words)} at ${u.checkWordsPerMinute} wpm.`);
+      if (s.content.layout === "why") {
+        const t = final.plainTalk.slides.find((x) => x.numbers);
+        out.push("", `The numbers line is ${final.plainTalk.numbersOnStage ? "on" : "off"} in this export. ${final.plainTalk.numbersOnStage ? "Without it" : "With it"}, the slide would say: "${final.plainTalk.numbersOnStage ? t.say : `${t.sayNumbers} ${t.say}`}"`);
+      }
       continue;
     }
     const base = final.demo.notes;
@@ -652,7 +732,7 @@ export function speakerScript(data, final, { label = "review export" } = {}) {
     for (const st of DEMO_STATUSES) out.push(`- ${st}: "${final.demo.statuses[st].notes}" (${countWords(final.demo.statuses[st].notes)} words)`);
     out.push("", `${countWords(base)} words plus the status line, inside the ${u.demoSeconds} s demo clock. This export is at "${data.deck.demoStatus}": ${u.doorWords} words, ${u.doorSeconds} s, leaving ${u.liveSeconds} s live.`);
   }
-  out.push("", `**Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at ${u.checkWordsPerMinute} wpm, plus ${u.transitionSeconds} s of transitions = ${tenths(u.talkSeconds + u.transitionSeconds)} s of the ${u.talkCapSeconds} s cap. At ${u.slowWordsPerSecond} words a second the talk would take ${u.talkSlowSeconds} s.**`, "");
+  out.push("", `**Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at ${u.checkWordsPerMinute} wpm, plus ${u.transitionSeconds} s of transitions = ${tenths(u.talkSeconds + u.transitionSeconds)} s of the ${u.talkCapSeconds} s cap. At ${slowWpm} words a minute it would take ${u.talkSlowSeconds} s, plus transitions ${tenths(u.talkSlowSeconds + u.transitionSeconds)} s.**`, "");
   return out.join("\n");
 }
 export function serialize(data) {
@@ -666,6 +746,7 @@ export function serialize(data) {
 export function finalPdfName(data) {
   if (data.deck.preview) throw new FinalError("a preview build never exports a PDF");
   if (data.deck.reviewOnly) throw new FinalError("a review render of another outcome never exports a PDF");
+  if (data.deck.demoReview) throw new FinalError("a demo review render never exports a PDF");
   const c = data.build.cutoff;
   return `final-5min/SentiLab-5min-${c.slice(0, 10)}-${c.slice(11, 13)}${c.slice(14, 16)}-${data.build.gate}.pdf`;
 }
@@ -704,7 +785,7 @@ export function cliOptions(args) {
     check: args.includes("--check"), refresh, export: args.includes("--export"), shots: arg(args, "--shots"),
     build: {
       gate: arg(args, "--gate"), measured: arg(args, "--measured") ?? null, cutoff, preview: args.includes("--preview"),
-      rederived: args.includes("--rederived"), demoStatus: arg(args, "--demo-status"),
+      rederived: args.includes("--rederived"), demoStatus: arg(args, "--demo-status"), demoReview: args.includes("--demo-review"),
     },
   };
 }
@@ -724,7 +805,7 @@ function main(args) {
     for (const f of readdirSync(FIGURE_OUT_DIR)) if (!data.figureFiles.has(f)) throw new FinalError(`deck/final-5min/figures/${f} is not a figure FINAL.json names; remove it by hand`);
     for (const [f, bytes] of data.figureFiles) writeFileSync(join(FIGURE_OUT_DIR, f), bytes);
     // The script is the export's: a preview or a review render of another outcome leaves it alone.
-    if (!data.deck.preview && !data.deck.reviewOnly) writeFileSync(SCRIPT_PATH, speakerScript(data, final));
+    if (!data.deck.preview && !data.deck.reviewOnly && !data.deck.demoReview) writeFileSync(SCRIPT_PATH, speakerScript(data, final));
   };
   const cli = cliOptions(args);
   if (cli.check) {
@@ -753,7 +834,7 @@ function main(args) {
   console.log(`  talk ${u.talkWords} words = ${u.talkSeconds} s at ${u.checkWordsPerMinute} wpm (${u.talkSlowSeconds} s at ${u.slowWordsPerSecond} w/s) + ${u.transitionSeconds} s transitions = ${tenths(u.talkSeconds + u.transitionSeconds)} s of ${u.talkCapSeconds} s; door ${u.doorWords} words = ${u.doorSeconds} s (${u.doorSlowSeconds} s), live ${u.liveSeconds} s of the ${u.demoSeconds} s demo clock; slot ${u.maxSeconds} s`);
   for (const s of data.slides) console.log(`  ${s.label.padEnd(6)} ${s.id.padEnd(12)} ${String(s.notes.words).padStart(3)} words ${String(s.notes.seconds).padStart(5)} s (${String(s.notes.slowSeconds).padStart(5)} s)${s.main ? (s.id === "demo" ? "  door, inside the demo clock" : "") : "  (backup, not spoken)"}`);
   if (cli.export) {
-    const r = spawnSync(process.execPath, [join(REPO_ROOT, "scripts", "export-deck-pdf.mjs"), "--deck", "final", ...(cli.shots ? ["--shots", cli.shots] : []), ...(data.deck.preview || data.deck.reviewOnly ? ["--no-pdf"] : [])], { stdio: "inherit" });
+    const r = spawnSync(process.execPath, [join(REPO_ROOT, "scripts", "export-deck-pdf.mjs"), "--deck", "final", ...(cli.shots ? ["--shots", cli.shots] : []), ...(data.deck.preview || data.deck.reviewOnly || data.deck.demoReview ? ["--no-pdf"] : [])], { stdio: "inherit" });
     process.exit(r.status ?? 1);
   }
 }

@@ -6,25 +6,27 @@ window.DECK_DATA = {
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 02:50 UTC",
+    "cutoff": "2026-11-01 03:50 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
     "reviewOnly": false,
-    "demoStatus": "staging"
+    "demoReview": false,
+    "demoStatus": "replay",
+    "plain": true
   },
   "budget": {
     "checkWordsPerMinute": 150,
-    "slowWordsPerSecond": 2.2,
-    "talkWords": 378,
-    "talkSeconds": 151.2,
-    "talkSlowSeconds": 171.8,
+    "slowWordsPerSecond": 2.25,
+    "talkWords": 359,
+    "talkSeconds": 143.6,
+    "talkSlowSeconds": 159.6,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
-    "doorWords": 47,
-    "doorSeconds": 18.8,
-    "doorSlowSeconds": 21.4,
-    "liveSeconds": 101.2,
+    "doorWords": 34,
+    "doorSeconds": 13.6,
+    "doorSlowSeconds": 15.1,
+    "liveSeconds": 106.4,
     "demoSeconds": 120,
     "maxSeconds": 300
   },
@@ -43,14 +45,422 @@ window.DECK_DATA = {
   },
   "slides": [
     {
-      "id": "problem",
+      "id": "talk1",
       "main": true,
+      "kicker": "SentiLab",
+      "notes": {
+        "text": "Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.",
+        "words": 48,
+        "seconds": 19.2,
+        "slowSeconds": 21.3
+      },
+      "content": {
+        "layout": "talk",
+        "title": "AI agents arrange chips. Software predicts the heat.",
+        "figure": null,
+        "still": {
+          "id": "view3d",
+          "src": "figures/package-view-replay.png",
+          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "width": 1920,
+          "height": 1080,
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
+          "label": "simulated, not silicon"
+        },
+        "caption": null
+      },
+      "label": "1 / 9"
+    },
+    {
+      "id": "talk2",
+      "main": true,
+      "kicker": "The problem",
+      "notes": {
+        "text": "We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
+        "words": 37,
+        "seconds": 14.8,
+        "slowSeconds": 16.4
+      },
+      "content": {
+        "layout": "talk",
+        "title": "Same design, same files: 119 °C or 241 °C?",
+        "figure": {
+          "id": "plain1",
+          "src": "figures/plain1-same-chips.svg",
+          "sha256": "9d1e00cabb836fcb3d9174a0f3cd3d9e5776804c05285da8b5fe328c64423e75",
+          "width": 1664,
+          "height": 640,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "Two heat maps of the same chip layout on one colour scale. The older simulator version peaks at 119 degrees C and the newer one at 241: 2.6 times as much heating above the 45 degree air, with the same chips, power and input files.",
+          "texts": [
+            "Older, 6.0",
+            "hottest spot 119 °C",
+            "CPU",
+            "CPU",
+            "CPU",
+            "CPU",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "Newer, 7.0",
+            "hottest spot 241 °C",
+            "CPU",
+            "CPU",
+            "CPU",
+            "CPU",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "DRAM",
+            "45 °C",
+            "100 °C",
+            "150 °C",
+            "200 °C",
+            "245 °C",
+            "2.6×",
+            "as much heating,",
+            "above the 45 °C air",
+            "Same chips",
+            "Same power",
+            "Same input files"
+          ]
+        },
+        "still": null,
+        "caption": "The CPU-DRAM reference layout. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+      },
+      "label": "2 / 9"
+    },
+    {
+      "id": "talk3",
+      "main": true,
+      "kicker": "Where it splits",
+      "notes": {
+        "text": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.",
+        "words": 43,
+        "seconds": 17.2,
+        "slowSeconds": 19.1
+      },
+      "content": {
+        "layout": "talk",
+        "title": "The answers split at one step: lid to cooler.",
+        "figure": {
+          "id": "plain2",
+          "src": "figures/plain2-stack.svg",
+          "sha256": "7ddf7a93d66ec77010888a6b6b78929eb56ef64818aee842d2acb2899103b165",
+          "width": 1664,
+          "height": 640,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "Exploded view of chips, thermal paste, metal lid and cooler on real grids. The older version falls gently, with a 4 degree gap between the lid and the cooler. The newer version has a 142 degree gap there. A separate check of that gap, using separately located layer maxima: 142 in the newer version, about 4 in two independent solvers, 3 in the older version.",
+          "texts": [
+            "Older version, 6.0",
+            "102 °C",
+            "Cooler",
+            "106 °C",
+            "Metal lid",
+            "116 °C",
+            "Thermal paste",
+            "119 °C",
+            "Chips",
+            "4 degrees",
+            "between the lid",
+            "and the cooler",
+            "Newer version, 7.0",
+            "86 °C",
+            "Cooler",
+            "228 °C",
+            "Metal lid",
+            "235 °C",
+            "Thermal paste",
+            "241 °C",
+            "Chips",
+            "142 degrees",
+            "between the lid",
+            "and the cooler",
+            "Independent check",
+            "Newer version: 142",
+            "2 other solvers: 4",
+            "Older version: 3"
+          ]
+        },
+        "still": null,
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Independent check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+      },
+      "label": "3 / 9"
+    },
+    {
+      "id": "talk4",
+      "main": true,
+      "kicker": "The agents",
+      "notes": {
+        "text": "I asked our shared room one question: why did our study come out inconclusive? Three agents investigated separately and sealed their notes. One showed that our old setup heated up much more than the paper predicted; another pointed at the lid-to-cooler step. Neither had the whole answer. Thirty-two minutes in, one had named a suspect. Then one agent proposed stopping our own public experiment, two agreed, and it stopped within five minutes. We took those numbers back publicly.",
+        "words": 78,
+        "seconds": 31.2,
+        "slowSeconds": 34.7
+      },
+      "content": {
+        "layout": "talk",
+        "title": "The agents found it, and stopped our own run.",
+        "figure": {
+          "id": "plain4",
+          "src": "figures/plain4-timeline.svg",
+          "sha256": "672b220cdc539e2619aeffc009d7d1c5aac292b2db8deb8aac7051b1562f6356",
+          "width": 1664,
+          "height": 548,
+          "scale": 1,
+          "minFont": 24,
+          "alt": "Timeline: a person's question at 12:43; an agent's source suspect at 13:15, confirmed 13:28; a public-code model at 14:26; saved output at 14:42; agents halt their own public run at 15:56; a public notice read back live at 16:40; public case at 22:22; an outside team reproduces it at 23:01; the test fixed in advance passes at 23:44; an outside team finite-element result at 00:03.",
+          "texts": [
+            "6 h",
+            "12:43",
+            "A person asks why the",
+            "study was inconclusive",
+            "13:15",
+            "An agent reads the code,",
+            "names a suspect. Another",
+            "confirms it, 13:28",
+            "14:26",
+            "Another agent models it",
+            "from public code",
+            "14:42",
+            "Saved results show the",
+            "gap. Second check, 14:53",
+            "15:56",
+            "Agents stop their own public",
+            "run, under 5 min after one",
+            "proposed it",
+            "16:40",
+            "Numbers taken",
+            "back in public",
+            "22:22",
+            "Public test",
+            "case posted",
+            "23:01",
+            "Outside team",
+            "reproduces: 39 min",
+            "23:44",
+            "Test set in",
+            "advance: PASS",
+            "00:03",
+            "Second team's",
+            "solver: 1 h 41",
+            "A person",
+            "Our agents",
+            "Outside teams",
+            "UTC, 2026-10-31 into 11-01. Linear on each side of the break."
+          ]
+        },
+        "still": null,
+        "caption": "Times UTC, from the room and run records. Linear on each side of the break."
+      },
+      "label": "4 / 9"
+    },
+    {
+      "id": "talk5",
+      "main": true,
+      "kicker": "The test",
+      "notes": {
+        "text": "For the paper check, we used the paper's own temperature reading. We set a pass bar in advance: the older version had to match it within one degree. It came within a hundredth. Two independent physics programs land within about six degrees, much closer than the newer version; why they differ is still open. Which version matches a real chip is still ahead.",
+        "words": 63,
+        "seconds": 25.2,
+        "slowSeconds": 28
+      },
+      "content": {
+        "layout": "talk",
+        "title": "We set the bar first. It passed.",
+        "figure": {
+          "id": "plain3",
+          "src": "figures/plain3-answers.svg",
+          "sha256": "2003d0c0b9cf445eef3d7694b147b24464131ee767ae9380f2259966491f870a",
+          "width": 1664,
+          "height": 450,
+          "scale": 1,
+          "minFont": 24,
+          "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and another team's rerun all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233.",
+          "texts": [
+            "50 °C",
+            "100 °C",
+            "150 °C",
+            "200 °C",
+            "250 °C",
+            "The published answer: 116",
+            "Our rerun of the older version: 116",
+            "Another team's rerun of it: 116",
+            "2 independent solvers: 122",
+            "Close, not identical. That gap is still open.",
+            "Newer version: 233",
+            "ours and another team's",
+            "The paper's own temperature reading, not the hottest spot",
+            "Pass mark set in advance: within 1 degree of the published answer"
+          ]
+        },
+        "still": null,
+        "caption": "The CPU-DRAM reference, rounded. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
+      },
+      "label": "5 / 9"
+    },
+    {
+      "id": "talk6",
+      "main": true,
+      "kicker": "Checking each other",
+      "notes": {
+        "text": "Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.",
+        "words": 30,
+        "seconds": 12,
+        "slowSeconds": 13.3
+      },
+      "content": {
+        "layout": "talk",
+        "title": "A second agent catches what the first approved.",
+        "figure": {
+          "id": "fig5",
+          "src": "figures/fig5-waffle.svg",
+          "sha256": "ed392e3bc0e97f76e4ccf23841252276cd3f1f664daf237f58f24fa32a6d7422",
+          "width": 678,
+          "height": 472,
+          "scale": 1.4,
+          "minFont": 24,
+          "alt": "A field of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
+          "texts": [
+            "17 at a version another agent had approved",
+            "63 more where a later agent was first",
+            "110 others"
+          ]
+        },
+        "still": null,
+        "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. Not blind, so a description, not a controlled test."
+      },
+      "label": "6 / 9"
+    },
+    {
+      "id": "talk7",
+      "main": true,
+      "kicker": "Other teams",
+      "notes": {
+        "text": "The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
+        "words": 37,
+        "seconds": 14.8,
+        "slowSeconds": 16.4
+      },
+      "content": {
+        "layout": "talk",
+        "title": "Other teams build on it.",
+        "figure": {
+          "id": "fig6",
+          "src": "figures/fig6-teams.svg",
+          "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
+          "width": 1664,
+          "height": 760,
+          "scale": 0.92,
+          "minFont": 24,
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel solve, compared; An outside team to An outside team: evaluation notes.",
+          "texts": [
+            "public test case",
+            "rigidity tool",
+            "matchmaking, review",
+            "benchmark, public case",
+            "shot-cost points",
+            "test harness",
+            "dataset search",
+            "answers, knowledge base",
+            "physics anchors",
+            "fracture package",
+            "blind panel solve, compared",
+            "evaluation notes",
+            "SentiLab",
+            "An outside team",
+            "Both versions on our case,",
+            "39 min after it went public",
+            "An outside team",
+            "Ran through the open-source",
+            "ScienceClaw registry, executor",
+            "ScienceClaw",
+            "“your matchmaking”, then used",
+            "our review to fix its package",
+            "An outside team",
+            "Separate solver on our",
+            "case, in 1 h 41",
+            "An outside team",
+            "“Thanks, very useful”",
+            "Result not shown",
+            "An outside team",
+            "Asked for it.",
+            "Use not confirmed yet",
+            "An outside team",
+            "“glad to have another",
+            "agent on it”",
+            "An outside team",
+            "“Yes, yours helped.”",
+            "Then it corrected a claim of ours",
+            "2 checked our thermal case",
+            "3 said other help was useful",
+            "3 haven't confirmed yet",
+            "between other teams"
+          ]
+        },
+        "still": null,
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC. Only teams that agreed are named."
+      },
+      "label": "7 / 9"
+    },
+    {
+      "id": "talk8",
+      "main": true,
+      "kicker": "Why it matters",
+      "notes": {
+        "text": "Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.",
+        "words": 23,
+        "seconds": 9.2,
+        "slowSeconds": 10.2
+      },
+      "content": {
+        "layout": "why",
+        "title": "Why it matters.",
+        "numbers": null
+      },
+      "label": "8 / 9"
+    },
+    {
+      "id": "talk9",
+      "main": true,
+      "kicker": "Live demo",
+      "notes": {
+        "text": "The live submission flow is still being finished. This preview uses saved simulation data and sample arrivals to show how it will work. No agent has a verified better layout yet. That's the challenge.",
+        "words": 34,
+        "seconds": 13.6,
+        "slowSeconds": 15.1
+      },
+      "content": {
+        "layout": "door",
+        "title": "Send your agent.",
+        "status": "replay",
+        "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "instruction": null,
+        "urlNote": null,
+        "diagram": null,
+        "still": {
+          "id": "view3d",
+          "src": "figures/package-view-replay.png",
+          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "width": 1920,
+          "height": 1080,
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
+          "label": "simulated, not silicon"
+        }
+      },
+      "label": "9 / 9"
+    },
+    {
+      "id": "problem",
+      "main": false,
       "kicker": "The problem",
       "notes": {
         "text": "AI agents can now propose chiplet layouts in minutes, and a thermal simulator judges every one. We ran one published layout through two releases of the same open simulator, with byte-identical input files. Version 6.0 says 119 degrees; 7.0 says 241. That's 2.6 times the temperature rise. SentiLab is built so agents propose, challenge each other and keep the evidence. All of it is simulated, not silicon.",
         "words": 67,
         "seconds": 26.8,
-        "slowSeconds": 30.5
+        "slowSeconds": 29.8
       },
       "content": {
         "title": "Same chips, same power, same input files: 119 or 241 degrees?",
@@ -104,17 +514,17 @@ window.DECK_DATA = {
         "line": "SentiLab: agents propose, challenge each other and keep the evidence behind every result.",
         "caption": "The CPU-DRAM layout's chip layer on a 64 by 64 grid; the ring marks the hottest cell. 119 and 241 are chip-layer grid maxima (119.07 C and 240.53 C). The frozen gate statistic, the maximum native block output under centre mapping, is 115.93 C and 232.67 C; in 7.0 that maximum is a substrate block, not a chip. Run 23:41 to 23:44 UTC. Simulated, not silicon."
       },
-      "label": "1 / 8"
+      "label": "B1"
     },
     {
       "id": "stack",
-      "main": true,
+      "main": false,
       "kicker": "Where it opens",
       "notes": {
         "text": "Here's where it opens. Follow the hottest cell down through the modeled layers: between the spreader and the sink, the difference is 4 kelvin in 6.0 and 142 in 7.0. The public source computes that link differently. An outside team ran both versions with the detailed 3-D mode off and got the same answer, as reported by them.",
         "words": 58,
         "seconds": 23.2,
-        "slowSeconds": 26.4
+        "slowSeconds": 25.8
       },
       "content": {
         "title": "The difference opens between two modeled layers.",
@@ -164,17 +574,17 @@ window.DECK_DATA = {
         "credit": "An outside team ran both versions with the detailed 3-D mode off: both give 75.37 C and 115.29 C, as reported by them.",
         "caption": "The CPU-DRAM layout: each run's hottest chip-layer cell, then the same x/y grid index through the modeled layers, shown exploded. Spreader to sink: 4.04 K in 6.0, 141.77 K in 7.0. Modeled nodes, not a copper layer. This localizes the difference; it does not by itself show a single cause. Panel at right: Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated."
       },
-      "label": "2 / 8"
+      "label": "B2"
     },
     {
       "id": "timeline",
-      "main": true,
+      "main": false,
       "kicker": "Our own numbers",
       "notes": {
         "text": "A person asked one question at 12:43. Thirty-two minutes later an agent reading the source named a suspect, and a second confirmed it. A third, run by another person, modeled it from public code. Then one agent proposed stopping our own public run, two agreed, and it halted under five minutes later. We withdrew those temperatures in public.",
         "words": 58,
         "seconds": 23.2,
-        "slowSeconds": 26.4
+        "slowSeconds": 25.8
       },
       "content": {
         "title": "Agents found it, checked it, and stopped our own run.",
@@ -244,17 +654,17 @@ window.DECK_DATA = {
         ],
         "caption": "Times UTC, from the room and run records; the time scale is linear on each side of the break. Saved-output values are modeled node values at matching positions, not calibrated temperatures."
       },
-      "label": "3 / 8"
+      "label": "B3"
     },
     {
       "id": "gate",
-      "main": true,
+      "main": false,
       "kicker": "The test fixed in advance",
       "notes": {
         "text": "We fixed a test in advance: the older version must reproduce both published numbers within one kelvin. It passed, which reproduces those numbers but does not prove physical accuracy. A second reviewer has independently re-derived it from the signed raw outputs. Two outside teams checked us, as reported by them: an outside team ran both versions, and a second outside team used its own finite-element code.",
         "words": 66,
         "seconds": 26.4,
-        "slowSeconds": 30
+        "slowSeconds": 29.3
       },
       "content": {
         "title": "The link differs between versions. We fixed the test first.",
@@ -328,29 +738,29 @@ window.DECK_DATA = {
         "scope": "Scope, in the operator's words: “this binary, at grid 64, on the block-centre metric only. It doesn't cover other grids or the search objective J.” Statistic: the maximum native block output under centre mapping. Chiplet-centre means (75.475 and 115.935 C) and active-grid peaks (75.48 and 119.07 C) are separate.",
         "figureCaption": "Outside: as reported by outside teams. Finite element sits 8 to 9 percent above 6.0 in rise; that gap is open."
       },
-      "label": "4 / 8"
+      "label": "B4"
     },
     {
       "id": "checks",
-      "main": true,
+      "main": false,
       "kicker": "Checking each other",
       "notes": {
         "text": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
         "words": 42,
         "seconds": 16.8,
-        "slowSeconds": 19.1
+        "slowSeconds": 18.7
       },
       "content": {
         "title": "Agents check each other.",
         "figure": {
           "id": "fig5",
           "src": "figures/fig5-waffle.svg",
-          "sha256": "592d07bb3be88f6c9ba4fad4eefce767f77b401163d5cc682843ed65aefeaf42",
+          "sha256": "ed392e3bc0e97f76e4ccf23841252276cd3f1f664daf237f58f24fa32a6d7422",
           "width": 678,
           "height": 472,
           "scale": 1,
           "minFont": 24,
-          "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
+          "alt": "A field of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
           "texts": [
             "17 at a version another agent had approved",
             "63 more where a later agent was first",
@@ -366,29 +776,29 @@ window.DECK_DATA = {
           "text": "Designed to compare agents with defects planted in advance. It has not run yet; when it does, its result goes here, whatever it shows."
         }
       },
-      "label": "5 / 8"
+      "label": "B5"
     },
     {
       "id": "teams",
-      "main": true,
+      "main": false,
       "kicker": "Other teams",
       "notes": {
-        "text": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.",
-        "words": 54,
-        "seconds": 21.6,
-        "slowSeconds": 24.5
+        "text": "And the work travels. We offered help to eight outside teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.",
+        "words": 51,
+        "seconds": 20.4,
+        "slowSeconds": 22.7
       },
       "content": {
         "title": "Other teams build on it, and with each other.",
         "figure": {
           "id": "fig6",
           "src": "figures/fig6-teams.svg",
-          "sha256": "b283a065b6fd03acad4cce832c9ce1e2f95edb4ebd0613be3fa56bb8b141c130",
+          "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
           "width": 1664,
           "height": 760,
           "scale": 0.92,
           "minFont": 24,
-          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel test, running; An outside team to An outside team: evaluation notes.",
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel solve, compared; An outside team to An outside team: evaluation notes.",
           "texts": [
             "public test case",
             "rigidity tool",
@@ -400,7 +810,7 @@ window.DECK_DATA = {
             "answers, knowledge base",
             "physics anchors",
             "fracture package",
-            "blind panel test, running",
+            "blind panel solve, compared",
             "evaluation notes",
             "SentiLab",
             "An outside team",
@@ -427,25 +837,25 @@ window.DECK_DATA = {
             "An outside team",
             "“Yes, yours helped.”",
             "Then it corrected a claim of ours",
-            "2 used it and returned a result",
-            "3 said it helped, in their words",
-            "3 delivered, not confirmed yet",
+            "2 checked our thermal case",
+            "3 said other help was useful",
+            "3 haven't confirmed yet",
             "between other teams"
           ]
         },
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:09 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence."
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence."
       },
-      "label": "6 / 8"
+      "label": "B6"
     },
     {
       "id": "numbers",
-      "main": true,
+      "main": false,
       "kicker": "By the numbers",
       "notes": {
-        "text": "By the numbers, measured: from midnight UTC on Saturday to 00:27 on Sunday we merged 90 pull requests. The cloud bill posted so far for Saturday is 5,112 dollars, for the whole account.",
-        "words": 33,
-        "seconds": 13.2,
-        "slowSeconds": 15
+        "text": "By the numbers, measured: from midnight UTC on Saturday to the count at 00:22 to 00:27 on Sunday, we merged 90 pull requests. The cloud cost posted by 02:44 UTC for Saturday is 6,376 dollars for the whole account, and it is still posting.",
+        "words": 44,
+        "seconds": 17.6,
+        "slowSeconds": 19.6
       },
       "content": {
         "title": "By the numbers, measured.",
@@ -454,10 +864,10 @@ window.DECK_DATA = {
           {
             "n": "1",
             "value": "90",
-            "label": "pull requests merged from 31 Oct 00:00 UTC to 1 Nov 00:27 UTC, when they were counted (121 opened); median 44 min 28 s from open to merge",
+            "label": "pull requests merged since 31 Oct 00:00 UTC, collected 1 Nov 00:22–00:27 UTC (121 opened); median 44 min 28 s from open to merge",
             "class": "MEASURED",
             "tag": "MEASURED",
-            "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository."
+            "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository. A recount at 00:25 UTC found 91."
           },
           {
             "n": "2",
@@ -469,25 +879,25 @@ window.DECK_DATA = {
           },
           {
             "n": "3",
-            "value": "$5,112.39",
-            "label": "cloud cost posted for 31 October, all projects",
+            "value": "$6,376.21",
+            "label": "cloud cost posted by 02:44 UTC for 31 Oct (whole account; includes lagged earlier-day usage)",
             "class": "MEASURED",
             "tag": "POSTED SO FAR",
             "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon."
           }
         ]
       },
-      "label": "7 / 8"
+      "label": "B7"
     },
     {
       "id": "demo",
-      "main": true,
+      "main": false,
       "kicker": "Live demo",
       "notes": {
-        "text": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation. Right now it is being built on our staging site.",
-        "words": 47,
-        "seconds": 18.8,
-        "slowSeconds": 21.4
+        "text": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation. This preview uses saved simulation data and sample arrivals, labelled as a replay.",
+        "words": 50,
+        "seconds": 20,
+        "slowSeconds": 22.2
       },
       "content": {
         "title": "Live demo: send your agent",
@@ -503,7 +913,7 @@ window.DECK_DATA = {
             "text": "One purpose, one hour"
           },
           {
-            "title": "ENGRAM view",
+            "title": "Agent view",
             "text": "The challenge as data"
           },
           {
@@ -519,10 +929,19 @@ window.DECK_DATA = {
             "text": "Arrivals, the queue and the package in 3D"
           }
         ],
-        "status": "staging",
-        "statusText": "Status: staging. The door, queue and 3D view are being built and tested on a staging site; the public address may still change."
+        "status": "replay",
+        "statusText": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "still": {
+          "id": "view3d",
+          "src": "figures/package-view-replay.png",
+          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "width": 1920,
+          "height": 1080,
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon.",
+          "label": "replay · simulated, not silicon"
+        }
       },
-      "label": "8 / 8"
+      "label": "B8"
     },
     {
       "id": "how",
@@ -532,7 +951,7 @@ window.DECK_DATA = {
         "text": "Backup. If asked how the team works, walk the four steps; each has a dated example.",
         "words": 16,
         "seconds": 6.4,
-        "slowSeconds": 7.3
+        "slowSeconds": 7.1
       },
       "content": {
         "title": "One goal, separate investigations, open challenge, one record.",
@@ -561,7 +980,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B1"
+      "label": "B9"
     },
     {
       "id": "chronology",
@@ -571,7 +990,7 @@ window.DECK_DATA = {
         "text": "Backup. If asked how the day unfolded, walk this table; every line is a room record.",
         "words": 16,
         "seconds": 6.4,
-        "slowSeconds": 7.3
+        "slowSeconds": 7.1
       },
       "content": {
         "title": "The day in detail: 31 October into 1 November 2026, UTC, from the room record.",
@@ -583,7 +1002,7 @@ window.DECK_DATA = {
           },
           {
             "at": "13:08",
-            "text": "Three agents seal their findings before reading each other's (13:08 to 13:15; one had seen a one-line preview), then attack each other's reports (13:18)."
+            "text": "Three agents post sealed findings from 13:08 to 13:15, each before reading the others' (one had seen a one-line preview), then attack each other's reports (13:18)."
           },
           {
             "at": "13:15",
@@ -647,7 +1066,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B2"
+      "label": "B10"
     },
     {
       "id": "reviews",
@@ -657,7 +1076,7 @@ window.DECK_DATA = {
         "text": "Backup. If asked whether the agents really check each other, read the line as written, with its qualifier.",
         "words": 18,
         "seconds": 7.2,
-        "slowSeconds": 8.2
+        "slowSeconds": 8
       },
       "content": {
         "title": "How reviews work here: what a later reviewer was first to record.",
@@ -697,7 +1116,7 @@ window.DECK_DATA = {
           "All 17 follow one reviewer's approvals, often scoped real-run checks. This is not a ranking of reviewers."
         ]
       },
-      "label": "B3"
+      "label": "B11"
     },
     {
       "id": "metrics",
@@ -707,11 +1126,11 @@ window.DECK_DATA = {
         "text": "Backup. If asked for the numbers, separate saved output from the simplified model; neither is a calibrated temperature.",
         "words": 18,
         "seconds": 7.2,
-        "slowSeconds": 8.2
+        "slowSeconds": 8
       },
       "content": {
         "kicker": "Backup · numbers",
-        "title": "The numbers behind slide 3, each with its evidence class.",
+        "title": "The numbers behind the timeline, each with its evidence class.",
         "saved": {
           "eyebrow": "Our simulator's saved output · no new solve",
           "lines": [
@@ -756,7 +1175,32 @@ window.DECK_DATA = {
           "limit": "They agree within 0.001 K with our extrapolated estimates and differ from our finest meshes by 0.018 and 0.044 K; no certified error bound follows. Model solutions, not silicon."
         }
       },
-      "label": "B4"
+      "label": "B12"
+    },
+    {
+      "id": "view3d",
+      "main": false,
+      "kicker": "Backup · replay",
+      "notes": {
+        "text": "Backup. A replay of our 3D package view: simulated, not silicon.",
+        "words": 11,
+        "seconds": 4.4,
+        "slowSeconds": 4.9
+      },
+      "content": {
+        "title": "The 3D package view, replaying a bundled fixture.",
+        "label": "replay · simulated, not silicon",
+        "caption": "Our package view (build 4e047187) replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Simulated, not silicon.",
+        "still": {
+          "id": "view3d",
+          "src": "figures/package-view-replay.png",
+          "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+          "width": 1920,
+          "height": 1080,
+          "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon."
+        }
+      },
+      "label": "B13"
     },
     {
       "id": "profile",
@@ -766,7 +1210,7 @@ window.DECK_DATA = {
         "text": "Backup. The same layer profile as a line chart, both layouts; modeled nodes, not a copper layer.",
         "words": 17,
         "seconds": 6.8,
-        "slowSeconds": 7.7
+        "slowSeconds": 7.6
       },
       "content": {
         "title": "The same profile as a line chart, for both layouts.",
@@ -815,7 +1259,7 @@ window.DECK_DATA = {
         },
         "caption": "Each run's hottest chip-layer cell, then the same x/y grid index through the modeled layers. Spreader to sink: layout A 1.24 K in 6.0 and 55.31 K in 7.0; the CPU-DRAM layout 4.04 K and 141.77 K. Modeled nodes, not a copper layer. Simulated, not silicon."
       },
-      "label": "B5"
+      "label": "B14"
     },
     {
       "id": "layers",
@@ -825,7 +1269,7 @@ window.DECK_DATA = {
         "text": "Backup. Independently located layer maxima beside both versions; read the sentence as written, and the cause stays open.",
         "words": 18,
         "seconds": 7.2,
-        "slowSeconds": 8.2
+        "slowSeconds": 8
       },
       "content": {
         "title": "Layer maxima: two finite-element solves, beside both simulator versions.",
@@ -894,10 +1338,10 @@ window.DECK_DATA = {
         ],
         "sentence": "Two separate FE implementations (ours and an outside team's) give spreader-minus-sink layer-maximum contrasts of about 1.30 K and 4.20 K, much closer to HotSpot 6 than HotSpot 7. The remaining FE–HotSpot 6 offset is also visible in the sink-layer maxima; its cause remains open.",
         "chip": "Chip minus sink, both finite-element solves agree with HotSpot 6.0 within 0.44 K.",
-        "note": "These maxima are located independently in each layer, so they are not the same-index column on slide 2 (4.04 K and 141.77 K there). The finite-element team's spreader and sink maxima are 5.46 mm apart.",
+        "note": "These maxima are located independently in each layer, so they are not the same-index column of the exploded stack (4.04 K and 141.77 K there). The finite-element team's spreader and sink maxima are 5.46 mm apart.",
         "caption": "Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated."
       },
-      "label": "B6"
+      "label": "B15"
     },
     {
       "id": "gate-detail",
@@ -907,7 +1351,7 @@ window.DECK_DATA = {
         "text": "Backup. If asked how the test works, read the rules; the three wordings were written before any result.",
         "words": 18,
         "seconds": 7.2,
-        "slowSeconds": 8.2
+        "slowSeconds": 8
       },
       "content": {
         "title": "Gate zero: what runs, what passes, and the wording fixed before the result.",
@@ -923,7 +1367,7 @@ window.DECK_DATA = {
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 02:48 UTC"
+          "checked": "checked 2026-11-01 03:49 UTC"
         },
         "result": {
           "label": "PASS",
@@ -959,7 +1403,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B7"
+      "label": "B16"
     },
     {
       "id": "drill",
@@ -969,7 +1413,7 @@ window.DECK_DATA = {
         "text": "Backup. This is a test fixture with illustrative values; it shows the designed mechanism, not a result.",
         "words": 17,
         "seconds": 6.8,
-        "slowSeconds": 7.7
+        "slowSeconds": 7.6
       },
       "content": {
         "kicker": "Backup · test fixture",
@@ -998,9 +1442,9 @@ window.DECK_DATA = {
         ],
         "labCaption": "Lab view: the measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.",
         "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
-        "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
+        "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal in the timeline used a public notice and per-value labels."
       },
-      "label": "B8"
+      "label": "B17"
     },
     {
       "id": "status",
@@ -1010,7 +1454,7 @@ window.DECK_DATA = {
         "text": "Backup. Where it stands: no deliverable is fully accepted, and scientific benefit is not established.",
         "words": 15,
         "seconds": 6,
-        "slowSeconds": 6.8
+        "slowSeconds": 6.7
       },
       "content": {
         "title": "Where it stands: 0 of 8 deliverables fully accepted.",
@@ -1075,7 +1519,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B9"
+      "label": "B18"
     },
     {
       "id": "gb10",
@@ -1085,7 +1529,7 @@ window.DECK_DATA = {
         "text": "Backup. If asked about our local workstation, give the wall times and say what they do not show.",
         "words": 18,
         "seconds": 7.2,
-        "slowSeconds": 8.2
+        "slowSeconds": 8
       },
       "content": {
         "title": "Our local workstation: what ran on 31 October, and for how long.",
@@ -1110,7 +1554,7 @@ window.DECK_DATA = {
           "Wall time of automated runs is not human time saved."
         ]
       },
-      "label": "B10"
+      "label": "B19"
     },
     {
       "id": "prs",
@@ -1120,93 +1564,93 @@ window.DECK_DATA = {
         "text": "Backup. Pull request states at the check time; merged ones show their merge commit.",
         "words": 14,
         "seconds": 5.6,
-        "slowSeconds": 6.4
+        "slowSeconds": 6.2
       },
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 02:48 UTC",
+        "checked": "checked 2026-11-01 03:49 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 02:48 UTC"
+            "checked": "checked 2026-11-01 03:49 UTC"
           }
         ]
       },
-      "label": "B11"
+      "label": "B20"
     },
     {
       "id": "receipt",
@@ -1216,7 +1660,7 @@ window.DECK_DATA = {
         "text": "Backup. The outside-team receipts in full, and why our own leaderboard is not used as evidence.",
         "words": 16,
         "seconds": 6.4,
-        "slowSeconds": 7.3
+        "slowSeconds": 7.1
       },
       "content": {
         "title": "The outside-team receipts, exactly, and what we do not count as evidence.",
@@ -1250,19 +1694,53 @@ window.DECK_DATA = {
         "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent.",
         "names": "Named with their consent, on record in the help room: ScienceClaw. The other 7 teams are not named until they agree."
       },
-      "label": "B12"
+      "label": "B21"
+    },
+    {
+      "id": "qa",
+      "main": false,
+      "kicker": "Backup · questions",
+      "notes": {
+        "text": "Backup. If asked, answer in these words.",
+        "words": 7,
+        "seconds": 2.8,
+        "slowSeconds": 3.1
+      },
+      "content": {
+        "title": "Questions we may get, answered plainly.",
+        "items": [
+          {
+            "q": "Why does it say unvalidated?",
+            "a": "That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."
+          },
+          {
+            "q": "Did you make a better chip?",
+            "a": "Not a verified one yet. That's the open challenge."
+          },
+          {
+            "q": "Which version is right?",
+            "a": "We reproduced the published result and compared independent models. Nobody has measured this chip yet."
+          },
+          {
+            "q": "Why more than one agent?",
+            "a": "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."
+          }
+        ]
+      },
+      "label": "B22"
     }
   ],
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T02:50:00Z",
+    "cutoff": "2026-11-01T03:50:00Z",
     "preview": false,
     "rederived": true,
-    "demoStatus": "staging"
+    "demoStatus": "replay",
+    "demoReview": false
   },
   "source": {
-    "finalSha256": "33abea78ef2646c9eff2da4431c64596d1e9c78e7f8e37517c8343ea21a9af91",
-    "schemaSha256": "696266569c948be32ec708b668c5c456af0616016aed08329ce504b6d53c9980"
+    "finalSha256": "690e9007f7f644b10907950e23097a5f8104d3053f310c73af2904f70aa1c0af",
+    "schemaSha256": "fdb16d383466c9b0a2a5131ded5c85ba4dd77eade162b8342f78083d3287db5b"
   }
 };

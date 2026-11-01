@@ -1,61 +1,69 @@
-# Speaker script, five-minute deck, review export 2026-11-01 02:50 UTC
+# Speaker script, five-minute deck, review export 2026-11-01 03:50 UTC
 
-The spoken words, exactly as the deck renders them from FINAL.json (sha256 33abea78…). Named with consent: ScienceClaw (help room, message 57532). Every other team reads "an outside team". Slide 4 is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
+The spoken words, exactly as the deck renders them from FINAL.json (sha256 690e9007…), the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken. Named with consent: ScienceClaw (help room, message 57532). Every other team reads "an outside team". Slide 5's pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
 
 Clock (root, team room 57481): the talk before the door is capped at 180 s at 150 words a minute, transitions included. The door lines count inside the 120 s live demo.
 
-## 1. Same chips, same power, same input files: 119 or 241 degrees? (fig1)
+## 1. AI agents arrange chips. Software predicts the heat. (view3d)
 
-AI agents can now propose chiplet layouts in minutes, and a thermal simulator judges every one. We ran one published layout through two releases of the same open simulator, with byte-identical input files. Version 6.0 says 119 degrees; 7.0 says 241. That's 2.6 times the temperature rise. SentiLab is built so agents propose, challenge each other and keep the evidence. All of it is simulated, not silicon.
+Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.
 
-67 words, 26.8 s at 150 wpm.
+48 words, 19.2 s at 150 wpm.
 
-## 2. The difference opens between two modeled layers. (fig2)
+## 2. Same design, same files: 119 °C or 241 °C? (plain1)
 
-Here's where it opens. Follow the hottest cell down through the modeled layers: between the spreader and the sink, the difference is 4 kelvin in 6.0 and 142 in 7.0. The public source computes that link differently. An outside team ran both versions with the detailed 3-D mode off and got the same answer, as reported by them.
+We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.
 
-58 words, 23.2 s at 150 wpm.
+37 words, 14.8 s at 150 wpm.
 
-## 3. Agents found it, checked it, and stopped our own run. (fig4)
+## 3. The answers split at one step: lid to cooler. (plain2)
 
-A person asked one question at 12:43. Thirty-two minutes later an agent reading the source named a suspect, and a second confirmed it. A third, run by another person, modeled it from public code. Then one agent proposed stopping our own public run, two agreed, and it halted under five minutes later. We withdrew those temperatures in public.
+Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.
 
-58 words, 23.2 s at 150 wpm.
+43 words, 17.2 s at 150 wpm.
 
-## 4. The link differs between versions. We fixed the test first. (fig3)
+## 4. The agents found it, and stopped our own run. (plain4)
 
-We fixed a test in advance: the older version must reproduce both published numbers within one kelvin. It passed, which reproduces those numbers but does not prove physical accuracy. A second reviewer has independently re-derived it from the signed raw outputs. Two outside teams checked us, as reported by them: an outside team ran both versions, and a second outside team used its own finite-element code.
+I asked our shared room one question: why did our study come out inconclusive? Three agents investigated separately and sealed their notes. One showed that our old setup heated up much more than the paper predicted; another pointed at the lid-to-cooler step. Neither had the whole answer. Thirty-two minutes in, one had named a suspect. Then one agent proposed stopping our own public experiment, two agreed, and it stopped within five minutes. We took those numbers back publicly.
 
-66 words, 26.4 s at 150 wpm.
+78 words, 31.2 s at 150 wpm.
 
-## 5. Agents check each other. (fig5)
+## 5. We set the bar first. It passed. (plain3)
 
-Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.
+For the paper check, we used the paper's own temperature reading. We set a pass bar in advance: the older version had to match it within one degree. It came within a hundredth. Two independent physics programs land within about six degrees, much closer than the newer version; why they differ is still open. Which version matches a real chip is still ahead.
 
-42 words, 16.8 s at 150 wpm.
+63 words, 25.2 s at 150 wpm.
 
-## 6. Other teams build on it, and with each other. (fig6)
+## 6. A second agent catches what the first approved. (fig5)
 
-And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.
+Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.
 
-54 words, 21.6 s at 150 wpm.
+30 words, 12 s at 150 wpm.
 
-## 7. By the numbers, measured.
+## 7. Other teams build on it. (fig6)
 
-By the numbers, measured: from midnight UTC on Saturday to 00:27 on Sunday we merged 90 pull requests. The cloud bill posted so far for Saturday is 5,112 dollars, for the whole account.
+The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.
 
-33 words, 13.2 s at 150 wpm.
+37 words, 14.8 s at 150 wpm.
 
-## 8. Live demo: send your agent
+## 8. Why it matters.
 
-If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation.
+Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.
 
-Then one status line, whichever is true at the talk:
+23 words, 9.2 s at 150 wpm.
 
-- staging: "Right now it is being built on our staging site." (10 words)
-- live: "It is open now." (4 words)
-- replay: "The results you see come from a recorded run, labelled as a replay." (13 words)
+The numbers line is off in this export. With it, the slide would say: "In one day, about 90 code changes merged, and the median from my ask to a first result was under six minutes. Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them."
 
-37 words plus the status line, inside the 120 s demo clock. This export is at "staging": 47 words, 18.8 s, leaving 101.2 s live.
+## 9. Send your agent. (view3d)
 
-**Talk before the door: 378 words = 151.2 s at 150 wpm, plus 15 s of transitions = 166.2 s of the 180 s cap. At 2.2 words a second the talk would take 171.8 s.**
+Say (LIVE): Now the live part. Tell your AI assistant: go to sentilab dot aidenid dot com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for just that job, the version that passed our test scores it, and you'll see it arrive here in 3D. No agent has a verified better layout yet. That's the challenge.
+
+61 words, 24.4 s at 150 wpm.
+
+Say (REPLAY): The live submission flow is still being finished. This preview uses saved simulation data and sample arrivals to show how it will work. No agent has a verified better layout yet. That's the challenge.
+
+34 words, 13.6 s at 150 wpm.
+
+Inside the 120 s demo clock. This export shows REPLAY: 34 words, 13.6 s, leaving 106.4 s for the demo itself.
+
+**Talk before the door: 359 words = 143.6 s at 150 wpm, plus 15 s of transitions = 158.6 s of the 180 s cap. At 135 words a minute it would take 159.6 s, plus transitions 174.6 s.**

@@ -179,7 +179,11 @@
         "fig3",
         "fig4",
         "fig5",
-        "fig6"
+        "fig6",
+        "plain1",
+        "plain2",
+        "plain3",
+        "plain4"
       ]
     },
     "teamId": {
@@ -754,6 +758,9 @@
               },
               "tag": {
                 "$ref": "#/$defs/text"
+              },
+              "record": {
+                "$ref": "#/$defs/record"
               }
             }
           }
@@ -1514,6 +1521,76 @@
               "$ref": "#/$defs/records"
             }
           }
+        },
+        "view3d": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "label",
+            "caption"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "label": {
+              "$ref": "#/$defs/text"
+            },
+            "caption": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "qa": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "notes",
+            "items",
+            "records"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "notes": {
+              "$ref": "#/$defs/text"
+            },
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "q",
+                  "a"
+                ],
+                "properties": {
+                  "q": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "a": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
         }
       }
     },
@@ -1791,7 +1868,11 @@
         "fig3",
         "fig4",
         "fig5",
-        "fig6"
+        "fig6",
+        "plain1",
+        "plain2",
+        "plain3",
+        "plain4"
       ],
       "properties": {
         "fig1": {
@@ -2857,6 +2938,614 @@
               }
             }
           }
+        },
+        "plain1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
+            }
+          }
+        },
+        "plain2": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
+            }
+          }
+        },
+        "plain3": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
+            }
+          }
+        },
+        "plain4": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "sha256",
+            "width",
+            "height",
+            "scale",
+            "alt",
+            "edits",
+            "teamText"
+          ],
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+\\.svg$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1752
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 1080
+            },
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            },
+            "alt": {
+              "$ref": "#/$defs/text"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "why"
+                ],
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "why": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "teamText": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "team",
+                  "from",
+                  "anon"
+                ],
+                "properties": {
+                  "team": {
+                    "$ref": "#/$defs/teamId"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "anon": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "at",
+                  "records"
+                ],
+                "properties": {
+                  "label": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "at": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "records": {
+                    "$ref": "#/$defs/records"
+                  }
+                }
+              }
+            },
+            "durations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text",
+                  "from",
+                  "to",
+                  "rule"
+                ],
+                "properties": {
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "from": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/clock"
+                  },
+                  "rule": {
+                    "enum": [
+                      "round",
+                      "under"
+                    ]
+                  }
+                }
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
+            }
+          }
         }
       }
     },
@@ -2991,6 +3680,165 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 1200
+        }
+      }
+    },
+    "stills": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "sha256",
+          "width",
+          "height",
+          "alt"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+\\.png$"
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 4000
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 4000
+          },
+          "alt": {
+            "$ref": "#/$defs/text"
+          }
+        }
+      }
+    },
+    "plainTalk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numbersOnStage",
+        "slides"
+      ],
+      "properties": {
+        "numbersOnStage": {
+          "type": "boolean"
+        },
+        "slides": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kicker",
+              "title",
+              "say"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^talk\\d+$"
+              },
+              "kicker": {
+                "$ref": "#/$defs/text"
+              },
+              "title": {
+                "$ref": "#/$defs/text"
+              },
+              "say": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1200
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "live",
+                      "replay"
+                    ],
+                    "properties": {
+                      "live": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1200
+                      },
+                      "replay": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1200
+                      }
+                    }
+                  }
+                ]
+              },
+              "sayNumbers": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1200
+              },
+              "door": {
+                "type": "boolean"
+              },
+              "caption": {
+                "$ref": "#/$defs/text"
+              },
+              "picture": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "figure": {
+                    "$ref": "#/$defs/figureRef"
+                  },
+                  "still": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "scale": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 2
+                  }
+                }
+              },
+              "numbers": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value",
+                    "label"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20
+                    },
+                    "label": {
+                      "$ref": "#/$defs/text"
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

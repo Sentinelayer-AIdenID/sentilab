@@ -1,5 +1,6 @@
-/* SentiLab talk deck for the five-minute slot: eight main slides, most built around one figure (the last is the door to
- * the live demo), then backup, authored once at 1920x1080 and scaled to the window.
+/* SentiLab talk deck for the five-minute slot: nine main slides from the plain-language script, one picture each (the
+ * last is the door to the live demo), then the earlier five-minute deck and the questions page as backup, authored once
+ * at 1920x1080 and scaled to the window.
  *
  * Every word on a slide comes from deck-data.json, which scripts/build-deck-final.mjs generates from the reviewed source
  * docs/sentilab/deck/final-5min/FINAL.json. renderSlides() is a pure string function, so the node test renders exactly
@@ -27,7 +28,30 @@
       + ` data-min-font="${esc(f.minFont)}" data-natural-width="${esc(f.width)}"></figure>`;
   };
 
+  // A screenshot of our own view, drawn at its declared width; it carries no text the checks could read, so none is held to the type floor.
+  const still = (st, w, cls = "") => `<figure class="fig still ${cls}"><img src="${esc(st.src)}" alt="${esc(st.alt)}" width="${w}" height="${Math.round((st.height * w) / st.width)}" data-still="${esc(st.id)}"></figure>`;
+  // Its label ("simulated, not silicon") sits above it wherever the view's temperatures are shown.
+  const stillLabel = (st) => (st.label ? `<span class="pill still-label">${esc(st.label)}</span>` : "");
+
   // ── slide bodies ──────────────────────────────────────────────────────────────────────────────────────────────────
+  // The plain talk: one title and one picture per slide; "why" may carry its numbers; the door is LIVE or REPLAY.
+  const LAYOUTS = {
+    talk(c) {
+      const pic = c.figure ? fig(c.figure) : c.still ? `${stillLabel(c.still)}${still(c.still, 1320)}` : "";
+      return `<h1 class="ftitle">${esc(c.title)}</h1>${pic}`;
+    },
+    why(c) {
+      // Without its numbers the slide is its title alone, centred; with them, the tiles take the height of their words.
+      const tiles = c.numbers ? `<div class="ngrid why-numbers n${c.numbers.length}">${c.numbers.map((x) => `<div class="ntile"><b class="nval">${esc(x.value)}</b><p class="nlab">${esc(x.label)}</p></div>`).join("")}</div>` : "";
+      return `<h1 class="ftitle${c.numbers ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}`;
+    },
+    door(c) {
+      if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${still(c.still, 1100, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+      const flow = c.diagram.map((d) => `<li><b>${esc(d.title)}</b><span>${esc(d.text)}</span></li>`).join("");
+      return `<h1>${esc(c.title)}</h1><div class="dinst"><p>${esc(c.instruction)}</p>${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}</div>`
+        + `<ol class="dflow">${flow}</ol><p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
+    },
+  };
   const BODY = {
     problem(c) {
       return `<h1 class="ftitle">${esc(c.title)}</h1>${fig(c.figure)}<p class="fline">${esc(c.line)}</p>`;
@@ -67,6 +91,7 @@
       return `<h1>${esc(c.title)}</h1><div class="ngrid n${c.items.length}">${tiles}</div>`;
     },
     demo(c) {
+      if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${still(c.still, 1100, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
       const flow = c.diagram.map((d) => `<li><b>${esc(d.title)}</b><span>${esc(d.text)}</span></li>`).join("");
       return `<h1>${esc(c.title)}</h1><div class="dinst"><p>${esc(c.instruction)}</p>${c.urlNote ? `<span class="durl">${esc(c.urlNote)}</span>` : ""}</div>`
         + `<ol class="dflow">${flow}</ol><p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
@@ -99,6 +124,9 @@
         + `<span class="eyebrow sep">${esc(c.continuum.eyebrow)}</span>${list(c.continuum.lines, "pts")}<p class="lim">${esc(c.continuum.limit)}</p></div>`
         + `<div class="card"><span class="eyebrow">${esc(m.eyebrow)}</span>${table}<p>${esc(m.spread)}</p><p class="lim">${esc(m.review)}</p></div>`
         + `</div><p class="hist">${esc(c.history)}</p>`;
+    },
+    view3d(c) {
+      return `<h1>${esc(c.title)}</h1><span class="pill still-label">${esc(c.label)}</span>${still(c.still, 1280)}`;
     },
     profile(c) {
       return `<h1>${esc(c.title)}</h1>${fig(c.figure)}`;
@@ -138,8 +166,17 @@
       return `<h1>${esc(c.title)}</h1><table class="rct"><tbody>${rows}</tbody></table>`
         + `<p class="notyet">${esc(c.notYet)} ${esc(c.names)}</p><p class="noev">${esc(c.notEvidence)}</p>`;
     },
+    qa(c) {
+      const items = c.items.map((x) => `<div class="qa-item"><dt>${esc(x.q)}</dt><dd>${esc(x.a)}</dd></div>`).join("");
+      return `<h1>${esc(c.title)}</h1><dl class="qa">${items}</dl>`;
+    },
   };
   // Footer notes that belong to a slide (the cutoff and the page label are on every slide).
+  const LAYOUT_FOOT = {
+    talk: (c) => c.caption ?? "",
+    why: (c) => (c.numbers ? "Measured counts; the cost was posted so far when read, and is not the price of this experiment." : ""),
+    door: () => "Scores shown in the demo are simulated, not measured on silicon.",
+  };
   const FOOT = {
     problem: (c) => c.caption,
     stack: (c) => c.caption,
@@ -151,17 +188,19 @@
       : c.items.map((x) => `${x.n}. ${x.caveat}`).join(" ")),
     demo: () => "Scores shown in the demo are simulated, not measured on silicon.",
     profile: (c) => c.caption,
+    view3d: (c) => c.caption,
     layers: (c) => c.caption,
     gb10: () => "Measured wall times from the run records. This slide reports no human time saved.",
     chronology: (c) => c.note,
     metrics: () => "No value here is a calibrated temperature.",
   };
-  const MARKS = { preview: "PREVIEW · not a result", reviewOnly: "REVIEW · not the recorded result" };
+  const MARKS = { preview: "PREVIEW · not a result", reviewOnly: "REVIEW · not the recorded result", demoReview: "REVIEW · door variant, not the export" };
 
   function renderSlide(s, data) {
-    const body = BODY[s.id];
+    const layout = s.content.layout;
+    const body = layout ? LAYOUTS[layout] : BODY[s.id];
     if (!body) throw new Error(`no layout for slide ${s.id}`);
-    const note = FOOT[s.id]?.(s.content) ?? "";
+    const note = (layout ? LAYOUT_FOOT[layout] : FOOT[s.id])?.(s.content) ?? "";
     const mark = Object.keys(MARKS).filter((k) => data.deck[k]).map((k) => `<span class="preview">${MARKS[k]}</span>`).join("");
     return `<section class="slide ${s.main ? "main" : "backup"}" id="s-${esc(s.id)}" data-label="${esc(s.label)}" data-notes="${esc(s.id)}">`
       + `<header class="bar"><span class="brand"><i class="mark"></i><b>${esc(data.deck.title)}</b><span>${esc(data.deck.event)}</span></span>${mark}<span class="kicker">${esc(s.kicker)}</span></header>`

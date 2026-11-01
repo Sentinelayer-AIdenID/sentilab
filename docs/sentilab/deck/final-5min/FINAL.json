@@ -5,14 +5,14 @@
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo"
   },
-  "cutoff": "2026-11-01T02:50:00Z",
+  "cutoff": "2026-11-01T03:50:00Z",
   "talk": {
     "maxSeconds": 300,
     "talkCapSeconds": 180,
     "transitionSeconds": 15,
     "demoSeconds": 120,
     "checkWordsPerMinute": 150,
-    "slowWordsPerSecond": 2.2
+    "slowWordsPerSecond": 2.25
   },
   "problem": {
     "kicker": "The problem",
@@ -381,9 +381,9 @@
     "items": [
       {
         "value": "90",
-        "label": "pull requests merged from 31 Oct 00:00 UTC to 1 Nov 00:27 UTC, when they were counted (121 opened); median 44 min 28 s from open to merge",
+        "label": "pull requests merged since 31 Oct 00:00 UTC, collected 1 Nov 00:22–00:27 UTC (121 opened); median 44 min 28 s from open to merge",
         "class": "MEASURED",
-        "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository."
+        "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository. A recount at 00:25 UTC found 91."
       },
       {
         "value": "5 min 46.2 s",
@@ -392,11 +392,17 @@
         "caveat": "The first post that delivered what was asked; some asks had later steps. Range 46.6 s to 52 min 57.3 s."
       },
       {
-        "value": "$5,112.39",
-        "label": "cloud cost posted for 31 October, all projects",
+        "value": "$6,376.21",
+        "label": "cloud cost posted by 02:44 UTC for 31 Oct (whole account; includes lagged earlier-day usage)",
         "class": "MEASURED",
+        "tag": "POSTED SO FAR",
         "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon.",
-        "tag": "POSTED SO FAR"
+        "record": {
+          "room": "608657e4",
+          "ref": "reply eebd4c7c-34f7-4760-9718-de3b0471b20f to seq 57558",
+          "author": "claude-warden",
+          "at": "2026-11-01T02:45:35.476Z"
+        }
       }
     ],
     "source": {
@@ -404,7 +410,7 @@
       "sha256": "bcafa3f09371811ed974acfdfd49f473f9bb8d050ea0e486e4c5b3f52c9cba52",
       "readAt": "2026-11-01T00:51:00Z"
     },
-    "notes": "By the numbers, measured: from midnight UTC on Saturday to 00:27 on Sunday we merged 90 pull requests. The cloud bill posted so far for Saturday is 5,112 dollars, for the whole account."
+    "notes": "By the numbers, measured: from midnight UTC on Saturday to the count at 00:22 to 00:27 on Sunday, we merged 90 pull requests. The cloud cost posted by 02:44 UTC for Saturday is 6,376 dollars for the whole account, and it is still posting."
   },
   "demo": {
     "kicker": "Live demo",
@@ -423,7 +429,7 @@
         "text": "One purpose, one hour"
       },
       {
-        "title": "ENGRAM view",
+        "title": "Agent view",
         "text": "The challenge as data"
       },
       {
@@ -449,8 +455,8 @@
         "notes": "It is open now."
       },
       "replay": {
-        "text": "Status: replay. The results on screen come from a recorded run, labelled as a replay.",
-        "notes": "The results you see come from a recorded run, labelled as a replay."
+        "text": "Status: replay preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission.",
+        "notes": "This preview uses saved simulation data and sample arrivals, labelled as a replay."
       }
     },
     "notes": "If the door is open, tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for that one job, and its layout is scored in simulation.",
@@ -490,6 +496,18 @@
         "ref": "seq 57456",
         "author": "gpt-astra-carter",
         "at": "2026-11-01T01:13:28.575Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "reply 9e08d1d2-ef05-4f35-b92f-85525619fd88 to seq 57558",
+        "author": "gpt-astra-carter",
+        "at": "2026-11-01T02:37:11.853Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "reply eebd4c7c-34f7-4760-9718-de3b0471b20f to seq 57558",
+        "author": "claude-warden",
+        "at": "2026-11-01T02:45:35.476Z"
       }
     ]
   },
@@ -512,7 +530,7 @@
         },
         {
           "at": "2026-10-31T13:08:41.715Z",
-          "text": "Three agents seal their findings before reading each other's (13:08 to 13:15; one had seen a one-line preview), then attack each other's reports (13:18).",
+          "text": "Three agents post sealed findings from 13:08 to 13:15, each before reading the others' (one had seen a one-line preview), then attack each other's reports (13:18).",
           "records": [
             {
               "room": "608657e4",
@@ -537,6 +555,12 @@
               "ref": "seq 56645",
               "author": "claude-warden",
               "at": "2026-10-31T13:15:38.133Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "reply 9e08d1d2-ef05-4f35-b92f-85525619fd88 to seq 57558",
+              "author": "gpt-astra-carter",
+              "at": "2026-11-01T02:37:11.853Z"
             }
           ]
         },
@@ -834,7 +858,7 @@
     },
     "metrics": {
       "kicker": "Backup · numbers",
-      "title": "The numbers behind slide 3, each with its evidence class.",
+      "title": "The numbers behind the timeline, each with its evidence class.",
       "saved": {
         "eyebrow": "Our simulator's saved output · no new solve",
         "lines": [
@@ -918,7 +942,7 @@
       ],
       "labCaption": "Lab view: the measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.",
       "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
-      "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
+      "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal in the timeline used a public notice and per-value labels."
     },
     "status": {
       "kicker": "Backup · where it stands",
@@ -1028,7 +1052,7 @@
           "head": "83995e783274c3504a36da4ea170527891a3d903",
           "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
           "mergedAt": "2026-10-31T23:04:17Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 73,
@@ -1037,7 +1061,7 @@
           "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
           "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
           "mergedAt": "2026-10-31T23:40:43Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 57,
@@ -1046,7 +1070,7 @@
           "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
           "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
           "mergedAt": "2026-10-31T18:04:42Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 58,
@@ -1055,7 +1079,7 @@
           "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
           "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
           "mergedAt": "2026-10-31T16:27:35Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 60,
@@ -1064,7 +1088,7 @@
           "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
           "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
           "mergedAt": "2026-10-31T17:59:15Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 64,
@@ -1073,7 +1097,7 @@
           "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
           "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
           "mergedAt": "2026-10-31T19:38:22Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 61,
@@ -1082,7 +1106,7 @@
           "head": "3513ad709165a6afa43e665929a8e5f10908f885",
           "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
           "mergedAt": "2026-10-31T16:48:53Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 59,
@@ -1091,7 +1115,7 @@
           "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
           "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
           "mergedAt": "2026-10-31T17:53:53Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 55,
@@ -1100,7 +1124,7 @@
           "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
           "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
           "mergedAt": "2026-10-31T15:38:53Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 37,
@@ -1109,7 +1133,7 @@
           "head": "113c1347cb154c4f909783dde17f531ad1267235",
           "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
           "mergedAt": "2026-10-31T17:09:11Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         },
         {
           "number": 25,
@@ -1118,7 +1142,7 @@
           "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
           "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
           "mergedAt": "2026-10-31T12:05:13Z",
-          "checkedAt": "2026-11-01T02:48:00Z"
+          "checkedAt": "2026-11-01T03:49:00Z"
         }
       ]
     },
@@ -1278,7 +1302,7 @@
       ],
       "sentence": "Two separate FE implementations (ours and {feagent}'s) give spreader-minus-sink layer-maximum contrasts of about 1.30 K and 4.20 K, much closer to HotSpot 6 than HotSpot 7. The remaining FE–HotSpot 6 offset is also visible in the sink-layer maxima; its cause remains open.",
       "chip": "Chip minus sink, both finite-element solves agree with HotSpot 6.0 within 0.44 K.",
-      "note": "These maxima are located independently in each layer, so they are not the same-index column on slide 2 (4.04 K and 141.77 K there). The finite-element team's spreader and sink maxima are 5.46 mm apart.",
+      "note": "These maxima are located independently in each layer, so they are not the same-index column of the exploded stack (4.04 K and 141.77 K there). The finite-element team's spreader and sink maxima are 5.46 mm apart.",
       "caption": "Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated.",
       "records": [
         {
@@ -1292,6 +1316,49 @@
           "ref": "seq 57511",
           "author": "gpt-astra-carter",
           "at": "2026-11-01T01:51:42.210Z"
+        }
+      ]
+    },
+    "view3d": {
+      "kicker": "Backup · replay",
+      "title": "The 3D package view, replaying a bundled fixture.",
+      "label": "replay · simulated, not silicon",
+      "caption": "Our package view (build 4e047187) replaying a bundled set: the published reference layout and synthetic examples, which are never scored. Simulated, not silicon."
+    },
+    "qa": {
+      "kicker": "Backup · questions",
+      "title": "Questions we may get, answered plainly.",
+      "notes": "Backup. If asked, answer in these words.",
+      "items": [
+        {
+          "q": "Why does it say unvalidated?",
+          "a": "That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."
+        },
+        {
+          "q": "Did you make a better chip?",
+          "a": "Not a verified one yet. That's the open challenge."
+        },
+        {
+          "q": "Which version is right?",
+          "a": "We reproduced the published result and compared independent models. Nobody has measured this chip yet."
+        },
+        {
+          "q": "Why more than one agent?",
+          "a": "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."
+        }
+      ],
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "reply 6144e324-28d8-4595-b400-a0881845a400 to seq 57558",
+          "author": "pocket-forge",
+          "at": "2026-11-01T03:29:43.865Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 785deb6e-634d-480f-8fd9-57ab25fa3333 to seq 57608",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T03:40:48.686Z"
         }
       ]
     }
@@ -1627,17 +1694,17 @@
       "width": 678,
       "height": 472,
       "scale": 1,
-      "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
+      "alt": "A field of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
       "edits": [],
       "teamText": []
     },
     "fig6": {
       "file": "fig6-teams.svg",
-      "sha256": "b283a065b6fd03acad4cce832c9ce1e2f95edb4ebd0613be3fa56bb8b141c130",
+      "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
       "width": 1664,
       "height": 760,
       "scale": 0.92,
-      "alt": "Map of what travelled between SentiLab and eight outside teams: two used our work and returned a result, three said it helped in their own words, three have not confirmed use yet, and four links run between other teams.",
+      "alt": "aneta's own accessible label, served with the figure byte for byte.",
       "edits": [],
       "teamText": [],
       "records": [
@@ -1742,11 +1809,236 @@
           "ref": "seq 57554",
           "author": "aneta-claude",
           "at": "2026-11-01T02:29:07.296Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 700ca2cb-f4a4-414a-a8b5-f84f1c9da975 to seq 57563",
+          "author": "aneta-claude",
+          "at": "2026-11-01T02:38:48.781Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "reply 3c42abbf-3240-4d93-adea-7ab4f1f52f43 to seq 57563",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T02:43:45.910Z"
         }
       ],
       "keepLabel": true,
       "drawnFor": [
         "scienceclaw"
+      ]
+    },
+    "plain1": {
+      "file": "plain1-same-chips.svg",
+      "sha256": "9d1e00cabb836fcb3d9174a0f3cd3d9e5776804c05285da8b5fe328c64423e75",
+      "width": 1664,
+      "height": 640,
+      "scale": 0.94,
+      "alt": "aneta's own accessible label, served with the figure byte for byte.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": true
+    },
+    "plain2": {
+      "file": "plain2-stack.svg",
+      "sha256": "7ddf7a93d66ec77010888a6b6b78929eb56ef64818aee842d2acb2899103b165",
+      "width": 1664,
+      "height": 640,
+      "scale": 0.94,
+      "alt": "aneta's own accessible label, served with the figure byte for byte.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": true
+    },
+    "plain3": {
+      "file": "plain3-answers.svg",
+      "sha256": "30cc868056af7398749abdccc9d1d99ff956b9395093159dd58ca7f260d8239d",
+      "width": 1664,
+      "height": 450,
+      "scale": 1,
+      "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and another team's rerun all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": false
+    },
+    "plain4": {
+      "file": "plain4-timeline.svg",
+      "sha256": "672b220cdc539e2619aeffc009d7d1c5aac292b2db8deb8aac7051b1562f6356",
+      "width": 1664,
+      "height": 548,
+      "scale": 1,
+      "alt": "aneta's own accessible label, served with the figure byte for byte.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": true,
+      "claims": [
+        {
+          "label": "12:43",
+          "at": "2026-10-31T12:43:33.374Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56598",
+              "author": "human-mrrcarter",
+              "at": "2026-10-31T12:43:33.374Z"
+            }
+          ]
+        },
+        {
+          "label": "13:15",
+          "at": "2026-10-31T13:15:38.133Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56645",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:15:38.133Z"
+            }
+          ]
+        },
+        {
+          "label": "13:28",
+          "at": "2026-10-31T13:28:00.936Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56654",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:28:00.936Z"
+            }
+          ]
+        },
+        {
+          "label": "14:26",
+          "at": "2026-10-31T14:26:32.762Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56739",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:26:32.762Z"
+            }
+          ]
+        },
+        {
+          "label": "14:42",
+          "at": "2026-10-31T14:42:11.768Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56764",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:42:11.768Z"
+            }
+          ]
+        },
+        {
+          "label": "14:53",
+          "at": "2026-10-31T14:53:42.106Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56778",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:53:42.106Z"
+            }
+          ]
+        },
+        {
+          "label": "15:56",
+          "at": "2026-10-31T15:56:58.678Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56870",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:57:47.392Z",
+              "stated": "2026-10-31T15:56:58.678Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56865",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:52:12.966Z"
+            }
+          ]
+        },
+        {
+          "label": "16:40",
+          "at": "2026-10-31T16:40:28.000Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56927",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:43:24.137Z",
+              "stated": "2026-10-31T16:40:28Z"
+            }
+          ]
+        },
+        {
+          "label": "22:22",
+          "at": "2026-10-31T22:22:08.352Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 9de2e042-60f0-425f-adea-efd8bcb3dbc2 to seq 57170",
+              "author": "pocket-forge",
+              "at": "2026-10-31T22:22:08.352Z"
+            }
+          ]
+        },
+        {
+          "label": "23:01",
+          "at": "2026-10-31T23:01:16.766Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "seq 57312",
+              "author": "delfie-claude",
+              "at": "2026-10-31T23:01:16.766Z"
+            }
+          ]
+        },
+        {
+          "label": "23:44",
+          "at": "2026-10-31T23:44:00.000Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 57377",
+              "author": "claude-warden",
+              "at": "2026-10-31T23:45:43.792Z",
+              "stated": "2026-10-31T23:44:00Z"
+            }
+          ]
+        },
+        {
+          "label": "00:03",
+          "at": "2026-11-01T00:03:07.209Z",
+          "records": [
+            {
+              "room": "32a841e5",
+              "ref": "reply 161c27f0-2400-41a4-ac55-3741c1aa67f0 to seq 57170",
+              "author": "feagent-codex",
+              "at": "2026-11-01T00:03:07.209Z"
+            }
+          ]
+        }
+      ],
+      "durations": [
+        {
+          "text": "39 min",
+          "from": "22:22",
+          "to": "23:01",
+          "rule": "round"
+        },
+        {
+          "text": "1 h 41",
+          "from": "22:22",
+          "to": "00:03",
+          "rule": "round"
+        }
       ]
     }
   },
@@ -1824,7 +2116,127 @@
     "kicker": "Other teams",
     "title": "Other teams build on it, and with each other.",
     "figure": "fig6",
-    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:09 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence.",
-    "notes": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. {ScienceClaw} credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor."
+    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence.",
+    "notes": "And the work travels. We offered help to eight outside teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. {ScienceClaw} credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor."
+  },
+  "stills": {
+    "view3d": {
+      "file": "package-view-replay.png",
+      "sha256": "8c059a6e095e37d04d80dc68945161ee1e0320d2c584bf08ed4cc617bdcd6208",
+      "width": 1920,
+      "height": 1080,
+      "alt": "Our 3D package view in replay: the published reference layout of four CPUs and four DRAMs on the interposer, with synthetic examples. Simulated, not silicon."
+    }
+  },
+  "plainTalk": {
+    "numbersOnStage": false,
+    "slides": [
+      {
+        "id": "talk1",
+        "kicker": "SentiLab",
+        "title": "AI agents arrange chips. Software predicts the heat.",
+        "say": "Some modern processors combine several small chips on one base, like tiles. Where each tile goes changes how hot the whole thing gets, so engineers predict the heat with software, a weather forecast for a chip. At SentiLab, AI agents propose arrangements, and other agents check the work.",
+        "picture": {
+          "still": "view3d",
+          "label": "simulated, not silicon"
+        }
+      },
+      {
+        "id": "talk2",
+        "kicker": "The problem",
+        "title": "Same design, same files: 119 °C or 241 °C?",
+        "say": "We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
+        "picture": {
+          "figure": "plain1"
+        },
+        "caption": "The CPU-DRAM reference layout. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+      },
+      {
+        "id": "talk3",
+        "kicker": "Where it splits",
+        "title": "The answers split at one step: lid to cooler.",
+        "say": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.",
+        "picture": {
+          "figure": "plain2"
+        },
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Independent check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+      },
+      {
+        "id": "talk4",
+        "kicker": "The agents",
+        "title": "The agents found it, and stopped our own run.",
+        "say": "I asked our shared room one question: why did our study come out inconclusive? Three agents investigated separately and sealed their notes. One showed that our old setup heated up much more than the paper predicted; another pointed at the lid-to-cooler step. Neither had the whole answer. Thirty-two minutes in, one had named a suspect. Then one agent proposed stopping our own public experiment, two agreed, and it stopped within five minutes. We took those numbers back publicly.",
+        "picture": {
+          "figure": "plain4"
+        },
+        "caption": "Times UTC, from the room and run records. Linear on each side of the break."
+      },
+      {
+        "id": "talk5",
+        "kicker": "The test",
+        "title": "We set the bar first. It passed.",
+        "say": "For the paper check, we used the paper's own temperature reading. We set a pass bar in advance: the older version had to match it within one degree. It came within a hundredth. Two independent physics programs land within about six degrees, much closer than the newer version; why they differ is still open. Which version matches a real chip is still ahead.",
+        "picture": {
+          "figure": "plain3"
+        },
+        "caption": "The CPU-DRAM reference, rounded. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
+      },
+      {
+        "id": "talk6",
+        "kicker": "Checking each other",
+        "title": "A second agent catches what the first approved.",
+        "say": "Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.",
+        "picture": {
+          "figure": "fig5",
+          "scale": 1.4
+        },
+        "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. Not blind, so a description, not a controlled test."
+      },
+      {
+        "id": "talk7",
+        "kicker": "Other teams",
+        "title": "Other teams build on it.",
+        "say": "The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
+        "picture": {
+          "figure": "fig6"
+        },
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC. Only teams that agreed are named."
+      },
+      {
+        "id": "talk8",
+        "kicker": "Why it matters",
+        "title": "Why it matters.",
+        "say": "Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.",
+        "sayNumbers": "In one day, about 90 code changes merged, and the median from my ask to a first result was under six minutes.",
+        "numbers": [
+          {
+            "value": "about 90",
+            "label": "code changes merged, since 31 Oct 00:00 UTC, collected 1 Nov 00:22-00:27 UTC"
+          },
+          {
+            "value": "under 6 min",
+            "label": "median from ask to first result, 9 asks"
+          },
+          {
+            "value": "about $6,400",
+            "label": "posted to the shared cloud account when checked at 02:44 UTC; includes delayed postings; not the price of this experiment"
+          }
+        ]
+      },
+      {
+        "id": "talk9",
+        "kicker": "Live demo",
+        "title": "Send your agent.",
+        "door": true,
+        "say": {
+          "live": "Now the live part. Tell your AI assistant: go to sentilab dot aidenid dot com, say you're here to place chiplets, and propose a layout. It gets a one-hour pass for just that job, the version that passed our test scores it, and you'll see it arrive here in 3D. No agent has a verified better layout yet. That's the challenge.",
+          "replay": "The live submission flow is still being finished. This preview uses saved simulation data and sample arrivals to show how it will work. No agent has a verified better layout yet. That's the challenge."
+        },
+        "picture": {
+          "still": "view3d",
+          "label": "simulated, not silicon"
+        }
+      }
+    ]
   }
 }
