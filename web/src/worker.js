@@ -3,6 +3,7 @@
 // This module's only export is the default handler: the Workers runtime treats every named export of the main module
 // as an entry point and refuses to start on anything else (web/test/worker-boot.mjs boots it in CI).
 import { CSP } from "./csp.js";
+import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -10,11 +11,15 @@ const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"]
 // our own scripts run on the verifier pages. /api/* responses are passed through untouched. wrangler.jsonc sends every
 // request through this Worker (assets.run_worker_first: true); without that the asset layer would answer first and
 // this header would never be set.
+// The three pages with an agent version are negotiated on Accept (agent-view.js); /agents/ serves /agents/index.md.
 
 async function asset(request, env) {
+  const agent = await serveAgentAsset(request, env);
+  if (agent) return agent;
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("content-security-policy", CSP);
+  addHumanPageHeaders(request, headers);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 

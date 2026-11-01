@@ -1,5 +1,7 @@
 # SentiLab package view: agent twin (stub)
 
+[View the normal site](?view=human)
+
 This is the machine-readable twin of the human 3D view at `/sentilab/package/`. It is a stub: it lists the model the
 view draws, not the layouts or temperatures on screen.
 

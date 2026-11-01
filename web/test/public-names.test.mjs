@@ -2,7 +2,7 @@
 // Public naming rule for everything the site serves from web/public: no vendor, product or model names, and no internal
 // agent handles, in the pages, their scripts and styles, or the data they render. licenses.html and licenses/ are
 // excluded: third-party license texts must name their authors. Matching is case-insensitive and word-bounded.
-//   - HTML, JS, MJS, CSS and SVG are scanned whole (markup, copy, comments and code: all of it is public).
+//   - HTML, JS, MJS, CSS, SVG, TXT and MD are scanned whole (markup, copy, comments and code: all of it is public).
 //   - JSON and JSONL are parsed and every key and string value is scanned, except cryptographic blobs (signatures,
 //     keys, hashes), whose random letters can spell anything.
 //   - "root" is a handle only in page copy (HTML); in code it is a plain word (a tree's root, a public root key).
@@ -51,7 +51,7 @@ function scanJson(value, path, hits, skip = () => false) {
 // Every finding for one served file: [] when it is clean.
 export function scanFile(rel, text) {
   const ext = extname(rel).toLowerCase();
-  if ([".html", ".js", ".mjs", ".css", ".svg", ".txt"].includes(ext)) {
+  if ([".html", ".js", ".mjs", ".css", ".svg", ".txt", ".md"].includes(ext)) {
     let body = text;
     if (rel === "app.js") {
       assert.equal(body.split(SANITIZER).length - 1, 1, "app.js holds the sanitizer exactly once");
@@ -89,7 +89,7 @@ function served() {
 
 test("no vendor, model or internal names in any served public page, script, style or rendered data (licenses excluded)", () => {
   const files = served();
-  assert.ok(files.includes("index.html") && files.includes("sentilab/index.html") && files.includes("sentilab/package/index.html") && files.includes("tfl08/leaderboard.json"), "the walk reaches the pages and the data");
+  assert.ok(files.includes("index.html") && files.includes("sentilab/index.html") && files.includes("sentilab/package/index.html") && files.includes("tfl08/leaderboard.json") && files.includes("agents/index.md") && files.includes("llms.txt"), "the walk reaches the pages, the data and the agent pages");
   const findings = files.flatMap((rel) => scanFile(rel, readFileSync(join(PUBLIC, rel), "utf8")));
   assert.deepEqual(findings, []);
 });
@@ -108,6 +108,7 @@ test("negative control: seeded names are caught in every file kind; blobs and pl
     ["sentilab/view-pins.js", "// provisioned by claude-warden\n"],
     ["sentilab/view-core.mjs", "// reference by pocket-forge\n"],
     ["styles.css", "/* colours from Gemini */\n"],
+    ["agents/physics.md", "Reviewed by astra.\n"],
     ["replay/run.json", JSON.stringify({ reason: "jev-1.2 timed out" })],
     ["replay/run.json", JSON.stringify({ note: { "powered by OpenAI": 1 } })],
     ["sentilab/demo-run.jsonl", `${JSON.stringify({ a: 1 })}\n${JSON.stringify({ body: { note: "GPT-4o chose swap" } })}\n`],
