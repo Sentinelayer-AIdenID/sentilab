@@ -65,6 +65,10 @@ export function installApi(t, routes = {}) {
     arrival: async () => new Response(null, { status: 204 }),
     status: async () => Response.json({ schema: "sentilab-door-status/1", id: RUN, label: "automation · ab12", class: "automation",
       operator: "openai", short_id: "ab12", status: "queued" }),
+    // A4 rev 2: the visitors page that carries the notice (none by default, so the wall offers no opt-in), and the
+    // heartbeat.
+    visitors: async () => new Response("not found", { status: 404 }),
+    here: async () => new Response(null, { status: 204 }),
     ...routes,
   };
   t.mock.method(globalThis, "fetch", async (input, init = {}) => {
@@ -74,7 +78,8 @@ export function installApi(t, routes = {}) {
     const call = { method: init.method ?? "GET", origin: url.origin, path: url.pathname + url.search, headers, body, signal: init.signal, redirect: init.redirect };
     calls.push(call);
     const name = url.pathname === "/api/open/v1/door/board" ? "board" : url.pathname === "/api/open/v1/door/submit" ? "submit"
-      : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status" : null;
+      : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status"
+      : url.pathname === "/api/open/v1/door/visitors" ? "visitors" : url.pathname === "/api/open/v1/door/here" ? "here" : null;
     if (!name) return new Response("not found", { status: 404 });
     return handlers[name](call);
   });

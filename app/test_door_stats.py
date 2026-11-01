@@ -52,6 +52,11 @@ class StatsTests(tk.DoorCase, unittest.TestCase):
         self.arrive(**{"class": "likely_human", "purpose": "read", "nonce": COLLIDING[1]})
         self.arrive(**{"class": "unknown", "purpose": "review", "nonce": tk.nonce(900)})
         accepted = []
+        for nonce in COLLIDING:                 # two strangers whose runs share the short id 0f62
+            status, reply = self.submit(self.body(moved(5), nonce_value=nonce))
+            self.assertEqual(status, 202, reply)
+            self.assertEqual(reply["short_id"], "0f62")
+            accepted.append(reply["run_id"])
         for index in range(5):
             status, reply = self.submit(self.body(moved(index), nonce_value=tk.nonce(10 + index)))
             self.assertEqual(status, 202, reply)
@@ -72,11 +77,15 @@ class StatsTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(headers.get("cache-control"), "no-store")
         self.assertEqual(stats, recount(self.door))
-        # The history above, by hand: 3 passes (two sharing a short id); 6 runs plus 2 refusals (the conflict and the
-        # illegal layout); of the 4 runs drained, 3 were evaluated (2 reproduced, 1 not) and 1 failed.
+        # The history above, by hand: 3 passes (two sharing a short id); 8 runs plus 2 refusals (the conflict and the
+        # illegal layout); of the 4 runs drained, 3 were evaluated (2 reproduced: the two strangers sharing 0f62; 1 not
+        # reproduced) and 1 failed.
         self.assertEqual(stats["passes"], 3)
-        self.assertEqual(stats["submissions"], 8)
+        self.assertEqual(stats["submissions"], 10)
         self.assertEqual(stats["results"], {"evaluated": 3, "reproduced": 2, "rejected": 2, "failed": 1})
+        reproduced = [item for item in self.door.results(None, "20")[1]["items"] if item["status"] == "reproduced"]
+        self.assertEqual([item["short_id"] for item in reproduced], ["0f62", "0f62"])
+        self.assertEqual(len({item["id"] for item in reproduced}), 2)
         self.assertEqual(stats["through_seq"], self.store.last_seq())
 
     def test_submissions_agree_with_the_boards_own_counter(self):

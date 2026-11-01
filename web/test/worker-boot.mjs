@@ -14,6 +14,8 @@
 //      - the agent door (src/door/door.js), opened with a boot-only DOOR_TOKEN_KEY: a classified agent's wall on /, a
 //        token for a purpose, the ENGRAM view, the preview check, the tap-link confirm page, submit answering honestly
 //        with the API off, the door's 405s and scope refusal, and its stylesheet;
+//      - Amendment 4: the heartbeat route (503 presence_unavailable with the API off, 405 to a GET), and a wall with no
+//        opt-in while the intake's notice can't be read;
 //      - the runtime logged no error.
 // Exit 0 when every check passes; 1 (with the runtime's log) otherwise. WRANGLER_VERSION pins the CLI (default below).
 import { spawn, spawnSync } from "node:child_process";
@@ -154,6 +156,17 @@ if (ready) {
   const css = await fetch(`${BASE}/door.css`);
   check("GET /door.css: the door's stylesheet, the bytes in web/public/door.css, the exact CSP", css.status === 200 && same(new Uint8Array(await css.arrayBuffer()), file("door.css"))
     && css.headers.get("content-security-policy") === CSP, `${css.status} · ${css.headers.get("content-type")}`);
+  // Amendment 4 rev 2: the heartbeat route in the runtime (the API off, so presence is unavailable), and the opt-in, which
+  // the wall offers only under the intake's own notice (none with the API off).
+  const here = await fetch(`${BASE}/api/open/v1/door/here`, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ page: "live", tab: "3f9c2a7b4e1d6c8f0a5b9e2d7c4f1a86" }) });
+  check("POST /api/open/v1/door/here with the API off: 503 presence_unavailable, no-store, no CSP", here.status === 503
+    && (await here.json().catch(() => ({}))).error === "presence_unavailable" && here.headers.get("cache-control") === "no-store"
+    && here.headers.get("content-security-policy") === null, `${here.status}`);
+  const hereGet = await fetch(`${BASE}/api/open/v1/door/here`);
+  check("GET /api/open/v1/door/here: 405, allow POST", hereGet.status === 405 && hereGet.headers.get("allow") === "POST", `${hereGet.status}`);
+  check("the wall offers no opt-in without the intake's notice", !wallText.includes('name="notice_version"')
+    && wallText.includes("Telling us who you are isn't available right now."));
   check("the runtime logged no error", !/\[ERROR\]/.test(strip(log)));
 }
 stop();

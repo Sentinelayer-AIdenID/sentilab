@@ -42,6 +42,7 @@ import { CSP } from "../csp.js";
 import { identityFor } from "../edge.js";
 import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
+import { declarationOutcome, declareObject, noticeFrom, readOptIn, viaSource } from "./declare.js";
 import { agentView, gateZeroFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
 import { confirmHtml, notConfirmedHtml, pressRefusedHtml, problemHtml, referrerPolicyFor, resultHtml, termsChangedHtml, tokenHtml, tokenJson, tokenMarkdown,
@@ -57,7 +58,7 @@ export const LIMITS = Object.freeze({
 });
 export const API = Object.freeze({
   submit: "/api/open/v1/door/submit", status: "/api/open/v1/door/status/", board: "/api/open/v1/door/board",
-  arrival: "/api/open/v1/door/arrival",
+  arrival: "/api/open/v1/door/arrival", visitors: "/api/open/v1/door/visitors?limit=1", here: "/api/open/v1/door/here",
 });
 // The classifier's own enums (src/vendor/aidenid-classifier/src/types.ts): nothing else is ever sent as a class or an
 // operator. "ours" marks SentiLab's own background agents on the board.
@@ -139,8 +140,9 @@ export function protectToken(response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-// The intake's open feeds that the public /api proxy passes on (the board, results and events the human view reads).
-export const DOOR_FEEDS = /^\/api\/open\/v1\/door\/(board|results|events)$/;
+// The intake's open feeds that the public /api proxy passes on (the board, results and events the human view reads; the
+// visitors page and the run totals of Amendment 4).
+export const DOOR_FEEDS = /^\/api\/open\/v1\/door\/(board|results|events|visitors|stats)$/;
 // A path as the API routes it. The API percent-decodes a path before routing it, so /api/open/v1/door/%62oard is its
 // board and door%2Fboard its board too; the proxy's feed filter matches this decoded form. Escapes are decoded until
 // none is left (a double-encoded spelling only over-matches, which is safe); null when an escape does not decode.
@@ -283,10 +285,25 @@ async function sharedBoard(env, url) {
   return value;
 }
 
-// Test hook: forget the isolate's board cache and rate windows.
+// The notice of GET /door/visitors ({version, text}, or null when it can't be read), shared for BOARD_TTL_MS per
+// isolate like the board. The purpose step shows exactly this text, and accepts an opt-in only under its version.
+let noticeCache = null;
+async function sharedNotice(env, url) {
+  const origin = apiOrigin(env);
+  const now = Date.now();
+  if (noticeCache && noticeCache.origin === origin && now - noticeCache.at < BOARD_TTL_MS) return noticeCache.value;
+  const answer = await callApi(env, API.visitors, { host: url.host, timeoutMs: 1500 });
+  const value = answer.ok && answer.status === 200 ? noticeFrom(answer.json) : null;
+  noticeCache = { origin, at: now, value };
+  return value;
+}
+
+// Test hook: forget the isolate's board and notice caches and rate windows.
 export function resetDoorState() {
   boardCache = null;
+  noticeCache = null;
   windows.clear();
+  hereWindows.clear();
 }
 
 // Root's saved gate-zero record, read through the asset layer (never copied into this Worker).
@@ -314,11 +331,14 @@ async function bounded(task, ms) {
 // The arrival the door sends: the class and declared operator from the classifier's enums, the purpose chosen and the
 // token's nonce. A wall view has no purpose and no nonce yet. The intake keeps the class and the time, and with a pick
 // the purpose and short_id (the first 4 hex of sha256(nonce)); never the operator or the nonce. It publishes them on
-// its events feed. The wall says exactly this (render.js RECORDED).
-export function arrivalOf(identity, purpose, nonce) {
+// its events feed. The wall says exactly this (render.js RECORDED). With the visitor's opt-in at the pick (declare.js
+// readOptIn), the arrival also carries their declaration, and the intake publishes it with an opaque visitor_handle
+// (root's #89); never otherwise.
+export function arrivalOf(identity, purpose, nonce, declaration = null) {
   return { class: CLASSES.includes(identity?.triage?.class) ? identity.triage.class : "unknown",
     operator: OPERATORS.includes(identity?.operator) ? identity.operator : "unknown",
-    ...(PURPOSE_IDS.includes(purpose) ? { purpose } : {}), ...(/^[0-9a-f]{16}$/.test(nonce ?? "") ? { nonce } : {}) };
+    ...(PURPOSE_IDS.includes(purpose) ? { purpose } : {}), ...(/^[0-9a-f]{16}$/.test(nonce ?? "") ? { nonce } : {}),
+    ...(declaration ? { declaration } : {}) };
 }
 
 async function postCollector(request, env, identity, event, expiresAt) {
@@ -334,13 +354,13 @@ async function postCollector(request, env, identity, event, expiresAt) {
 }
 
 // Fire and forget: nothing here can delay or change a response.
-function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce = null, expiresAt = null }) {
+function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce = null, expiresAt = null, declaration = null }) {
   if (typeof ctx?.waitUntil !== "function") return;
   try {
     ctx.waitUntil((async () => {
       if (!(await allow(env, "DOOR_READ_LIMITER", `arrival:${prefixOf(request)}`))) return;
       const who = identity === undefined ? await identityFor(request, env) : identity;
-      const event = arrivalOf(who, purpose, nonce);
+      const event = arrivalOf(who, purpose, nonce, declaration);
       await Promise.allSettled([callApi(env, API.arrival, { method: "POST", body: event, host: url.host, timeoutMs: 1200 }),
         postCollector(request, env, who, event, expiresAt)]);
     })().catch(() => undefined));
@@ -361,12 +381,16 @@ async function authorize(request, env, url, values, required, format) {
 }
 
 // ── routes ────────────────────────────────────────────────────────────────────────────────────────────────────────
+// The wall: the purpose links and form, and the opt-in under the notice of GET /door/visitors (none when it can't be
+// read). A landing link's ?via= pre-fills the source and is carried in the purpose links, never recorded.
 async function wall(request, env, url) {
-  const submissions = request.method === "HEAD" ? "unknown" : (await sharedBoard(env, url)).admission;
+  const head = request.method === "HEAD";
+  const [board, notice] = head ? [{ admission: "unknown" }, null] : await Promise.all([sharedBoard(env, url), sharedNotice(env, url)]);
+  const options = { notice, source: viaSource(url.searchParams) };
   const kind = negotiate(request);
-  if (kind === "json") return json(request, 200, wallJson(url.origin, submissions));
-  if (kind === "md") return markdown(request, 200, wallMarkdown(url.origin, submissions));
-  return html(request, 200, wallHtml(url.origin, submissions));
+  if (kind === "json") return json(request, 200, wallJson(url.origin, board.admission, options));
+  if (kind === "md") return markdown(request, 200, wallMarkdown(url.origin, board.admission, options));
+  return html(request, 200, wallHtml(url.origin, board.admission, options));
 }
 
 async function intent(request, env, ctx, url) {
@@ -382,11 +406,16 @@ async function intent(request, env, ctx, url) {
   const now = Date.now();
   const token = await mintToken(key, { purpose, site: url.host, now });
   const { claims } = await verifyToken(key, token, { site: url.host, now });
+  // The opt-in is read only when the visitor sent a notice version, and is checked against the notice the door can
+  // show now. Whatever it says, the pass is minted the same way: a declaration never changes the token.
+  const optIn = readOptIn(url.searchParams, url.searchParams.has("notice_version") ? await sharedNotice(env, url) : null);
   const { admission } = await sharedBoard(env, url);
-  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });
-  if (kind === "json") return json(request, 200, tokenJson(url.origin, claims, token, admission));
-  if (kind === "md") return markdown(request, 200, tokenMarkdown(url.origin, claims, token, admission));
-  return html(request, 200, tokenHtml(url.origin, claims, token, admission));
+  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at,
+    declaration: optIn.status === "sent" ? optIn.declaration : null });
+  const page = { declaration: declarationOutcome(optIn), source: viaSource(url.searchParams) };
+  if (kind === "json") return json(request, 200, tokenJson(url.origin, claims, token, admission, page));
+  if (kind === "md") return markdown(request, 200, tokenMarkdown(url.origin, claims, token, admission, page));
+  return html(request, 200, tokenHtml(url.origin, claims, token, admission, page));
 }
 
 async function engram(request, env, ctx, url) {
@@ -394,11 +423,14 @@ async function engram(request, env, ctx, url) {
   if (auth instanceof Response) return auth;
   if (request.method === "HEAD") return json(request, 200, null);
   const reading = await allow(env, "DOOR_READ_LIMITER", `engram:${prefixOf(request)}`);
-  const [live, gate] = await Promise.all([
+  const [live, gate, notice] = await Promise.all([
     reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null, terms: null },
-    gateZero(request, env, url)]);
+    gateZero(request, env, url), sharedNotice(env, url)]);
+  // How to opt in (Amendment 4): declaring goes with choosing a purpose, so the template starts a new pass.
+  const declare = { ...declareObject(url.origin, notice, { purpose: auth.claims.purpose, source: viaSource(url.searchParams) }),
+    ...(notice ? { note: "Declaring goes with choosing a purpose: this link gives you a new pass (a new token) that carries your declaration. This token stays valid." } : {}) };
   return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: live.terms,
-    gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft }));
+    gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft, declare }));
 }
 
 function layoutFrom(values) {
@@ -683,4 +715,86 @@ export async function serveWallOrAgentVersion(request, env, seam = {}) {
   }
   if (request.method === "GET") emitArrival(request, env, seam.ctx, url, { identity: seam.identity ?? null });
   return wall(request, env, url);
+}
+
+// ── the heartbeat (Amendment 4 rev 2, section 4.3) ──────────────────────────────────────────────────────────────
+// POST /api/open/v1/door/here {page, tab} from a visible lab page (web/public/sentilab/here.mjs): the one write the
+// public /api path takes (worker.js routes this exact path here, before its read-only rule). The door checks the body,
+// that the page is this site's own and a per-IP limit, then forwards exactly {page, tab, class} to the intake with fresh
+// headers: the intake never receives the client's IP, user agent, cookie or Referer. class is the detector's,
+// qualified to four values. The door stores nothing; the intake keeps tabs, not people (app/door/presence.py).
+export const HERE_PATH = "/api/open/v1/door/here";
+export const HERE_PAGES = Object.freeze(["wall", "package3d", "live", "board", "results"]);
+export const HERE_LIMIT = Object.freeze({ limit: 300, periodMs: 60000 });
+const HERE_TAB = /^[0-9a-f]{32}$/;
+const MAX_HERE_BYTES = 256;
+const MAX_HERE_WINDOWS = 20000;
+const HERE_HEADERS = Object.freeze({ "cache-control": "no-store", "x-content-type-options": "nosniff" });
+const TAB_CLASS = Object.freeze({ verified_agent: "agent", signed_agent: "agent", declared_agent: "agent", crawler_claimed: "bot",
+  automation: "bot", likely_human: "likely_human" });
+// The per-IP limit: client prefix -> {start, count}, in this isolate's memory only. Windows are fixed, and kept in the
+// order they began, so each heartbeat first drops every window that began periodMs or more ago: while heartbeats
+// arrive, no prefix is kept past its window. An isolate that gets no further request can run no timer; it ends with it.
+const hereWindows = new Map();
+
+function hereAllow(key, now) {
+  for (const [old, window] of hereWindows) {
+    if (now - window.start < HERE_LIMIT.periodMs) break;
+    hereWindows.delete(old);
+  }
+  let window = hereWindows.get(key);
+  if (!window) {
+    if (hereWindows.size >= MAX_HERE_WINDOWS) hereWindows.delete(hereWindows.keys().next().value);
+    window = { start: now, count: 0 };
+    hereWindows.set(key, window);
+  }
+  if (window.count >= HERE_LIMIT.limit) return false;
+  window.count += 1;
+  return true;
+}
+
+// Test hook: the limiter's entries, as copies.
+export function hereLimiterEntries() {
+  return [...hereWindows].map(([key, value]) => [key, { ...value }]);
+}
+
+function hereAnswer(request, status, value, extra = {}) {
+  const body = value === null || request.method === "HEAD" ? null : JSON.stringify(value);
+  return new Response(body, { status, headers: { ...HERE_HEADERS, ...(value === null ? {} : { "content-type": "application/json" }), ...extra } });
+}
+
+// A heartbeat comes from this site's own page: Sec-Fetch-Site same-origin, or, from a client that sends none, no Origin
+// of another site. (A cross-site page can't send JSON here at all without a preflight, which this path refuses.)
+function ownPage(request, url) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null) return site === "same-origin";
+  const origin = request.headers.get("origin");
+  return origin === null || origin === url.origin;
+}
+
+// The heartbeat's {page, tab}, or null unless the body is exactly that object (the contract's strict reader first).
+function heartbeatOf(text) {
+  const read = strictJson(text);
+  if (read.codes) return null;
+  const keys = Object.keys(read.value).sort();
+  if (keys.length !== 2 || keys[0] !== "page" || keys[1] !== "tab") return null;
+  const { page, tab } = read.value;
+  return HERE_PAGES.includes(page) && typeof tab === "string" && HERE_TAB.test(tab) ? { page, tab } : null;
+}
+
+export async function handleHere(request, env) {
+  const url = new URL(request.url);
+  if (request.method !== "POST") return hereAnswer(request, 405, { error: "method_not_allowed" }, { allow: "POST" });
+  if (!/^application\/json(;|$)/.test((request.headers.get("content-type") ?? "").toLowerCase())) return hereAnswer(request, 415, { error: "unsupported_media_type" });
+  if (!ownPage(request, url)) return hereAnswer(request, 403, { error: "cross_site" });
+  if (!hereAllow(`here:${prefixOf(request)}`, Date.now())) return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });
+  const body = await readBody(request, MAX_HERE_BYTES);
+  const beat = "text" in body ? heartbeatOf(body.text) : null;
+  if (!beat) return hereAnswer(request, 400, { error: "bad_heartbeat" });
+  const who = await identityFor(request, env);
+  const answer = await callApi(env, API.here, { method: "POST", body: { ...beat, class: TAB_CLASS[who?.triage?.class] ?? "unknown" },
+    host: url.host, timeoutMs: 1500 });
+  if (answer.ok && answer.status === 204) return hereAnswer(request, 204, null);
+  if (answer.ok && answer.status === 429) return hereAnswer(request, 429, { error: "rate_limited" }, { "retry-after": "60" });
+  return hereAnswer(request, 503, { error: "presence_unavailable" });
 }

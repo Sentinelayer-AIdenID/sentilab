@@ -25,7 +25,7 @@ export function gateZeroFrom(evidence) {
     active: number(row.active_layer_grid_peak_C), precisionK: number(gate.raw_output_precision_K) };
 }
 
-export function agentView({ origin, token, claims, submissions, terms, gateZero, board, boardStatus, cpuSecondsLeft }) {
+export function agentView({ origin, token, claims, submissions, terms, gateZero, board, boardStatus, cpuSecondsLeft, declare = null }) {
   const evidenceUrl = `${origin}/agents/evidence.json`;
   return {
     schema: VIEW_SCHEMA,
@@ -93,6 +93,8 @@ export function agentView({ origin, token, claims, submissions, terms, gateZero,
     },
     board,
     board_status: boardStatus,
+    // How to opt in to a public declaration (Amendment 4 rev 2): the notice, the template and the fields (declare.js).
+    ...(declare ? { declare } : {}),
     human_page: `${origin}/?view=human`,
   };
 }

@@ -6,7 +6,8 @@ import { withEdge } from "./edge.js";
 import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
-import { carriesToken, decodedPath, DOOR_FEEDS, doorRoute, handleDoor, protectToken, serveWallOrAgentVersion, tokenBearing, withoutOperators } from "./door/door.js";
+import { carriesToken, decodedPath, DOOR_FEEDS, doorRoute, handleDoor, handleHere, HERE_PATH, protectToken, serveWallOrAgentVersion, tokenBearing,
+  withoutOperators } from "./door/door.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -69,6 +70,8 @@ async function doorFeed(upstream, headers) {
   }
   for (const name of ["content-length", "content-encoding", "etag"]) headers.delete(name);
   headers.set("content-type", "application/json");
+  // The visitors feed carries visitors' own declared text: never sniffed as anything but JSON.
+  headers.set("x-content-type-options", "nosniff");
   return new Response(JSON.stringify(withoutOperators(value)), { status: upstream.status, headers });
 }
 
@@ -84,9 +87,12 @@ async function allowRunStart(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
+    // A lab page's heartbeat (door/door.js handleHere): this exact path only, checked and forwarded by the door with
+    // fresh headers. Any other spelling of it is the read-only API below.
+    if (pathname === HERE_PATH) return handleHere(request, env);
     // SentiLab is hands-off: the service runs its own loop, so the public /api is read-only. No caller can start runs
-    // or reach any API write route from outside. The edge's one write route is the agent door's POST /agents/submit
-    // (door/door.js), which reaches the API only after the door's token, format and rate checks.
+    // or reach any API write route from outside. The edge's write routes are the agent door's POST /agents/submit, which
+    // reaches the API only after the door's token, format and rate checks, and the heartbeat above (door/door.js).
     if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
       return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
         { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });
