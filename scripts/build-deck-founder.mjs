@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DECK_ROOT, NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 import { readQr } from "./qr-read.mjs";
@@ -419,15 +419,44 @@ function pictureFiles(v4) {
 // The short cut's speaker script sits beside the full one.
 export const scriptPath = (slot) => (slot === "3min" ? FOUNDER_OUTPUTS.script : join(FOUNDER_DIR, `SCRIPT-${slot}.md`));
 
-export function outputsMatch(data, v4, loaded) {
+// Everything the build writes, by path: the deck data, both speaker scripts, FILL-IN, SOURCES and each picture as served.
+export function publicOutputs(data, v4, loaded) {
   const { json, js } = serialize(data);
-  const pics = pictureFiles(v4);
-  const same = (p, s) => existsSync(p) && readFileSync(p, "utf8") === s;
-  const scripts = FOUNDER_SLOTS.every((slot) => same(scriptPath(slot), speakerScript(slot === data.deck.slot ? data : buildFounderData(loaded, { slot }), v4)));
-  return same(join(FOUNDER_DECK_DIR, "deck-data.json"), json) && same(join(FOUNDER_DECK_DIR, "deck-data.js"), js)
-    && scripts && same(FOUNDER_OUTPUTS.fillIn, fillInTable(data)) && same(FOUNDER_OUTPUTS.sources, sourcesList(data))
-    && JSON.stringify(readdirSync(FOUNDER_FIGURE_DIR).sort()) === JSON.stringify([...pics.keys()].sort())
-    && [...pics].every(([f, b]) => readFileSync(join(FOUNDER_FIGURE_DIR, f)).equals(b));
+  const out = new Map([[join(FOUNDER_DECK_DIR, "deck-data.json"), json], [join(FOUNDER_DECK_DIR, "deck-data.js"), js]]);
+  for (const slot of FOUNDER_SLOTS) out.set(scriptPath(slot), speakerScript(slot === data.deck.slot ? data : buildFounderData(loaded, { slot, final: !data.deck.draft }), v4));
+  out.set(FOUNDER_OUTPUTS.fillIn, fillInTable(data));
+  out.set(FOUNDER_OUTPUTS.sources, sourcesList(data));
+  for (const [f, b] of pictureFiles(v4)) out.set(join(FOUNDER_FIGURE_DIR, f), b);
+  return out;
+}
+// Carter's handoff files (the coordinator, 12:31Z): aneta's answer sheet and demo run sheet, beside the scripts and not on
+// a slide, exactly as received; V4.json pins each by its sha256.
+export function handoffFiles(v4) {
+  const files = new Map();
+  for (const [file, h] of Object.entries(v4.handoff ?? {})) {
+    const path = join(FOUNDER_DIR, file);
+    const bytes = existsSync(path) ? readFileSync(path) : null;
+    if (!bytes || sha256(bytes) !== h.sha256) throw new FounderError(`handoff file ${file} is not the file V4.json pins (${h.sha256.slice(0, 8)}…)`);
+    files.set(path, bytes);
+  }
+  return files;
+}
+// A team that has not consented to be named appears in nothing the deck publishes, in any letter case (the coordinator,
+// 12:31Z: Vortex stays "another team"): the slides and the sources page, a figure's text or alt text, the notes, both
+// scripts, FILL-IN, SOURCES and Carter's handoff files. The PDFs are printed from these. Embedded image data is skipped.
+export function checkUnnamed(files, v4) {
+  for (const [path, body] of files) {
+    if (!/\.(json|js|md|svg)$/.test(path)) continue;
+    const text = String(body).replace(/data:[^"')\s]+/g, "");
+    for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(text)) throw new FounderError(`${relative(REPO_ROOT, path)} names ${t}, who has not consented`);
+  }
+}
+
+export function outputsMatch(data, v4, loaded) {
+  const outputs = publicOutputs(data, v4, loaded);
+  const pics = [...outputs.keys()].filter((p) => p.startsWith(FOUNDER_FIGURE_DIR)).map((p) => basename(p)).sort();
+  return JSON.stringify(readdirSync(FOUNDER_FIGURE_DIR).sort()) === JSON.stringify(pics)
+    && [...outputs].every(([p, b]) => existsSync(p) && readFileSync(p).equals(Buffer.isBuffer(b) ? b : Buffer.from(b, "utf8")));
 }
 
 function main(args) {
@@ -436,22 +465,18 @@ function main(args) {
   const slot = at >= 0 ? args[at + 1] : "3min";
   const final = args.includes("--final") || loaded.v4.build === "final";
   const data = buildFounderData(loaded, { slot, final });
+  const outputs = publicOutputs(data, loaded.v4, loaded);
+  checkUnnamed([...outputs, ...handoffFiles(loaded.v4)], loaded.v4);
   if (args.includes("--check")) {
     if (slot !== "3min") throw new FounderError("--check reads the committed build, which is the 3min slot");
     if (!outputsMatch(data, loaded.v4, loaded)) { console.error("deck/founder-v4 or its SCRIPT/FILL-IN/SOURCES differ from a fresh build of V4.json"); process.exit(1); }
     console.log("deck/founder-v4 matches a fresh build");
     return;
   }
-  const { json, js } = serialize(data);
   mkdirSync(FOUNDER_FIGURE_DIR, { recursive: true });
-  writeFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), json);
-  writeFileSync(join(FOUNDER_DECK_DIR, "deck-data.js"), js);
-  const pics = pictureFiles(loaded.v4);
+  const pics = new Set([...outputs.keys()].filter((p) => p.startsWith(FOUNDER_FIGURE_DIR)).map((p) => basename(p)));
   for (const f of readdirSync(FOUNDER_FIGURE_DIR)) if (!pics.has(f)) throw new FounderError(`deck/founder-v4/figures/${f} is not a picture V4.json names; remove it by hand`);
-  for (const [f, b] of pics) writeFileSync(join(FOUNDER_FIGURE_DIR, f), b);
-  for (const s of FOUNDER_SLOTS) writeFileSync(scriptPath(s), speakerScript(s === slot ? data : buildFounderData(loaded, { slot: s }), loaded.v4));
-  writeFileSync(FOUNDER_OUTPUTS.fillIn, fillInTable(data));
-  writeFileSync(FOUNDER_OUTPUTS.sources, sourcesList(data));
+  for (const [p, b] of outputs) writeFileSync(p, b);
   const u = data.budget;
   console.log(`deck/founder-v4: ${data.slides.length} slides (${data.slides.filter((s) => s.main).length} main), facts as of ${data.deck.cutoff}${data.deck.measuring ? `, ${data.placeholders.length} placeholders` : ""}`);
   console.log(`  talk ${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm + ${u.transitionSeconds} s transitions = ${u.totalSeconds} s of ${u.talkCapSeconds} s (${u.slowTotalSeconds} s at ${u.slowWordsPerMinute} wpm)`);

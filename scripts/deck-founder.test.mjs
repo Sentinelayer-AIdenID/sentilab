@@ -6,8 +6,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import {
-  FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, countWords, fillInTable, founderPdfName,
-  loadFounder, outputsMatch, scriptPath, serialize, sourcesList, speakerScript, windowShown,
+  FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, checkUnnamed, countWords, fillInTable,
+  founderPdfName, handoffFiles, loadFounder, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList, speakerScript,
+  windowShown,
 } from "./build-deck-founder.mjs";
 import { PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 
@@ -410,6 +411,36 @@ test("a slide with a QR code also prints the address it encodes, on the draft an
   const noDoor = (v) => { v.slides.find((x) => x.id === "invite").points = []; };
   assert.throws(() => variant(noDoor), /slide invite shows a QR code without the address it encodes \(sentilab\.aidenid\.com\)/);
   assert.throws(() => variant((v) => { noDoor(v); v.build = "final"; }), /slide invite shows a QR code without the address it encodes/);
+});
+
+test("a team that has not consented to be named appears in nothing the deck publishes: Vortex stays \"another team\"", () => {
+  assert.ok(loaded.v4.teams.unnamed.includes("Vortex"));
+  // Everything the build writes (deck data, both scripts, FILL-IN, SOURCES, every figure as served, text and alt) and
+  // Carter's handoff files: none names an unnamed team, and none holds "vortex" in any letter case, even inside a word.
+  const files = [...publicOutputs(data, loaded.v4, loaded), ...handoffFiles(loaded.v4)];
+  for (const f of [scriptPath("3min"), scriptPath("2min"), FOUNDER_OUTPUTS.fillIn, FOUNDER_OUTPUTS.sources, join(FOUNDER_DIR, "CARTER-QA.md"), join(FOUNDER_DIR, "DEMO-RUN-SHEET.md")]) assert.ok(files.some(([p]) => p === f), f);
+  checkUnnamed(files, loaded.v4);
+  for (const [p, b] of files) if (/\.(json|js|md|svg)$/.test(p)) assert.doesNotMatch(String(b).replace(/data:[^"')\s]+/g, ""), /vortex/i, p);
+  // The guard reads every surface, in any letter case: the notes, a figure's alt text, SOURCES, a handoff file.
+  const built = (mutate) => { const v4 = structuredClone(loaded.v4); mutate(v4); const l = { ...loaded, v4 }; return [...publicOutputs(buildFounderData(l), v4, l)]; };
+  assert.throws(() => checkUnnamed(built((v) => { v.slides.find((x) => x.id === "link").cue += " As vORtex said."; }), loaded.v4), (e) => e instanceof FounderError && /names Vortex, who has not consented/.test(e.message));
+  assert.throws(() => checkUnnamed(built((v) => { v.figures.plain7.alt = "Read by VORTEX."; }), loaded.v4), /names Vortex/);
+  assert.throws(() => checkUnnamed(built((v) => { v.slides.find((x) => x.id === "hook").facts[0].source += " (vortex)"; }), loaded.v4), /names Vortex/);
+  assert.throws(() => checkUnnamed([[join(FOUNDER_DIR, "CARTER-QA.md"), "Team Vortex re-ran it."]], loaded.v4), /CARTER-QA\.md names Vortex/);
+  // Embedded image data is not text: a run of base64 that happens to spell a name is not a mention.
+  checkUnnamed([[join(FOUNDER_DECK_DIR, "figures", "x.svg"), '<image href="data:image/png;base64,QQ+vortex+QQ"/>']], loaded.v4);
+});
+
+test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
+  const pins = { "CARTER-QA.md": "d1e67703e3c3e7e8c0a5d8cc7e8ba048837a9a4b2e7a2d47d941f556aaf2acfe", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
+  assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
+  assert.equal(handoffFiles(loaded.v4).size, 2);
+  for (const f of Object.keys(pins)) assert.ok(existsSync(join(FOUNDER_DIR, f)) && !existsSync(join(FOUNDER_DECK_DIR, f)), f);
+  // Root's P2 wording is already in the answer sheet's 2.71-degree row.
+  assert.match(readFileSync(join(FOUNDER_DIR, "CARTER-QA.md"), "utf8"), /Within six minutes of our ask, two other teams reported reruns in their own setups, and both reported the same direction/);
+  const moved = structuredClone(loaded.v4);
+  moved.handoff["CARTER-QA.md"].sha256 = "0".repeat(64);
+  assert.throws(() => handoffFiles(moved), /handoff file CARTER-QA\.md is not the file V4\.json pins \(00000000…\)/);
 });
 
 test("a measured tile's time window, as the slide prints it", () => {
