@@ -35,7 +35,10 @@ class CouplingManifestTests(unittest.TestCase):
         self.assertEqual(evaluation["replay_identity"]["comparison"], "byte-for-byte")
         self.assertIn("receipt.json", evaluation["replay_identity"]["excluded"])
         self.assertEqual(evaluation["percentage_rounding"],
-                         "nearest whole percent from the exact rational; ties away from zero")
+                         "floor to whole percent from the exact rational; no clipping")
+        self.assertEqual(set(evaluation["mixed_outcome_wordings"]), {"MEETS", "MISSES"})
+        self.assertEqual(evaluation["reference_labels"],
+                         {"ascend910-tap25d-fig6a-raw": "Ascend Layout A", "micro150-tap25d-fig5a-raw": "CPU-DRAM"})
         self.assertEqual(evaluation["percentage_references"],
                          {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"})
         self.assertEqual(set(evaluation["outcome_wordings"]), {"MEETS", "MISSES", "DOESN'T COMPLETE"})
@@ -182,13 +185,30 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertEqual(report["coupling"]["verdict"], "FAIL")
         self.assertEqual(report["coupling"]["outcome"], "MISSES")
         self.assertEqual(report["coupling"]["wording"],
-            "That one change accounts for 90% and 85% of the difference, below the 85% we fixed. "
-            "Something else also contributes.")
+            "With only that one link changed in 7.0, 90% of the difference to 6.0 goes away on Ascend Layout A. "
+            "CPU-DRAM: That one change accounts for 84% of the difference, below the 85% we fixed.")
         self.assertEqual(report["coupling"]["percentage_rounding"],
-                         "nearest whole percent from the exact rational; ties away from zero")
+                         "floor to whole percent from the exact rational; no clipping")
         self.assertEqual([row["outcome"] for row in report["rows"]], ["MEETS", "MISSES"])
         self.assertEqual([row["primary"]["fraction_exact"] for row in report["rows"]], ["9/10", "169/200"])
         self.assertEqual([row["predicate"] for row in report["rows"]], [True, False])
+
+    def test_mixed_result_with_cpu_dram_meeting_reports_each_reference(self):
+        self.run_pair(0, 83.1504)  # exactly 84% on Ascend
+        report = self.run_pair(2, 127.604)  # exactly 90% on CPU-DRAM
+        self.assertEqual(report["coupling"]["wording"],
+            "Ascend Layout A: That one change accounts for 84% of the difference, below the 85% we fixed. "
+            "With only that one link changed in 7.0, 90% of the difference to 6.0 goes away on CPU-DRAM.")
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MEETS"])
+        self.assertEqual(report["coupling"]["verdict"], "FAIL")
+
+    def test_all_miss_keeps_the_frozen_sentence_and_floors_percentages(self):
+        self.run_pair(0, 82.9107)  # exactly 84.5% on Ascend
+        report = self.run_pair(2, 134.0247)  # exactly 84.5% on CPU-DRAM
+        self.assertEqual(report["coupling"]["wording"],
+            "That one change accounts for 84% and 84% of the difference, below the 85% we fixed. "
+            "Something else also contributes.")
+        self.assertEqual([row["outcome"] for row in report["rows"]], ["MISSES", "MISSES"])
 
     def test_missing_call_takes_precedence_over_a_completed_threshold_miss(self):
         report = self.run_pair(0, 90)
@@ -300,10 +320,11 @@ class CouplingEntryTests(fixtures.EntryCase):
 class FrozenEvaluationTests(unittest.TestCase):
     def test_percentage_rounding_uses_exact_rationals_without_clipping(self):
         call = coupling_allocation.build_manifest()["calls"][0]
-        # Kelvin text, hand-computed fraction and nearest whole percent (ties away from zero).
-        cases = (("355.1019", "173/200", 87), ("356.0607", "169/200", 85),
+        # Kelvin text, hand-computed fraction and whole percent rounded toward negative infinity.
+        cases = (("355.1019", "173/200", 86), ("356.0607", "169/200", 84),
                  ("356.060700000000000000000000000001", None, 84),
-                 ("396.8097", "-1/200", -1), ("348.3903", "201/200", 101),
+                 ("396.8097", "-1/200", -1), ("396.61794", "-1/1000", -1),
+                 ("348.3903", "201/200", 100),
                  ("380.59", "1/3", 33))
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp) / "run"
@@ -345,6 +366,7 @@ class FrozenEvaluationTests(unittest.TestCase):
                             {"kind": "material_only", "binary_sha256": call["binary_sha256"]})
                         self.assertEqual(result["fraction_exact"], exact)
                         self.assertIs(result["threshold_met"], expected)
+                        self.assertEqual(result["fraction_percent"], 85 if expected else 84)
                         self.assertEqual(result["maximizing_node"], "inode_0")
                         self.assertLess(result["diagnostics"]["chiplet_block_values_C"]["Chiplet_0"], 71)
                         with self.assertRaisesRegex(gate_zero.GateZeroRefusal, "pinned"):

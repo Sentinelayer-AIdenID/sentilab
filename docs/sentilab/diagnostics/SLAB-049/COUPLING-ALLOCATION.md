@@ -81,9 +81,10 @@ misses the threshold. Otherwise both references meeting `17/20` selects **MEETS*
 **MISSES**. There are no retries or automatic extra calls.
 
 The manifest freezes these wordings and the percentage mapping: `[x]` is Ascend Layout A and `[y]` is CPU-DRAM.
-Each signed evaluation retains `fraction_percent`, rounded directly from the exact rational to the nearest
-whole percent, with ties away from zero and no clipping to 0–100%. The report repeats that rounding rule.
-Display rounding does not affect the predicate: an exact 84.5% displays as 85% but still misses `17/20`.
+Each signed evaluation retains `fraction_percent`, rounded down (floor, toward negative infinity) directly
+from the exact rational, with no clipping to 0–100%. The report repeats that rounding rule. Display rounding
+does not affect the predicate: an exact 84.5% displays as 84% and misses `17/20`; a pass always displays at least
+85%, and a miss at most 84%.
 
 - **MEETS:** "With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the two
   references. That localizes it to this term in this configured model. It doesn't tell us what the authors
@@ -91,6 +92,14 @@ Display rounding does not affect the predicate: an exact 84.5% displays as 85% b
 - **MISSES:** "That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. Something
   else also contributes."
 - **DOESN'T COMPLETE:** "The run didn't complete, so we make no claim from it."
+
+When one reference meets and the other misses, the report uses one sentence per reference in call-list order,
+with the same frozen phrases. The manifest freezes these templates and the labels Ascend Layout A and CPU-DRAM:
+
+- **MEETS:** "With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on [reference]."
+- **MISSES:** "[reference]: That one change accounts for [x]% of the difference, below the 85% we fixed."
+
+Here `[x]` is that reference's percentage. The combined all-meet and all-miss wordings above remain unchanged.
 
 ## Operator review and execution
 

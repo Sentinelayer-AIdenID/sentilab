@@ -22,8 +22,9 @@ KIND = "material_only"
 SCHEMA = "sentilab-slab049-coupling-manifest-v1"
 NOT_AFTER_UTC = "2026-11-02T06:00:00Z"  # provisional until confirmed by root/aneta before signing
 REPLAY_OUTPUTS = ("sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt")
-PERCENTAGE_ROUNDING = "nearest whole percent from the exact rational; ties away from zero"
+PERCENTAGE_ROUNDING = "floor to whole percent from the exact rational; no clipping"
 PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
+REFERENCE_LABELS = {"ascend910-tap25d-fig6a-raw": "Ascend Layout A", "micro150-tap25d-fig5a-raw": "CPU-DRAM"}
 OUTCOME_WORDINGS = {
     "MEETS": ("With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the "
               "two references. That localizes it to this term in this configured model. It doesn't tell us "
@@ -31,6 +32,10 @@ OUTCOME_WORDINGS = {
     "MISSES": ("That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. "
                "Something else also contributes."),
     "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
+}
+MIXED_OUTCOME_WORDINGS = {
+    "MEETS": ("With only that one link changed in 7.0, [x]% of the difference to 6.0 goes away on [reference]."),
+    "MISSES": ("[reference]: That one change accounts for [x]% of the difference, below the 85% we fixed."),
 }
 
 
@@ -86,6 +91,8 @@ def build_manifest() -> dict:
                                         "excluded": {"receipt.json": "per-call timestamps and accounting"}},
                     "percentage_rounding": PERCENTAGE_ROUNDING,
                     "percentage_references": dict(PERCENTAGE_REFERENCES),
+                    "reference_labels": dict(REFERENCE_LABELS),
+                    "mixed_outcome_wordings": dict(MIXED_OUTCOME_WORDINGS),
                     "outcome_wordings": dict(OUTCOME_WORDINGS)},
         accounting={"calls": len(calls), "max_runs": len(calls), "retries": 0, "concurrency": 1, "gpu": False,
                     "host_architecture": gate["accounting"]["host_architecture"],
@@ -120,10 +127,8 @@ def require_receipt_identity(call: dict, identity: dict) -> None:
 
 
 def whole_percent(fraction: Fraction) -> int:
-    """Round the exact rational to the nearest whole percent, with ties away from zero."""
-    whole, remainder = divmod(abs(fraction.numerator) * 100, fraction.denominator)
-    magnitude = whole + (2 * remainder >= fraction.denominator)
-    return -magnitude if fraction < 0 else magnitude
+    """Floor the exact rational percentage, so displayed misses stay below 85%."""
+    return fraction.numerator * 100 // fraction.denominator
 
 
 def evaluate_call(call: dict, directory: Path, record: dict, identity: dict,
@@ -219,7 +224,11 @@ def report(manifest: dict, digest: str, ledger: dict, tags) -> dict:
     outcome = ("DOESN'T COMPLETE" if any(row["outcome"] == "DOESN'T COMPLETE" for row in rows)
                else "MEETS" if predicate is True else "MISSES")
     wording = OUTCOME_WORDINGS[outcome]
-    if outcome != "DOESN'T COMPLETE":
+    if {row["outcome"] for row in rows} == {"MEETS", "MISSES"}:
+        wording = " ".join(MIXED_OUTCOME_WORDINGS[row["outcome"]]
+                           .replace("[reference]", REFERENCE_LABELS[row["reference"]])
+                           .replace("[x]", str(row["primary"]["fraction_percent"])) for row in rows)
+    elif outcome != "DOESN'T COMPLETE":
         by_reference = {row["reference"]: row for row in rows}
         for placeholder, reference in PERCENTAGE_REFERENCES.items():
             wording = wording.replace(f"[{placeholder}]", str(by_reference[reference]["primary"]["fraction_percent"]))
