@@ -563,9 +563,14 @@ export async function createView3D({ canvas, labels, leaders, reduced = false, o
           keep.add(`layer:${r.level}`); keepLead.add(`layer:${r.level}`);
         }
       }
-      if (S.notScored) {
+      if (S.notScored && view.w >= 560) {
+        // On the chip layer's corner nearest the viewer, just below it: it labels the layer and covers no die. Phones
+        // show no 3D labels (the caption under the view says the same).
         const S0 = S.model.frame.interposer_mm;
-        put(label("notScored", "note", [["span", null, S.notScored]]).el, project(S0 / 2, S0 / 2, S.chipTop + 0.15));
+        const p = [[0, 0], [S0, 0], [S0, S0], [0, S0]].map(([x, y]) => project(x, y, S.fillTop)).reduce((m, q) => (q.y > m.y ? q : m));
+        const el = label("notScored", "note", [["span", null, S.notScored]]).el;
+        el.hidden = p.behind;
+        el.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y + 14)}px) translate(-50%, 0)`;
         keep.add("notScored");
       }
     } else if (S.kind === "result" && S.lab) {
