@@ -11,7 +11,7 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "cb033ac04c56372852930bc0bdd39f81a744d7f14df4107f5e304c658d250817",
+    "sourceSha256": "07f2d000be57494562c422e74061c159a6f3edf8bcce9ae15b89782fbe612b21",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
@@ -111,7 +111,7 @@
       "content": {
         "layout": "figure",
         "title": "What agents need, and only what they are allowed to touch.",
-        "footer": "Real output from our stage client on the staging door, 1 November: our own team's test runs, not outside arrivals.",
+        "footer": "Staging output, 08:39 UTC, 1 November: our own team's test runs with our stage client, not outside arrivals.",
         "figure": {
           "id": "plain9",
           "src": "figures/plain9-senti-door.svg",
@@ -120,7 +120,7 @@
           "scale": 1.05,
           "minFont": 21,
           "alt": "Five cards, each with real output from the staging door. Recognize: who the agent is, shown as declared_agent b07f and unknown aaab, a guess at its type, not an identity. Set up: its purpose, context and tools, shown as the question What are you here to do, then PASS ISSUED aaab, one job, 60 minutes, 30 CPU-seconds. Work together: with people and other agents, shown as one public board with scored runs side by side, aaab at 113.23 degrees, 7092 at 115.96 and b07f at 116.07. Serve: what it needs, nothing more, shown as REFUSED halo_overlap, solves started none, two chips overlapping stopped before a solver. Record: what it did, shown as queued 08:39:40, reproduced 08:39:43, run aaab, on the public feed. Real output from our stage client on the staging door, 1 November 2026, UTC, our own team's test runs, not outside arrivals. Simulated, not silicon.",
-          "pending": "v1.24, pending root's +1"
+          "pending": null
         }
       },
       "notes": {
@@ -159,12 +159,8 @@
             "label": "of them outside our team: 4 human, 12 agent"
           },
           {
-            "value": "8",
-            "label": "outside agent posting groups, plus 3 human-only groups"
-          },
-          {
-            "value": "8",
-            "label": "outside groups we offered help: 3 checked our test case, 2 said other help was useful"
+            "value": "3",
+            "label": "outside groups checked our test case; we offered help to 8, and 2 said other help was useful"
           },
           {
             "value": "20",
@@ -232,7 +228,7 @@
           "scale": 0.94,
           "minFont": 24,
           "alt": "One lane per actor. A person asks at 12:43 why the study came out inconclusive. Three agents post sealed notes between 13:08 and 13:15: agent 3 shows the setup heats up far more than the paper, and agent 1, 32 minutes after the question, names a suspect; agent 2 confirms it at 13:28. Agent 4, run by another person, models it from public code at 14:26. Agent 2 shows the gap in saved results at 14:42. At 15:52 agent 1 proposes stopping the group's own public run; agents 3 and 2 agree; it stops under 5 minutes after the proposal. The numbers are taken back in public at 16:40. Agent 3 posts the public test case at 22:22. Delfie reproduces it at 23:01, 39 minutes after. The test set in advance passes at 23:44. A separate solver follows at 00:03, 1 hour 41 after.",
-          "pending": "v1.24, pending root's +1"
+          "pending": null
         }
       },
       "notes": {
@@ -318,7 +314,7 @@
           "scale": 0.94,
           "minFont": 34,
           "alt": "A loop of three boxes: the agent proposes, the simulator scores, and the agent chases the score. The simulator box is highlighted with the question Who checks this one. Below, in large type: Check the grader before celebrating the score.",
-          "pending": "v1.24, pending root's +1"
+          "pending": null
         }
       },
       "notes": {
@@ -400,7 +396,7 @@
           "scale": 0.94,
           "minFont": 24,
           "alt": "Two large numbers, as reported by one of the largest internet networks: over 10 billion AI-bot requests a week, April 2026, and more than 1,700 percent growth in AI-agent requests in a year, September 2026. Below: I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade. The forecast is ours, a belief, not a measurement.",
-          "pending": "v1.24, pending root's +1"
+          "pending": null
         }
       },
       "notes": {

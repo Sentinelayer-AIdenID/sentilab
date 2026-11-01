@@ -25,7 +25,8 @@
     "The clock correction (relayed 08:24Z): Carter's slot is 3-4 minutes of talk plus 1-2 of demo (57411), so v4 targets 3:00-3:20 and the lines cut for time are back.",
     "Root's rev 2 review at 9a829898 (relayed 08:40Z): the fixed reference test line, posting groups instead of teams, aneta's expanded scorecard description (57915) with the reported-attribution tweak, and a timed rehearsal with the real demo.",
     "An optional measured item, Carter's call (relayed 09:03Z): aneta's team layout D1 on staging, with chatgpt's arithmetic check (addendum to 57781, 09:01Z).",
-    "Aneta's final read of rev 3 (57934, 10:00Z) with the v1.24 figures (packet da8908c1..., pending root's review) and root's reply (10:09Z); plain8-candidate from v1.22 (packet 644114f6..., root +1 09:18Z)."
+    "Aneta's final read of rev 3 (57934, 10:00Z) with the v1.24 figures (packet da8908c1..., pending root's review) and root's reply (10:09Z); plain8-candidate from v1.22 (packet 644114f6..., root +1 09:18Z).",
+    "Root's scoped +1 on the v1.24 figure assets (reply to 57934, 10:16:54Z, review 66d1d0201426641e3408edd740221573d283dac5e259070da2ac4b022d8c0e43) and aneta's slide-3 read (57941, 10:29Z), relayed 10:31Z."
   ],
   "teams": {
     "named": {
@@ -115,7 +116,7 @@
       "width": 1664,
       "height": 620,
       "scale": 1.05,
-      "pending": "v1.24, pending root's +1"
+      "review": "root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020...)"
     },
     "plain4": {
       "file": "plain4-timeline.svg",
@@ -123,7 +124,7 @@
       "width": 1664,
       "height": 690,
       "scale": 0.94,
-      "pending": "v1.24, pending root's +1"
+      "review": "root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020...)"
     },
     "plain10": {
       "file": "plain10-point.svg",
@@ -131,7 +132,7 @@
       "width": 1664,
       "height": 620,
       "scale": 0.94,
-      "pending": "v1.24, pending root's +1"
+      "review": "root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020...)"
     },
     "plain11": {
       "file": "plain11-traffic.svg",
@@ -139,7 +140,7 @@
       "width": 1664,
       "height": 620,
       "scale": 0.94,
-      "pending": "v1.24, pending root's +1"
+      "review": "root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020...)"
     },
     "plain8": {
       "file": "plain8-candidate.svg",
@@ -170,14 +171,15 @@
       "kicker": "Senti",
       "layout": "figure",
       "title": "What agents need, and only what they are allowed to touch.",
-      "footer": "Real output from our stage client on the staging door, 1 November: our own team's test runs, not outside arrivals.",
+      "footer": "Staging output, 08:39 UTC, 1 November: our own team's test runs with our stage client, not outside arrivals.",
       "say": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and keeps a record of what they did. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
       "facts": [
         {
           "shows": [
+            "08:39",
             "1"
           ],
-          "source": "Aneta's v1.24 captions for plain9-senti-door: the stage client's output and the public feed on staging, 1 November 2026; team runs only."
+          "source": "Aneta's v1.24 captions for plain9-senti-door: the stage client's output and the public feed on staging, 1 November 2026 (queued 08:39:40, reproduced 08:39:43, run aaab); team runs only. Root (10:16:54Z): keep it distinct from any new v1.24 execution claim."
         }
       ],
       "picture": {
@@ -203,12 +205,8 @@
           "label": "of them outside our team: 4 human, 12 agent"
         },
         {
-          "value": "8",
-          "label": "outside agent posting groups, plus 3 human-only groups"
-        },
-        {
-          "value": "8",
-          "label": "outside groups we offered help: 3 checked our test case, 2 said other help was useful"
+          "value": "3",
+          "label": "outside groups checked our test case; we offered help to 8, and 2 said other help was useful"
         },
         {
           "value": "20",

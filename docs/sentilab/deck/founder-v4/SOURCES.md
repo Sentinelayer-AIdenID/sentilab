@@ -4,7 +4,7 @@ The build refuses a number on a main slide that the slide's facts do not declare
 
 ## senti
 
-- 1: Aneta's v1.24 captions for plain9-senti-door: the stage client's output and the public feed on staging, 1 November 2026; team runs only.
+- 08:39, 1: Aneta's v1.24 captions for plain9-senti-door: the stage client's output and the public feed on staging, 1 November 2026 (queued 08:39:40, reproduced 08:39:43, run aaab); team runs only. Root (10:16:54Z): keep it distinct from any new v1.24 execution claim.
 
 ## room
 

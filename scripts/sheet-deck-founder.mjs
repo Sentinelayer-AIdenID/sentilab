@@ -20,7 +20,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const main = data.slides.map((s, k) => ({ s, k })).filter(({ s }) => s.main);
 const cells = main.map(({ s, k }) => {
   const png = readFileSync(join(shots, `${String(k + 1).padStart(2, "0")}-${s.id}-1920x1080.png`)).toString("base64");
-  return `<div class="cell"><img src="data:image/png;base64,${png}" width="640" height="360"><div class="say"><b>${esc(s.label)} · ${esc(s.kicker)}</b>`
+  return `<div class="cell"><img src="data:image/png;base64,${png}" width="800" height="450"><div class="say"><b>${esc(s.label)} · ${esc(s.kicker)}</b>`
     + `<p>${esc(s.notes.text)}</p><small>${s.notes.words} words · ${s.notes.seconds} s${s.notes.cue ? ` · cue: ${esc(s.notes.cue)}` : ""}</small></div></div>`;
 }).join("");
 const u = data.budget;
@@ -28,12 +28,12 @@ const head = `<h1>SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "
   + `<p class="clock">${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm + ${u.transitionSeconds} s transitions = ${u.totalSeconds} s of ${u.talkCapSeconds} s · at ${u.slowWordsPerMinute} wpm ${u.slowTotalSeconds} s</p>`
   + (data.placeholders.length ? `<p class="fill">Still measuring (shown as "measuring…"): ${data.placeholders.map((p) => esc(p.label)).join(" · ")}</p>` : "");
 const page = `<!doctype html><meta charset="utf-8"><style>
-body { margin: 0; padding: 36px 40px; width: 2520px; background: #0b1216; color: #eef3f2; font: 20px/1.4 "Segoe UI", system-ui, sans-serif; }
+body { margin: 0; padding: 36px 40px; width: 3000px; background: #0b1216; color: #eef3f2; font: 20px/1.4 "Segoe UI", system-ui, sans-serif; }
 h1 { margin: 0; font: 650 40px "Segoe UI", system-ui, sans-serif; }
 .clock { margin: 8px 0 0; color: #ecc993; font-weight: 600; }
 .fill { margin: 6px 0 0; color: #ecc993; }
 .grid { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 30px; }
-.cell { display: grid; grid-template-columns: 640px 1fr; gap: 20px; padding: 14px; border: 2px solid #2a3a42; border-radius: 12px; background: #121c23; }
+.cell { display: grid; grid-template-columns: 800px 1fr; gap: 20px; padding: 14px; border: 2px solid #2a3a42; border-radius: 12px; background: #121c23; }
 .cell img { display: block; border-radius: 6px; }
 .say b { display: block; font: 600 18px Consolas, monospace; color: #93afb8; text-transform: uppercase; letter-spacing: .06em; }
 .say p { margin: 8px 0; font-size: 21px; color: #d6e0e0; }
@@ -44,7 +44,7 @@ const dir = process.env.PLAYWRIGHT_DIR;
 const { chromium } = dir ? createRequire(pathToFileURL(join(resolve(dir), "noop.js")))("playwright") : await import("playwright");
 const browser = await chromium.launch();
 try {
-  const ctx = await browser.newContext({ viewport: { width: 2600, height: 1200 }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: { width: 3100, height: 1200 }, deviceScaleFactor: 2 });
   const p = await ctx.newPage();
   await p.setContent(page, { waitUntil: "load" });
   const out = join(FOUNDER_DIR, data.deck.slot === "3min" ? "sheet-main.png" : `sheet-main-${data.deck.slot}.png`);

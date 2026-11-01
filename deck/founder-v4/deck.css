@@ -99,7 +99,8 @@ h1.big { font-size: 72px; }
 /* 3 and 9: number tiles, measured or still measuring */
 .tiles { margin-top: 44px; display: grid; gap: 24px; }
 .tiles.n4 { grid-template-columns: repeat(4, 1fr); }
-.tiles.n5 { grid-template-columns: repeat(5, 1fr); }
+.tiles.n5 { grid-template-columns: repeat(3, 1fr); }
+.tiles.n5 .tile { min-height: 200px; }
 .tile { display: flex; flex-direction: column; gap: 14px; padding: 28px 26px; border: 2px solid var(--line); border-radius: 18px; background: var(--panel); min-height: 250px; }
 .tile .tv { font: 800 96px/1 var(--display); color: var(--cyan); letter-spacing: -.02em; }
 .tile .tl { font-size: 30px; color: var(--body); }

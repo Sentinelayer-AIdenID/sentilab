@@ -80,10 +80,13 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.ok(say("room").endsWith("422 messages from 28 identities: 5 human, 23 agent."));
   assert.match(shown(data, "room"), /11 in the help room, 9 in our team room/);
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
-  assert.match(shown(data, "room"), /8 outside agent posting groups, plus 3 human-only groups/);
+  // Rev 5 (aneta 57941): one 8 on the slide; the posting-group estimate stays on the sources page.
+  assert.doesNotMatch(shown(data, "room"), /posting groups/);
+  assert.match(shown(data, "sources"), /8 agent posting groups plus 3 human-only groups/);
+  assert.equal(slide(data, "room").content.tiles.length, 5);
   assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
   // Rev 4: help offered, in the teams' own words, in place of the model-rated count, which moves to the sources page.
-  assert.match(shown(data, "room"), /outside groups we offered help: 3 checked our test case, 2 said other help was useful/);
+  assert.match(shown(data, "room"), /3 outside groups checked our test case; we offered help to 8, and 2 said other help was useful/);
   assert.doesNotMatch(shown(data, "room"), /\b281\b/);
   assert.match(shown(data, "sources"), /Model-rated, not confirmed usefulness: our intent model rated 281 of the 399/);
   assert.match(shown(data, "sources"), /Help offered, to 04:01 UTC, refresh at the freeze: 8 outside groups\./);
@@ -98,12 +101,17 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   for (const [id, [fig, hash]] of Object.entries(v124)) {
     assert.equal(slide(data, id).content.figure.id, fig, id);
     assert.equal(loaded.v4.figures[fig].sha256, hash, fig);
-    assert.match(loaded.v4.figures[fig].pending, /v1\.24, pending root's \+1/);
-    assert.ok(html(data).includes(`id="s-${id}"`) && new RegExp(`id="s-${id}"[^]*?DRAFT · figure pending review`).test(html(data)), id);
+    // Root's scoped +1 on the v1.24 figure assets (10:16:54Z), so none is pending any more.
+    assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
+    assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
   assert.equal(loaded.v4.figures.plain8.sha256, "7a7f00842bc80ff287af95073043a1578be08ebb70ba7bdc9b00a99443fed88e");
   assert.equal(loaded.v4.figures.plain8.pending, undefined, "plain8 is v1.22, which root +1'd");
   assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
+  assert.doesNotMatch(html(data), /figure pending review/);
+  // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z).
+  assert.match(shown(data, "senti"), /Staging output, 08:39 UTC, 1 November: our own team's test runs/);
+  assert.equal(slide(data, "senti").content.figure.minFont, 21, "plain9's own 21 px text stays as drawn, recorded for the renderer");
   // The scorecard is aneta's v1.19 plain7 (root's three repairs drawn in), with one declared edit and this deck's label.
   const fig = slide(data, "scorecard").content.figure;
   assert.equal(fig.id, "plain7");
@@ -187,10 +195,11 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
 });
 
 test("--final drops every number without a receipt, speaks the no-numbers line, and loses the DRAFT tag", () => {
-  // The freeze refuses a figure still pending review; with root's +1 on v1.24 it goes through.
-  assert.throws(() => buildFounderData(loaded, { final: true }), /pending root's \+1; the freeze takes only reviewed figures/);
+  // The freeze refuses a figure still pending review; with root's +1 on v1.24, none is.
+  const pending = structuredClone(loaded.v4);
+  pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
+  assert.throws(() => buildFounderData({ ...loaded, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
   const reviewed = structuredClone(loaded.v4);
-  for (const fig of Object.values(reviewed.figures)) delete fig.pending;
   for (const slot of ["3min", "2min"]) {
     const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
@@ -261,4 +270,13 @@ test("the freeze drops tiles without a receipt even with no fallback picture, an
   const named = structuredClone(loaded.v4);
   named.figures.plain11.edits = [{ from: "AI-bot requests a week", to: "Cloudflare AI-bot requests a week", why: "test only" }];
   assert.throws(() => buildFounderData({ ...loaded, v4: named }), (e) => e instanceof FounderError && /public-render rule .* figure plain11/.test(e.message));
+});
+
+test("a figure still pending review is marked on its draft slide", () => {
+  const pending = structuredClone(loaded.v4);
+  pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
+  const d = buildFounderData({ ...loaded, v4: pending });
+  const section = (id) => html(d).split("\n").find((x) => x.includes(`id="s-${id}"`));
+  assert.match(section("point"), /DRAFT · figure pending review/);
+  assert.doesNotMatch(section("chips"), /figure pending review/);
 });
