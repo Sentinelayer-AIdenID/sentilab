@@ -29,6 +29,7 @@ def test_pinned_raw_reference_and_fresh_process_replay(tmp_path, monkeypatch):
             h.scorer.ledger.settle(reservation, receipt['cpu_s'], response)
             assert result.get('reason') is None, result
             assert receipt['input_sha256'] == gate_zero.frozen_inputs(gate_zero.reference(REFERENCE_ID))
+            assert receipt['input_sha256']['new_hotspot.config'] == h.manifest['fixture']['package']['hotspot_config_sha256']
             assert response['native_all_block_max_c'] == pytest.approx(115.93, abs=1e-9)
             assert response['max_chiplet_centre_mean_c'] == pytest.approx(115.935, abs=1e-9)
             assert response['active_grid_max_c'] == pytest.approx(119.07, abs=1e-9)

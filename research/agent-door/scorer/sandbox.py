@@ -90,10 +90,11 @@ def supervise(engine, spec, directory, wall_timeout):
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             os.setsid()
             resource.setrlimit(resource.RLIMIT_CPU, (CPU_LIMIT_S, CPU_LIMIT_S))
-            from thermal import stage
+            from thermal import check_config, stage
             from sundai_hotspot import slab049
             from sundai_hotspot.reference_validation import SOLVER_ENVIRONMENT
             hashes = stage(spec, directory)
+            check_config(directory, spec['hotspot_config_sha256'])
             (directory / 'inputs.json').write_text(json.dumps(hashes))
             os.chdir(directory)
             with open('stdout.txt', 'wb') as out, open('stderr.txt', 'wb') as err:
