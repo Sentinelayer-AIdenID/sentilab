@@ -673,16 +673,26 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
             findings = {str(agent.number): result for agent, result in zip(agents, results)}
         else:
             findings, transcript, finalized = empty_set(), [], False
+            histories = {agent.number: [dict(message) for message in base] for agent in agents}
+            cursors = {agent.number: 0 for agent in agents}
             while not finalized and any(not agent.stop_reason for agent in agents):
                 for agent in agents:
                     if agent.stop_reason:
                         continue
-                    messages = base + transcript + [{"role": "user", "content": c_turn_prompts[agent.number]}]
+                    messages = histories[agent.number]
+                    shared = transcript[cursors[agent.number]:] + [c_turn_prompts[agent.number]]
+                    if messages[-1]["role"] == "user":
+                        messages[-1]["content"] += "\n\n" + "\n\n".join(shared)
+                    else:
+                        messages.append({"role": "user", "content": "\n\n".join(shared)})
                     reply = engine.request(job["job_id"], agent, messages, deadline=deadline,
                                            scope=scope, record=writer.record)
                     if reply is None:
                         continue
-                    transcript.append({"role": "assistant", "content": f"Agent {agent.number}:\n{reply.content}"})
+                    labelled = f"Agent {agent.number}:\n{reply.content}"
+                    transcript.append(labelled)
+                    messages.append({"role": "assistant", "content": labelled})
+                    cursors[agent.number] = len(transcript)
                     # Each next prompt includes every reply since that agent's
                     # last request, including its own newly appended reply.
                     for participant in agents:
@@ -788,8 +798,8 @@ class DryRunModel:
 
     def complete(self, messages, *, max_tokens, timeout):
         history = [message for message in messages if message["role"] == "assistant"]
-        shared = any(message["content"].startswith("Agent ") for message in history)
-        if len(history) >= (3 if shared else 1):
+        shared = sum(len(re.findall(r"(?m)^Agent [123]:\n", message["content"])) for message in messages)
+        if shared >= 3 or (not shared and history):
             finding = {"file": "README.md", "location": "1", "defect": "synthetic dry-run finding",
                        "evidence": "Offline fixture; not a participant result."}
             content = "FINAL\n" + canonical(finding).decode("utf-8")

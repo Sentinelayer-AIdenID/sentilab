@@ -35,8 +35,10 @@ are read once before running. The same system prompt is used in every arm.
 prompt files. The runner does not add instructions for emitting interim findings.
 The packet message uses headers `### README.md`, `### config.json`, etc., in the
 order above. A/B subsequently receive their own reply and the sealed continue
-prompt. C receives the packet, every prior reply as `Agent N:\n<verbatim reply>`,
-then the corresponding sealed `c1`, `c2`, or `c3` prompt.
+prompt. C receives every prior reply as `Agent N:\n<verbatim reply>`. Each agent's
+own replies have the assistant role; peer replies are folded into one user
+message with that turn's sealed `c1`, `c2`, or `c3` prompt. The initial user
+message includes the packet, so roles alternate even on the first turn.
 
 The contract does not supply an initial prompt count, pilot selection, or C
 participant instructions. This implementation makes those explicit operator

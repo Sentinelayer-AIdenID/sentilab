@@ -38,7 +38,8 @@
     "c3": "c3.txt"
   },
   "pilot_arms": [
-    "A"
+    "A",
+    "C"
   ],
   "initial_prompt_tokens": {
     "case-one-A": {
@@ -69,6 +70,11 @@
     },
     "pilot-A": {
       "1": 100
+    },
+    "pilot-C": {
+      "1": 100,
+      "2": 100,
+      "3": 100
     }
   }
 }
