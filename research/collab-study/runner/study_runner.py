@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 import hashlib
 import json
 import os
 import socket
 import ssl
+import threading
 from urllib.parse import urlsplit
 
 import requests
@@ -259,3 +262,93 @@ class HTTPModel:
         except (KeyError, IndexError, TypeError, AttributeError):
             raise CallFailure("invalid_response", status=response.status_code, request_id=request_id, usage=usage) from None
         return Reply(content, usage, request_id, response_id)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def money(value) -> Decimal:
+    try:
+        result = Decimal(str(value))
+        if not result.is_finite() or result < 0:
+            raise ValueError
+        return result
+    except (InvalidOperation, ValueError):
+        raise InputError("prices and dollar cap must be finite nonnegative decimals") from None
+
+
+def decimal_text(value: Decimal) -> str:
+    return format(value.normalize(), "f")
+
+
+class Ledger:
+    """Reserve concurrent calls atomically; retain actual and unknown charges."""
+
+    def __init__(self, max_usd, prices: dict):
+        self.max_usd = money(max_usd)
+        self.prices = {name: money(prices[name]) for name in ("input", "cached_input", "output")}
+        self._lock = threading.Lock()
+        self._spent = Decimal(0)
+        self._reserved = Decimal(0)
+        self._attempts = []
+        self.stop_reason = None
+
+    def cost(self, prompt: int, cached: int, output: int) -> Decimal:
+        return ((prompt - cached) * self.prices["input"] + cached * self.prices["cached_input"] + output * self.prices["output"]) / 1_000_000
+
+    def reserve(self, job_id: str, agent: int, scope: str, *, prompt_bound: int, max_tokens: int) -> dict | None:
+        if scope not in {"pilot", "study", "retry"}:
+            raise InputError("invalid accounting scope")
+        if type(prompt_bound) is not int or prompt_bound < 0 or type(max_tokens) is not int or max_tokens <= 0:
+            raise InputError("invalid reservation token bounds")
+        bound = (prompt_bound * max(self.prices["input"], self.prices["cached_input"]) + max_tokens * self.prices["output"]) / 1_000_000
+        with self._lock:
+            if self.stop_reason or self._spent + self._reserved + bound > self.max_usd:
+                self.stop_reason = "dollar_cap"
+                return None
+            attempt = {"job_id": job_id, "agent": agent, "scope": scope, "attempt": len(self._attempts) + 1,
+                       "start_utc": utc_now(), "prompt_bound": prompt_bound, "max_tokens": max_tokens,
+                       "reserved_usd": decimal_text(bound), "state": "pending"}
+            self._reserved += bound
+            self._attempts.append(attempt)
+            return attempt
+
+    def settle(self, attempt: dict, *, usage=None, failure: CallFailure | None = None, request_id=None) -> None:
+        unknown = False
+        if failure and failure.safe_to_retry and usage is None:
+            charged, amount = 0, Decimal(0)
+        else:
+            try:
+                prompt, cached, output, _ = usage_counts(usage)
+                charged, amount = prompt + output, self.cost(prompt, cached, output)
+            except CallFailure:
+                unknown = True
+                charged = attempt["prompt_bound"] + attempt["max_tokens"]
+                amount = Decimal(attempt["reserved_usd"])
+        with self._lock:
+            if attempt["state"] != "pending":
+                raise RuntimeError("attempt already settled")
+            self._reserved -= Decimal(attempt["reserved_usd"])
+            self._spent += amount
+            attempt.update({"end_utc": utc_now(), "state": "failed" if failure else "response",
+                            "usage": usage, "unknown_usage": unknown, "charged_tokens": charged,
+                            "charged_usd": decimal_text(amount), "request_id": request_id or (failure.request_id if failure else None),
+                            "failure": failure.kind if failure else None,
+                            "http_status": failure.status if failure else None,
+                            "over_reserved_tokens": max(0, charged - attempt["prompt_bound"] - attempt["max_tokens"])})
+            if self._spent > self.max_usd:
+                self.stop_reason = "dollar_cap"
+
+    def report(self) -> dict:
+        with self._lock:
+            scopes = {}
+            for scope in ("pilot", "study", "retry"):
+                attempts = [item for item in self._attempts if item["scope"] == scope and item["state"] != "pending"]
+                scopes[scope] = {"usd": decimal_text(sum((Decimal(item["charged_usd"]) for item in attempts), Decimal(0))),
+                                 "charged_tokens": sum(item["charged_tokens"] for item in attempts),
+                                 "attempts": len(attempts), "unknown_usage_attempts": sum(item["unknown_usage"] for item in attempts)}
+            result = {"max_usd": decimal_text(self.max_usd), "grand_total_usd": decimal_text(self._spent),
+                      "reserved_usd": decimal_text(self._reserved), "overshoot_usd": decimal_text(max(Decimal(0), self._spent - self.max_usd)),
+                      "stop_reason": self.stop_reason, "scopes": scopes, "attempts": self._attempts}
+            return json.loads(canonical(result))

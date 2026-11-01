@@ -203,7 +203,7 @@ def test_http_failure_keeps_request_id_without_retry_or_error_body(monkeypatch, 
         headers = {"apim-request-id": "failed-provider-request"}
 
         def json(self):
-            return {"error": {"message": "obviously-fake-credential"}}
+            return {"error": {"message": "provider failure"}}
 
     monkeypatch.setattr(runner.requests.Session, "post", lambda *a, **kw: Response())
     model = runner.HTTPModel("https://provider.invalid/chat/completions", "obviously-fake-credential")
@@ -212,6 +212,7 @@ def test_http_failure_keeps_request_id_without_retry_or_error_body(monkeypatch, 
     assert not caught.value.safe_to_retry
     assert caught.value.request_id == "failed-provider-request"
     assert caught.value.status == status
+    assert caught.value.kind == "http_error"
     assert "obviously-fake-credential" not in str(caught.value)
 
 
@@ -221,3 +222,61 @@ def test_http_failure_keeps_request_id_without_retry_or_error_body(monkeypatch, 
 def test_invalid_usage_is_unknown_not_estimated(usage):
     with pytest.raises(runner.CallFailure, match="invalid_usage"):
         runner.usage_counts(usage)
+
+
+def test_dollar_cap_blocks_worst_case_call_and_scopes_include_retry():
+    ledger = runner.Ledger("0.0005", {"input": "1", "cached_input": "0.5", "output": "2"})
+    attempt = ledger.reserve("job-one", 1, "pilot", prompt_bound=100, max_tokens=100)
+    assert attempt is not None
+    ledger.settle(attempt, usage={"prompt_tokens": 100, "completion_tokens": 20,
+                                  "prompt_tokens_details": {"cached_tokens": 40}})
+    retry = ledger.reserve("job-one", 1, "retry", prompt_bound=100, max_tokens=100)
+    ledger.settle(retry, failure=runner.CallFailure("transport_unknown"))
+    assert ledger.reserve("job-two", 1, "study", prompt_bound=100, max_tokens=100) is None
+    result = ledger.report()
+    assert result["stop_reason"] == "dollar_cap"
+    assert result["grand_total_usd"] == "0.00042"
+    assert result["scopes"]["pilot"]["usd"] == "0.00012"
+    assert result["scopes"]["retry"]["usd"] == "0.0003"
+    assert result["scopes"]["study"]["usd"] == "0"
+    assert result["attempts"][1]["unknown_usage"] is True
+    assert result["attempts"][1]["charged_tokens"] == 200
+
+
+def test_reservations_count_inflight_calls_against_dollar_cap():
+    ledger = runner.Ledger("0.0005", {"input": "1", "cached_input": "0.5", "output": "2"})
+    first = ledger.reserve("first", 1, "study", prompt_bound=100, max_tokens=100)
+    assert first is not None
+    assert ledger.reserve("second", 1, "study", prompt_bound=100, max_tokens=100) is None
+    ledger.settle(first, failure=runner.CallFailure("presend_failure", safe_to_retry=True))
+    report = ledger.report()
+    assert report["grand_total_usd"] == "0"
+    assert report["attempts"][0]["unknown_usage"] is False
+    assert report["attempts"][0]["charged_tokens"] == 0
+
+
+def test_unknown_usage_is_charged_and_actual_overshoot_is_explicit():
+    ledger = runner.Ledger("0.0001", {"input": "1", "cached_input": "0.5", "output": "2"})
+    attempt = ledger.reserve("first", 1, "study", prompt_bound=20, max_tokens=20)
+    ledger.settle(attempt, usage={"prompt_tokens": 100, "completion_tokens": 20}, request_id="known-request")
+    report = ledger.report()
+    assert report["grand_total_usd"] == "0.00014"
+    assert report["overshoot_usd"] == "0.00004"
+    assert report["attempts"][0]["over_reserved_tokens"] == 80
+    assert report["attempts"][0]["request_id"] == "known-request"
+    assert report["stop_reason"] == "dollar_cap"
+
+
+def test_provider_credential_echo_is_withheld(monkeypatch):
+    class Response:
+        status_code = 200
+        headers = {"x-request-id": "obviously-fake-credential"}
+
+        def json(self):
+            return {"choices": [{"message": {"content": "FINAL\nobviously-fake-credential"}}]}
+
+    monkeypatch.setattr(runner.requests.Session, "post", lambda *a, **kw: Response())
+    model = runner.HTTPModel("https://provider.invalid/chat/completions", "obviously-fake-credential")
+    with pytest.raises(runner.CallFailure, match="credential_in_response") as caught:
+        model.complete([], max_tokens=50, timeout=1)
+    assert caught.value.request_id is None
