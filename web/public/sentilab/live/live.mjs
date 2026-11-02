@@ -300,6 +300,16 @@ function proposalRow(L) {
 }
 // Runs fill() only when what it would draw changed (key), so an unchanged row is not touched.
 function once(r, part, key, fill) { if (r.keys[part] !== key) { r.keys[part] = key; fill(); } }
+// Puts stable nodes into box in this order, touching the DOM only when the set or order differs; the focused node (or
+// the one holding it) is the same node afterwards, and focus is given back to it without being taken from anywhere else.
+const holds = (node, target) => node === target || (typeof node?.contains === "function" && node.contains(target));
+function placeChildren(box, nodes) {
+  const current = [...box.children];
+  if (current.length === nodes.length && current.every((n, i) => n === nodes[i])) return;
+  const active = document.activeElement;
+  box.replaceChildren(...nodes);
+  if (active && document.activeElement !== active && nodes.some((n) => holds(n, active))) active.focus?.({ preventScroll: true });
+}
 function renderProposals() {
   const box = $("proposalList");
   if (!box) return;
@@ -343,12 +353,7 @@ function renderProposals() {
   const ids = new Set(list.map((L) => L.id));
   for (const id of [...proposalRows.keys()]) if (!ids.has(id)) proposalRows.delete(id);
   if (!list.length) desired.push(proposalsEmpty ??= h("p", { class: "rail-empty" }, W.PROPOSALS.none));
-  const current = [...box.children];
-  if (current.length !== desired.length || current.some((n, i) => n !== desired[i])) {
-    const active = document.activeElement;
-    box.replaceChildren(...desired);
-    if (active && document.activeElement !== active && desired.includes(active)) active.focus?.({ preventScroll: true });
-  }
+  placeChildren(box, desired);
   const top = $("topLayouts");
   top.hidden = ![...rawResults.values()].some((x) => M.downloadable(x, licences));
   top.setAttribute("title", W.PACKAGE.topTitle);
@@ -423,38 +428,57 @@ function runTitleParts(L, names = namesNow()) {
   const name = M.runName(L, feed.state.events, names);
   return name === null ? [M.runTitle(L)] : [h("bdi", null, name), W.namedLayout(L)];
 }
+// The run rail (desktop and phone): one stable card per FULL run id and list, its content refilled in place only when
+// what it shows changes (a hide or a failed or stale read refills the title at once); the list re-placed only when the
+// set or order changes (root's keyboard-focus P2, the lists the 3 s poll rebuilt).
+const railCards = new Map();   // "d:"/"m:" + run id -> { btn, keys }
+let railEmpty = null;
 function runCard(L, selected, { mobile = false } = {}) {
-  const v = M.runView(L);
-  const btn = h("button", { type: "button", class: mobile ? (selected ? "selected" : "") : `experiment${selected ? " selected" : ""}`, "aria-pressed": selected ? "true" : "false", dataset: { run: L.id } });
-  if (mobile) {
-    btn.append(...runTitleParts(L), h("small", null, v.metric ? `${v.metric.text} · ${W.tempWord(v.metric, v.verification)}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
-      h("small", { class: "vt" }, W.visitorType(L.cls)));
-  } else {
-    btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, runTitleParts(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
-      h("small", { class: `outcome ${M.runOutcome(L).kind}`, title: M.runOutcome(L).title }, M.runOutcome(L).text),
-      h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), v.metric ? "simulated, not silicon" : "no temperature yet"));
+  const k = `${mobile ? "m" : "d"}:${L.id}`;
+  let c = railCards.get(k);
+  if (!c) {
+    const btn = h("button", { type: "button", dataset: { run: L.id } });
+    btn.addEventListener("click", () => selectRun(L.id));
+    c = { btn, keys: {} };
+    railCards.set(k, c);
   }
-  btn.addEventListener("click", () => selectRun(L.id));
-  return btn;
+  const cls = mobile ? (selected ? "selected" : "") : `experiment${selected ? " selected" : ""}`;
+  if (c.btn.className !== cls) c.btn.className = cls;
+  const pressed = selected ? "true" : "false";
+  if (c.btn.getAttribute("aria-pressed") !== pressed) c.btn.setAttribute("aria-pressed", pressed);
+  const v = M.runView(L);
+  const name = M.runName(L, feed.state.events, namesNow());
+  const o = mobile ? null : M.runOutcome(L);
+  const metric = v.metric ? `${v.metric.text} · ${W.tempWord(v.metric, v.verification)}` : null;
+  once(c, "body", JSON.stringify([name, L.short, L.status, L.cls, metric, Boolean(v.metric), o?.kind ?? null, o?.text ?? null, o?.title ?? null]), () => {
+    if (mobile) {
+      c.btn.replaceChildren(...runTitleParts(L), h("small", null, metric ?? (STATUS_TAG[L.status] ?? L.status).toLowerCase()), h("small", { class: "vt" }, W.visitorType(L.cls)));
+    } else {
+      c.btn.replaceChildren(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
+        h("strong", null, runTitleParts(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
+        h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text),
+        h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), v.metric ? "simulated, not silicon" : "no temperature yet"));
+    }
+  });
+  return c.btn;
 }
 function renderRuns() {
   const list = M.runsNewestFirst(layouts());
   const shown = shownRun().L;
   $("runCount").textContent = String(list.length).padStart(2, "0");
-  const box = $("runList"), mob = $("mobileRuns");
-  // Focus is given back only to this rail's own rebuilt card, in the same list; focus elsewhere (a timeline row with the
-  // same run id, for one) is never taken (root, 04927b9 P2: restore without stealing).
-  const active = document.activeElement;
-  const inMobile = Boolean(active && mob.contains?.(active)), inRail = Boolean(active && box.contains?.(active));
-  const focusId = inRail || inMobile ? active.dataset?.run ?? null : null;
-  box.replaceChildren(...list.map((L) => runCard(L, L === shown)));
-  mob.replaceChildren(...list.map((L) => runCard(L, L === shown, { mobile: true })));
+  const ids = new Set(list.map((L) => L.id));
+  for (const k of [...railCards.keys()]) if (!ids.has(k.slice(2))) railCards.delete(k);
+  const desktop = list.map((L) => runCard(L, L === shown));
+  const phone = list.map((L) => runCard(L, L === shown, { mobile: true }));
   if (!list.length) {
     const st = M.feedStatus(feed.state, { hostname: location.hostname }).state;
-    box.append(h("p", { class: "rail-empty" }, st === "error" ? "No runs: the door feed is not answering." : st === "connecting" ? "Reading the door's runs." : "No runs yet. The first proposal appears here as it arrives."));
+    railEmpty ??= h("p", { class: "rail-empty" });
+    const text = st === "error" ? "No runs: the door feed is not answering." : st === "connecting" ? "Reading the door's runs." : "No runs yet. The first proposal appears here as it arrives.";
+    if (railEmpty.textContent !== text) railEmpty.textContent = text;
+    desktop.push(railEmpty);
   }
-  if (focusId) [...(inMobile ? mob : box).querySelectorAll("[data-run]")].find((b) => b.dataset.run === focusId)?.focus();
+  placeChildren($("runList"), desktop);
+  placeChildren($("mobileRuns"), phone);
 }
 
 function renderModel() {
@@ -674,6 +698,33 @@ function drawMaps() {
   if (openAtlas) openAtlas.tableBox.replaceChildren(atlasTable(drawAtlas(openAtlas.svg, { large: true })));
   return a;
 }
+// "Follow the work": one stable row per FULL run id, its content refilled in place only when it changes; the click
+// always acts on the row's latest data.
+const agentRows = new Map();   // run id -> { btn, r, keys }
+let workEmpty = null;
+function agentRow(r, selected) {
+  let a = agentRows.get(r.run_id);
+  if (!a) {
+    const btn = h("button", { type: "button", dataset: { run: r.run_id } });
+    a = { btn, r, keys: {} };
+    btn.addEventListener("click", () => { const now = a.r; if (layouts().some((l) => l.id === now.run_id)) selectRun(now.run_id); openRun(now); });
+    agentRows.set(r.run_id, a);
+  }
+  a.r = r;
+  const cls = `agent-row${selected ? " selected" : ""}`;
+  if (a.btn.className !== cls) a.btn.className = cls;
+  const task = r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown";
+  const where = r.submitted ? W.TEXT.submitted(W.when(r.submitted.at)) : W.TEXT.submittedEarlier;
+  const L = layouts().find((l) => l.id === r.run_id);
+  const o = L ? M.runOutcome(L) : null;
+  const pip = r.task ? STATE_PIP(r.task.state) : "grey";
+  once(a, "body", JSON.stringify([r.cls, r.short, r.sameLabel, where, task, pip, o?.kind ?? null, o?.text ?? null, o?.title ?? null]), () => a.btn.replaceChildren(
+    h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
+    h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${W.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} designs with this short id` : where}`),
+      ...(o ? [h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)] : [])),
+    h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${pip}` })));
+  return a.btn;
+}
 function renderWork() {
   const scroller = $("visitorList");
   const keep = scroller.scrollTop ?? 0;
@@ -686,20 +737,18 @@ function renderWork() {
   const shown = shownRun().L;
   $("visitorCount").textContent = `${runs.length} RUN${runs.length === 1 ? "" : "S"}`;
   const list = $("visitorList");
-  list.replaceChildren();
-  for (const r of runs.slice(0, 30)) {
-    const task = r.task ? (STATUS_TAG[r.task.state] ?? r.task.state).toLowerCase() : "unknown";
-    const where = r.submitted ? W.TEXT.submitted(W.when(r.submitted.at)) : W.TEXT.submittedEarlier;
-    const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
-      h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${W.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} designs with this short id` : where}`),
-        ...(() => { const L = layouts().find((l) => l.id === r.run_id); if (!L) return []; const o = M.runOutcome(L); return [h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]; })()),
-      h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
-    btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
-    list.append(btn);
+  const shownRows = runs.slice(0, 30);
+  const keepIds = new Set(shownRows.map((r) => r.run_id));
+  for (const id of [...agentRows.keys()]) if (!keepIds.has(id)) agentRows.delete(id);
+  const nodes = shownRows.map((r) => agentRow(r, Boolean(shown && r.run_id === shown.id)));
+  nodes.push(...renderRecords());
+  if (!runs.length && !door.length && !anonymous.length) {
+    workEmpty ??= h("p", { class: "rail-empty" });
+    const text = M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet.";
+    if (workEmpty.textContent !== text) workEmpty.textContent = text;
+    nodes.push(workEmpty);
   }
-  renderRecords(list);
-  if (!runs.length && !door.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
+  placeChildren(list, nodes);
   // The newest record, or the replay cursor's.
   const pts = points();
   const c = M.cursorIndex(pts, S.cursorSeq);
@@ -798,7 +847,45 @@ function renderArrivals() {
 }
 
 // ── every door record: newest first, in the aquarium's population tabs, older pages on request ────────────────
-function renderRecords(list) {
+// The records section of "Follow the work": a stable head, a stable tab per population, a stable row per record seq
+// (an arrival's declared name refilled in place, so a hide or a failed or stale read clears it at once), a stable
+// marker per known gap, and one stable "Show earlier records" button; each list re-placed only when it changes.
+const rec = { head: null, tabs: null, tabButtons: new Map(), rows: null, rowNodes: new Map(), gapNodes: new Map(), none: null, more: null };
+function recordsNodes() {
+  if (!rec.head) {
+    rec.head = h("p", { class: "door-head" }, W.RECORDS.head);
+    rec.tabs = h("div", { class: "rec-tabs", role: "tablist", "aria-label": "Records by who sent them" });
+    for (const p of W.POPULATIONS) {
+      const b = h("button", { type: "button", role: "tab", dataset: { tab: p.id } });
+      b.addEventListener("click", () => { S.recTab = p.id; renderWork(); });
+      rec.tabButtons.set(p.id, b);
+    }
+    rec.tabs.replaceChildren(...rec.tabButtons.values());
+    rec.rows = h("div", { class: "rec-list", id: "recordRows" });
+    rec.none = h("p", { class: "rail-empty" }, W.RECORDS.none);
+    rec.more = h("button", { type: "button", class: "rec-more", id: "recordMore" });
+    // aria-disabled, never the disabled attribute: a focused button that has done its job keeps focus (a disabled one
+    // would drop it to the page), and a click on it then does nothing.
+    rec.more.addEventListener("click", () => { if (rec.more.getAttribute("aria-disabled") === "true") return; S.gapRetryAt = 0; if (M.rangeGaps(S.cover).length) fillGap(); else loadEarlier(); });
+  }
+  return rec;
+}
+function recordRow(e, name) {
+  let r = rec.rowNodes.get(e.seq);
+  if (!r) {
+    r = { div: h("div", { class: "rec-row", title: `seq ${e.seq}` }), keys: {} };
+    rec.rowNodes.set(e.seq, r);
+  }
+  const when = W.when(e.at);
+  const named = e.kind === "arrival" && name !== null;
+  once(r, "body", JSON.stringify([named ? name : null, named ? null : M.recordSentence(e), when]), () => r.div.replaceChildren(
+    avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification }),
+    named
+      ? h("span", null, h("bdi", null, name), `${W.namedTail(e)} \u00b7 ${e.event_kind === "declaration" ? W.TEXT.declared : W.TEXT.arrived}`, h("small", null, when))
+      : h("span", null, M.recordSentence(e), h("small", null, when))));
+  return r.div;
+}
+function renderRecords() {
   S.records = M.mergeRecords(S.records, feed.state.events);
   const win = feed.state.events;
   if (win.length) S.cover = M.addRange(S.cover, Math.min(...win.map((e) => e.seq)), feed.state.eventsCursor);
@@ -807,38 +894,46 @@ function renderRecords(list) {
   const done = !gaps.length && (M.readFromStart(S.cover) || Boolean(empty));
   const all = [...S.records.values()].sort((x, y) => y.seq - x.seq);
   const shown = S.recTab === "all" ? all : all.filter((e) => W.populationOf(e) === S.recTab);
-  list.append(h("p", { class: "door-head" }, W.RECORDS.head));
-  const tabs = h("div", { class: "rec-tabs", role: "tablist", "aria-label": "Records by who sent them" });
+  const R = recordsNodes();
   for (const p of W.POPULATIONS) {
+    const b = R.tabButtons.get(p.id);
     const n = p.id === "all" ? all.length : all.filter((e) => W.populationOf(e) === p.id).length;
-    const b = h("button", { type: "button", role: "tab", class: S.recTab === p.id ? "on" : "", "aria-selected": S.recTab === p.id ? "true" : "false", dataset: { tab: p.id } }, `${p.label} ${n}`);
-    b.addEventListener("click", () => { S.recTab = p.id; renderWork(); });
-    tabs.append(b);
+    const on = S.recTab === p.id;
+    const text = `${p.label} ${n}`;
+    if (b.textContent !== text) b.textContent = text;
+    if (b.className !== (on ? "on" : "")) b.className = on ? "on" : "";
+    if (b.getAttribute("aria-selected") !== (on ? "true" : "false")) b.setAttribute("aria-selected", on ? "true" : "false");
   }
-  list.append(tabs);
-  const rows = h("div", { class: "rec-list", id: "recordRows" });
   const names = namesNow();
-  if (!shown.length) rows.append(h("p", { class: "rail-empty" }, W.RECORDS.none));
+  const rowNodes = [];
+  const keepSeqs = new Set(shown.map((e) => e.seq)), keepGaps = new Set();
   let newer = null;
   for (const e of shown) {
     // Where records are known to be missing, the list says so in place (never a silent hole).
-    if (newer !== null && gaps.some(([lo, hi]) => lo > e.seq && hi < newer)) rows.append(h("p", { class: "rec-gap" }, W.RECORDS.gapHere));
+    const gap = newer === null ? null : gaps.find(([lo, hi]) => lo > e.seq && hi < newer);
+    if (gap) {
+      const key = `${gap[0]}-${gap[1]}`;
+      keepGaps.add(key);
+      if (!R.gapNodes.has(key)) R.gapNodes.set(key, h("p", { class: "rec-gap" }, W.RECORDS.gapHere));
+      rowNodes.push(R.gapNodes.get(key));
+    }
     newer = e.seq;
-    rows.append(h("div", { class: "rec-row", title: `seq ${e.seq}` }, avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification }),
-      e.kind === "arrival" && names.has(e.seq)
-        ? h("span", null, h("bdi", null, names.get(e.seq)), `${W.namedTail(e)} \u00b7 ${e.event_kind === "declaration" ? W.TEXT.declared : W.TEXT.arrived}`, h("small", null, W.when(e.at)))
-        : h("span", null, M.recordSentence(e), h("small", null, W.when(e.at)))));
+    rowNodes.push(recordRow(e, names.get(e.seq) ?? null));
   }
-  list.append(rows);
-  const more = h("button", { type: "button", class: "rec-more", id: "recordMore" },
-    S.recLoading ? (S.recWhat === "gap" ? W.RECORDS.filling : W.RECORDS.loading)
-      : S.recError ? (S.recWhat === "gap" ? W.RECORDS.gapFailed(S.recError) : W.RECORDS.failed(S.recError))
-      : gaps.length ? W.RECORDS.filling : done ? W.RECORDS.done : W.RECORDS.more);
-  more.disabled = S.recLoading || done;
-  more.addEventListener("click", () => { S.gapRetryAt = 0; if (M.rangeGaps(S.cover).length) fillGap(); else loadEarlier(); });
-  list.append(more);
+  for (const seq of [...R.rowNodes.keys()]) if (!keepSeqs.has(seq)) R.rowNodes.delete(seq);
+  for (const key of [...R.gapNodes.keys()]) if (!keepGaps.has(key)) R.gapNodes.delete(key);
+  if (!shown.length) rowNodes.push(R.none);
+  placeChildren(R.rows, rowNodes);
+  const label = S.recLoading ? (S.recWhat === "gap" ? W.RECORDS.filling : W.RECORDS.loading)
+    : S.recError ? (S.recWhat === "gap" ? W.RECORDS.gapFailed(S.recError) : W.RECORDS.failed(S.recError))
+    : gaps.length ? W.RECORDS.filling : done ? W.RECORDS.done : W.RECORDS.more;
+  if (R.more.textContent !== label) R.more.textContent = label;
+  const inert = S.recLoading || done ? "true" : "false";
+  if (R.more.getAttribute("aria-disabled") !== inert) R.more.setAttribute("aria-disabled", inert);
   if (gaps.length && !S.recLoading) setTimeout(fillGap, 0);
+  return [R.head, R.tabs, R.rows, R.more];
 }
+
 // One older page at a time, through the page's gate (spaced like every other request), never a burst.
 // Both readers record what they read as a covered range, and drop an answer from an ended epoch (pagehide).
 let recEpoch = 0;
@@ -875,6 +970,8 @@ async function fillGap() {
 }
 
 // ── the flight record ──────────────────────────────────────────────────────────────────────────────────────────────
+// Phones: the newest records as stable buttons, one per record seq.
+const mobileEvents = new Map();   // record seq -> { btn, keys }
 function renderTrace() {
   const svg = $("traceSvg");
   const { points: pts, first, last } = M.traceModel(feed.state.events);
@@ -922,11 +1019,20 @@ function renderTrace() {
   $("play").setAttribute("aria-label", S.playing ? "Pause the replay" : "Replay the recorded records");
   // Phones: a readable list of the newest records.
   const ml = $("mobileEventList");
-  ml.replaceChildren(...pts.slice(-12).reverse().map((p) => {
-    const i = pts.indexOf(p);
-    const b = h("button", { type: "button" }, h("span", null, W.when(p.at)), h("strong", null, M.recordTitle(p)), h("b", { "aria-hidden": "true" }, "↗"));
-    b.addEventListener("click", () => { setCursor(i); openRecord(i); });
-    return b;
+  const newest = pts.slice(-12).reverse();
+  const keep = new Set(newest.map((p) => p.seq));
+  for (const seq of [...mobileEvents.keys()]) if (!keep.has(seq)) mobileEvents.delete(seq);
+  placeChildren(ml, newest.map((p) => {
+    let m = mobileEvents.get(p.seq);
+    if (!m) {
+      m = { btn: h("button", { type: "button" }), keys: {} };
+      const seq = p.seq;
+      m.btn.addEventListener("click", () => { const i = points().findIndex((x) => x.seq === seq); if (i >= 0) { setCursor(i); openRecord(i); } });
+      mobileEvents.set(p.seq, m);
+    }
+    once(m, "body", JSON.stringify([W.when(p.at), M.recordTitle(p)]), () => m.btn.replaceChildren(
+      h("span", null, W.when(p.at)), h("strong", null, M.recordTitle(p)), h("b", { "aria-hidden": "true" }, "↗")));
+    return m.btn;
   }));
 }
 
